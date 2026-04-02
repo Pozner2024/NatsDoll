@@ -1,0 +1,28 @@
+{
+  "name": "@natsdoll/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "generate": "prisma generate"
+  },
+  "dependencies": {
+    "@natsdoll/shared": "*",
+    "@prisma/client": "^5.7.1",
+    "hono": "^4.2.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "prisma": "^5.7.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  }
+}

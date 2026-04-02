@@ -1,0 +1,26 @@
+{
+  "name": "natsdoll",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "B2C e-commerce platform for handmade polymer clay items",
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/web & npm run dev -w apps/api",
+    "build": "npm run build -w packages/shared && npm run build -w apps/web && npm run build -w apps/api",
+    "test": "npm run test -w",
+    "lint": "npm run lint -w"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.58.0",
+    "@typescript-eslint/parser": "^8.58.0",
+    "eslint": "^10.1.0",
+    "eslint-plugin-vue": "^10.8.0",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.58.0"
+  }
+}
