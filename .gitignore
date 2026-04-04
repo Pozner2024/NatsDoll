@@ -35,10 +35,10 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
-# Claude Code
-.claude/
+# Superpowers
 .superpowers/
-CLAUDE.md
+
+# Docs
 docs/
 
 # Prisma seed build artifacts

@@ -9,9 +9,11 @@
 import { AppHeader } from '@/shared'
 </script>
 
+
+
 <style scoped lang="scss">
 #app {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 </style>

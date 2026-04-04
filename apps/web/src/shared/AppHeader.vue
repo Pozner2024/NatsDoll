@@ -1,10 +1,17 @@
 <template>
-  <header class="app-header">
-    <span class="app-header__logo corinthia-bold">NatsDoll</span>
+  <header ref="headerRef" class="app-header">
+    <RouterLink
+      to="/"
+      class="app-header__logo corinthia-bold"
+      aria-label="NatsDoll — Home"
+    >
+      NatsDoll
+    </RouterLink>
     <button
+      ref="burgerRef"
       class="app-header__burger"
       :class="{ 'app-header__burger--open': isOpen }"
-      aria-label="Открыть меню"
+      :aria-label="isOpen ? 'Close menu' : 'Open menu'"
       @click="isOpen = !isOpen"
     >
       <span class="app-header__burger-line"></span>
@@ -13,26 +20,36 @@
     </button>
 
     <div class="app-header__nav-wrapper">
-      <NavMenu :is-open="isOpen" @close="isOpen = false" />
+      <BurgerMenu
+        :is-open="isOpen"
+        :trigger-ref="burgerRef"
+        @close="isOpen = false"
+      />
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { NavMenu } from '@/features/navigation'
+import { ref, onMounted, onUnmounted } from "vue";
+import { RouterLink } from "vue-router";
+import { BurgerMenu } from "@/features/navigation";
 
-const isOpen = ref(false)
+const isOpen = ref(false);
+const headerRef = ref<HTMLElement | null>(null);
+const burgerRef = ref<HTMLElement | null>(null);
 
 function handleOutsideClick(event: MouseEvent) {
-  const header = document.querySelector('.app-header')
-  if (isOpen.value && header && !header.contains(event.target as Node)) {
-    isOpen.value = false
+  if (
+    isOpen.value &&
+    headerRef.value &&
+    !headerRef.value.contains(event.target as Node)
+  ) {
+    isOpen.value = false;
   }
 }
 
-onMounted(() => document.addEventListener('click', handleOutsideClick))
-onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
+onMounted(() => document.addEventListener("click", handleOutsideClick));
+onUnmounted(() => document.removeEventListener("click", handleOutsideClick));
 </script>
 
 <style scoped lang="scss">
@@ -41,15 +58,17 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: #ffffff;
-  border-bottom: 1px solid #e8e0d8;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
   position: relative;
+  z-index: var(--z-header);
 
   &__logo {
     font-size: 32px;
-    color: #2c1810;
+    color: var(--color-text);
     letter-spacing: 1px;
     line-height: 1;
+    text-decoration: none;
   }
 
   &__burger {
@@ -58,16 +77,23 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
     gap: 5px;
     background: none;
     border: none;
-    cursor: pointer;
-    padding: 4px;
+    padding: 10px 8px;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
 
     &-line {
       display: block;
       width: 22px;
       height: 2px;
-      background: #2c1810;
+      background: var(--color-text);
       border-radius: 1px;
-      transition: transform 0.25s ease, opacity 0.25s ease;
+      transition:
+        transform 0.25s ease,
+        opacity 0.25s ease;
       transform-origin: center;
     }
 

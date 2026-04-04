@@ -1,0 +1,26 @@
+:root {
+  // Brand colors
+  --color-bg: #fdf6ef;
+  --color-text: #2c1810;
+  --color-accent: #8b5e52;
+  --color-text-muted: #5a3d35;
+
+  // Borders
+  --color-border: #ecddd5;
+
+  // UI
+  --color-white: #ffffff;
+
+  // Typography
+  --font-display: 'Playfair Display', serif;
+  --font-brand: 'Corinthia', cursive;
+
+  // Layout
+  --header-height: 65px;
+
+  // Z-index layers (scale by 10 — room to insert between layers)
+  --z-header: 10;      // site header — above all page content
+  --z-dropdown: 20;    // menus, tooltips, popovers — above header
+  // --z-modal: 30;    // modals (reserved)
+  // --z-toast: 40;    // notifications (reserved)
+}
