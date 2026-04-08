@@ -1,6 +1,5 @@
 import '@/assets/styles/variables.scss'
-import '@/assets/styles/reset.scss'
-import '@/assets/styles/fonts.scss'
+import '@/assets/styles/global.scss'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'

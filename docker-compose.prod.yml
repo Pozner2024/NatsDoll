@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      NODE_ENV: production
+      PORT: 3000
+      FRONTEND_URL: ${FRONTEND_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      YANDEX_S3_ACCESS_KEY: ${YANDEX_S3_ACCESS_KEY}
+      YANDEX_S3_SECRET_KEY: ${YANDEX_S3_SECRET_KEY}
+      YANDEX_S3_BUCKET: ${YANDEX_S3_BUCKET}
+      YANDEX_S3_ENDPOINT: ${YANDEX_S3_ENDPOINT}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 1  # rate limiter in-memory — строго одна реплика
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_API_URL: /api
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: ["npx", "prisma", "migrate", "deploy", "--schema=apps/api/prisma/schema.prisma"]
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres_data:

@@ -8,6 +8,11 @@
   // Borders
   --color-border: #ecddd5;
 
+  // Button gradient channels (r g b — for use with rgb(var(--x) / alpha))
+  --btn-gradient-dark: 160 90 60;
+  --btn-gradient-mid: 232 180 140;
+  --btn-gradient-light: 255 245 225;
+
   // UI
   --color-white: #ffffff;
 
@@ -16,11 +21,15 @@
   --font-brand: 'Corinthia', cursive;
 
   // Layout
-  --header-height: 65px;
+  --header-height: 45px;
 
-  // Z-index layers (scale by 10 — room to insert between layers)
-  --z-header: 10;      // site header — above all page content
-  --z-dropdown: 20;    // menus, tooltips, popovers — above header
-  // --z-modal: 30;    // modals (reserved)
-  // --z-toast: 40;    // notifications (reserved)
+  // Z-index layers
+  --z-slider-slide: 0;
+  --z-slider-overlay: calc(var(--z-slider-slide) + 1);
+  --z-slider-controls: calc(var(--z-slider-overlay) + 1);
+  --z-gallery-cta: 1;
+  --z-header: 10;
+  --z-dropdown: calc(var(--z-header) + 1);
+  // --z-modal: calc(var(--z-dropdown) + 1);
+  // --z-toast: calc(var(--z-modal) + 1);
 }

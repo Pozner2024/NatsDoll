@@ -14,7 +14,7 @@ You are a senior code reviewer for the NatsDoll project. Review changed files an
 
 ### 1. Security
 - JWT tokens not stored in localStorage (use httpOnly cookies or memory)
-- No secrets or API keys hardcoded (Cloudinary, PayPal, DB URL)
+- No secrets or API keys hardcoded (Yandex S3 keys, PayPal, DB URL)
 - All Hono route inputs validated with Zod before use
 - No SQL injection via raw Prisma queries (`$queryRaw` without parameterization)
 - No XSS via unescaped user content rendered in Vue templates

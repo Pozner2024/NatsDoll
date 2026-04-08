@@ -1,11 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
-import GalleryPage from '../pages/GalleryPage.vue'
-import ContactPage from '../pages/ContactPage.vue'
-import LoginPage from '../pages/LoginPage.vue'
-import CartPage from '../pages/CartPage.vue'
-import ShopPage from '../pages/ShopPage.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -16,27 +11,27 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/gallery',
     name: 'gallery',
-    component: GalleryPage,
+    component: () => import('../pages/GalleryPage.vue'),
   },
   {
     path: '/contact',
     name: 'contact',
-    component: ContactPage,
+    component: () => import('../pages/ContactPage.vue'),
   },
   {
     path: '/login',
     name: 'login',
-    component: LoginPage,
+    component: () => import('../pages/LoginPage.vue'),
   },
   {
     path: '/cart',
     name: 'cart',
-    component: CartPage,
+    component: () => import('../pages/CartPage.vue'),
   },
   {
     path: '/shop/:category?',
     name: 'shop',
-    component: ShopPage,
+    component: () => import('../pages/ShopPage.vue'),
   },
 ]
 

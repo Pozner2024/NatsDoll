@@ -20,26 +20,42 @@ You are a Vue 3 expert for the NatsDoll project. You write production-quality co
 - SCSS with BEM in `<style scoped>`
 - Vite
 
-## Architecture: Simplified FSD
+## Architecture: FSD (Feature-Sliced Design)
+
+Слои сверху вниз: `pages` → `widgets` → `features` → `entities` → `shared`. Импорт строго сверху вниз.
+
+**Структура слайса (widgets / features / entities):**
 
 ```
-features/
-├── FeatureName.vue       # main component (always)
-├── components/           # if 2+ sub-components
-├── featureApi.ts         # if HTTP requests
-├── useFeature.ts         # if reusable logic
-├── store.ts              # ONLY if state is shared or survives navigation
-├── types.ts              # if type used in 2+ files
-└── index.ts              # required — public API
+{layer}/{sliceName}/
+├── {SliceName}.vue         # главный компонент (всегда)
+├── components/             # если 2+ подкомпонентов
+├── use{SliceName}.ts       # composable с логикой (опционально)
+├── {sliceName}Api.ts       # HTTP запросы (опционально)
+├── store.ts                # ТОЛЬКО если состояние shared или переживает навигацию
+├── types.ts                # если тип используется в 2+ файлах
+├── {sliceName}.test.ts     # unit-тесты рядом с кодом
+└── index.ts                # ОБЯЗАТЕЛЕН — публичный API
 ```
 
-Deep imports are forbidden by ESLint. Export only via `index.ts`.
+**shared:**
+```
+shared/
+├── ui/        Vue компоненты-примитивы (AppButton, AppLogo, etc)
+├── lib/       утилиты и helpers
+├── api/       базовый HTTP-клиент
+├── config/    константы, env
+└── index.ts
+```
 
-**`store.ts` only when:**
-- State is shared between multiple components
-- State must survive navigation
+Deep imports запрещены ESLint. Экспорт только через `index.ts`.
 
-**No store needed for:** `product/`, `gallery/`, `reviews/`, `profile/` — local state suffices.
+**`store.ts` только когда:**
+- Состояние shared между несколькими компонентами
+- Состояние должно пережить навигацию
+
+**Store обязателен:** `auth/`, `catalog/`, `cart/`, `checkout/`, `orders/`, `admin/`
+**Store опционален:** `product/`, `gallery/`, `reviews/`, `profile/` — local state достаточно
 
 ## Reactivity Rules
 

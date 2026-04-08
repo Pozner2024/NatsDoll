@@ -1,0 +1,43 @@
+FROM node:20.19.0-alpine3.21 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY apps/api/package.json ./apps/api/
+
+RUN npm ci
+
+COPY apps/api/ ./apps/api/
+
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
+RUN npm run build -w apps/api
+
+# ─── runner ───────────────────────────────────────────
+FROM node:20.19.0-alpine3.21 AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN apk add --no-cache tini \
+  && addgroup -S appgroup \
+  && adduser -S appuser -G appgroup
+
+# Copy pre-built node_modules from builder to avoid re-running npm ci
+# and to preserve Prisma-generated client (native binaries + JS wrapper)
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/apps/api/dist ./apps/api/dist
+COPY --chown=appuser:appgroup apps/api/prisma ./apps/api/prisma
+COPY --chown=appuser:appgroup package.json ./
+COPY --chown=appuser:appgroup apps/api/package.json ./apps/api/
+
+USER appuser
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+# NOTE: run `prisma migrate deploy` before first start or via init container in docker-compose
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "apps/api/dist/main.js"]

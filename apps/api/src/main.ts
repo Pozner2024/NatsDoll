@@ -1,12 +1,14 @@
+import { serve } from '@hono/node-server'
 import { createApp } from './app'
+
+if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+  throw new Error('FRONTEND_URL env variable is required in production')
+}
 
 const port = Number(process.env.PORT || 3000)
 
 const app = createApp()
 
-console.log(`🚀 API starting on port ${port}`)
-console.log(`✓ Ready to listen on port ${port}`)
-
-// For development, export the app for use with a server adapter
-export default app
-export { createApp }
+serve({ fetch: app.fetch, port }, () => {
+  console.log(`Server running on port ${port}`)
+})

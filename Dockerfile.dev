@@ -1,0 +1,17 @@
+# Base image для разработки.
+# Исходники монтируются через volumes в docker-compose.dev.yml.
+# CMD должен переопределяться в docker-compose.dev.yml для каждого сервиса.
+
+FROM node:20.19.0-alpine3.21
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+
+RUN npm ci
+
+EXPOSE 3000 5173
+
+CMD ["sh", "-c", "echo 'Override CMD in docker-compose.dev.yml' && exit 1"]

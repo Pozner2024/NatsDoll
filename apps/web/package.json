@@ -12,20 +12,21 @@
   },
   "dependencies": {
     "@natsdoll/shared": "*",
-    "jsdom": "^29.0.1",
     "pinia": "^2.1.7",
+    "zod": "^3.22.4",
     "vue": "^3.3.8",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.1",
+    "jsdom": "^29.0.1",
     "@types/node": "^20.10.6",
     "@vitejs/plugin-vue": "^5.0.0",
     "@vue/test-utils": "^2.4.3",
     "sass": "^1.69.5",
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
-    "vitest": "^1.1.0",
+    "vitest": "^2.0.0",
     "vue-tsc": "^3.2.6"
   }
 }

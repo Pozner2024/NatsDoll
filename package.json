@@ -6,12 +6,11 @@
   "description": "B2C e-commerce platform for handmade polymer clay items",
   "workspaces": [
     "apps/web",
-    "apps/api",
-    "packages/shared"
+    "apps/api"
   ],
   "scripts": {
     "dev": "npm run dev -w apps/web & npm run dev -w apps/api",
-    "build": "npm run build -w packages/shared && npm run build -w apps/web && npm run build -w apps/api",
+    "build": "npm run build -w apps/web && npm run build -w apps/api",
     "test": "npm run test -w",
     "lint": "npm run lint -w"
   },

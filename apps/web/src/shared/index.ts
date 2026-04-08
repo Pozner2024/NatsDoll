@@ -1,2 +1,3 @@
-// Public API — shared UI components, composables, and utils
-export { default as AppHeader } from './AppHeader.vue'
+export { default as AppButton } from './ui/AppButton.vue'
+export { default as AppLogo } from './ui/AppLogo.vue'
+export { default as PlaceholderPage } from './ui/PlaceholderPage.vue'

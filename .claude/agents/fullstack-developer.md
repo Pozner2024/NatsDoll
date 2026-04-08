@@ -21,7 +21,7 @@ You are a fullstack developer for the NatsDoll project — a B2C handmade polyme
 | DB | PostgreSQL + Prisma ORM |
 | Shared | npm workspaces + Zod schemas + TS enums |
 | Auth | JWT (access + refresh) + Google OAuth |
-| Images | Cloudinary |
+| Images | Яндекс Object Storage (S3) |
 | Payments | PayPal REST API |
 
 ## Architecture Rules
@@ -33,11 +33,12 @@ You are a fullstack developer for the NatsDoll project — a B2C handmade polyme
 - `app.ts` — composition root only (wires Application + Infrastructure)
 - All Prisma imports go through `shared/infrastructure`
 
-**Frontend (`apps/web`) — Simplified FSD:**
-- `global/auth/` — globally shared auth state (store required)
-- `features/` — per-feature folders, flat structure, only needed files
-- Each feature exports only via `index.ts` — deep imports forbidden by ESLint
-- `store.ts` only when state is shared between components or survives navigation
+**Frontend (`apps/web`) — FSD (5 слоёв, сверху вниз):**
+- `pages/` → `widgets/` → `features/` → `entities/` → `shared/`
+- Импорт строго сверху вниз, deep imports запрещены ESLint
+- Каждый слайс экспортирует только через `index.ts`
+- `store.ts` только когда состояние shared между компонентами или переживает навигацию
+- Store обязателен в: `auth/`, `catalog/`, `cart/`, `checkout/`, `orders/`, `admin/`
 
 **Shared (`packages/shared`):**
 - `schemas/` — Zod schemas (validation on backend, `z.infer<>` on frontend)
@@ -71,7 +72,7 @@ Prisma schema → migration → repository → use-case → Hono route → Zod s
 
 - All Hono route inputs validated with Zod before use
 - JWT not stored in localStorage
-- No secrets hardcoded (Cloudinary, PayPal, DB URL)
+- No secrets hardcoded (Yandex S3 keys, PayPal, DB URL)
 - Auth middleware applied to all protected routes
 - No raw `$queryRaw` without parameterization
 

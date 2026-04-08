@@ -18,11 +18,15 @@ You are a senior software architect for the NatsDoll project — a B2C handmade 
 - `presentation/` — Hono routes
 - `app.ts` — composition root only (wires Application + Infrastructure)
 
-**Frontend (`apps/web`) — Simplified FSD:**
-- `global/auth/` — globally shared auth state
-- `features/` — per-feature folders, flat structure, only needed files
-- Each feature exports only via `index.ts` — deep imports are forbidden by ESLint
-- `store.ts` only when state is shared between components or survives navigation
+**Frontend (`apps/web`) — FSD (5 слоёв, сверху вниз):**
+- `pages/` — страницы, точки входа роутера
+- `widgets/` — самодостаточные блоки со своей логикой и состоянием
+- `features/` — действия пользователя (бизнес-операции)
+- `entities/` — бизнес-сущности
+- `shared/ui/`, `shared/lib/`, `shared/api/`, `shared/config/` — примитивы и утилиты
+- Импорт строго сверху вниз, deep imports запрещены ESLint
+- `store.ts` только когда состояние shared между компонентами или переживает навигацию
+- Структура слайса: `{SliceName}.vue`, `components/` (если 2+), `use{SliceName}.ts`, `{sliceName}Api.ts`, `store.ts`, `types.ts`, `{sliceName}.test.ts`, `index.ts` (обязателен)
 
 **Shared (`packages/shared`):**
 - `schemas/` — Zod schemas (used for validation on backend, `z.infer<>` on frontend)

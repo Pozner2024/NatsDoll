@@ -73,6 +73,7 @@ model Product {
 
   @@index([categoryId])
   @@index([isPublished])
+  @@index([deletedAt])
 }
 
 // ─── Cart ─────────────────────────────────────────────
@@ -111,8 +112,9 @@ model Order {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  user            User        @relation(fields: [userId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   items           OrderItem[]
+  reviews         Review[]
 
   @@index([userId])
   @@index([status])
@@ -142,6 +144,30 @@ model OrderItem {
   @@index([productId])
 }
 
+// ─── Gallery ──────────────────────────────────────────
+
+enum GallerySection {
+  HOME_PREVIEW   // главная страница — показывается сразу
+  HOME_POOL      // резерв для ротации с HOME_PREVIEW
+  COLLECTION_1
+  COLLECTION_2
+  COLLECTION_3
+  COLLECTION_4
+  COLLECTION_5
+}
+
+model GalleryItem {
+  id        String         @id @default(cuid())
+  gallery   GallerySection
+  position  Int
+  imageUrl  String
+  isActive  Boolean        @default(true)
+  updatedAt DateTime       @updatedAt
+
+  @@unique([gallery, position])
+  @@index([gallery])
+}
+
 // ─── Reviews ──────────────────────────────────────────
 
 model Review {
@@ -153,10 +179,12 @@ model Review {
   comment   String?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@unique([userId, productId])
   @@index([productId])
   @@index([userId])
+  @@index([orderId])
 }

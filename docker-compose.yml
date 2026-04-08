@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: natsdoll
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d natsdoll"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - api_node_modules:/app/node_modules
+      - api_ws_node_modules:/app/apps/api/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/natsdoll
+      NODE_ENV: development
+      PORT: 3000
+      FRONTEND_URL: http://localhost:5173
+      JWT_SECRET: dev-secret-key
+    env_file:
+      - apps/api/.env
+    command: sh -c "rm -rf /app/node_modules/.package-lock.json 2>/dev/null; npm ci && npx -w apps/api prisma migrate deploy && npm run generate -w apps/api && (npx -w apps/api prisma db seed || true) && npm run dev -w apps/api"
+    depends_on:
+      db:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - web_node_modules:/app/node_modules
+      - web_ws_node_modules:/app/apps/web/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_DEV_PROXY_TARGET: http://api:3000
+    command: sh -c "rm -rf /app/node_modules/.package-lock.json 2>/dev/null; npm ci -w apps/web -w packages/shared && npm run dev -w apps/web"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  api_node_modules:
+  api_ws_node_modules:
+  web_node_modules:
+  web_ws_node_modules:

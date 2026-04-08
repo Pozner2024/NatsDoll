@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
@@ -14,15 +17,16 @@
   },
   "dependencies": {
     "@natsdoll/shared": "*",
-    "@prisma/client": "^5.7.1",
-    "hono": "^4.2.4",
+    "@prisma/client": "^6.6.0",
+    "@hono/node-server": "^1.11.1",
+    "hono": "^4.7.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
-    "prisma": "^5.7.1",
+    "prisma": "^6.6.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
+    "vitest": "^2.0.0"
   }
 }

@@ -6,14 +6,5 @@
 </template>
 
 <script setup lang="ts">
-import { AppHeader } from '@/shared'
+import { AppHeader } from '@/widgets/app-header'
 </script>
-
-
-
-<style scoped lang="scss">
-#app {
-  width: 100%;
-  min-height: 100dvh;
-}
-</style>

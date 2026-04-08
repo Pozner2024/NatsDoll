@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, GallerySection } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -8,6 +8,21 @@ const categories = [
   { name: 'Miniatures', slug: 'miniatures' },
   { name: 'Jewelry', slug: 'jewelry' },
   { name: 'Custom Orders', slug: 'custom-orders' },
+]
+
+const BASE_URL = 'https://storage.yandexcloud.net/natsdoll'
+
+const galleryItems = [
+  ...Array.from({ length: 9 }, (_, i) => ({
+    gallery: GallerySection.HOME_PREVIEW,
+    position: i + 1,
+    imageUrl: `${BASE_URL}/gallery1/p${i + 1}.webp`,
+  })),
+  ...Array.from({ length: 9 }, (_, i) => ({
+    gallery: GallerySection.HOME_POOL,
+    position: i + 1,
+    imageUrl: `${BASE_URL}/gallery2/p${i + 1}.webp`,
+  })),
 ]
 
 async function main() {
@@ -22,6 +37,18 @@ async function main() {
   }
 
   console.log(`Seeded ${categories.length} categories.`)
+
+  console.log('Seeding gallery...')
+
+  for (const item of galleryItems) {
+    await prisma.galleryItem.upsert({
+      where: { gallery_position: { gallery: item.gallery, position: item.position } },
+      update: { imageUrl: item.imageUrl },
+      create: item,
+    })
+  }
+
+  console.log(`Seeded ${galleryItems.length} gallery items.`)
 }
 
 main()
