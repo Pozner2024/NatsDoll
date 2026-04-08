@@ -46,7 +46,13 @@
       "Bash(cd /d D:/Наташа/NatsDoll/apps/web)",
       "Bash(npx vite:*)",
       "Bash(C:/Users/user/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(node:*)",
+      "Bash(npx prisma:*)",
+      "Bash(cd /d \"D:\\\\Наташа\\\\NatsDoll\\\\apps\\\\web\")",
+      "Bash(docker compose:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

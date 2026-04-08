@@ -4,7 +4,7 @@ import { fetchHomeGallery, type GalleryItem } from './galleryApi'
 export function useGalleryGrid() {
   const preview = ref<GalleryItem[]>([])
   const pool = ref<GalleryItem[]>([])
-  const isLoading = ref(false)
+  const isLoading = ref(true)
   const hasError = ref(false)
 
   onMounted(async () => {

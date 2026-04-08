@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { makeGetHomeGallery } from './getHomeGallery'
-import type { GalleryRepository } from '../infrastructure/galleryRepository'
+import type { GalleryRepository } from '../types'
 
 const mockRepo: GalleryRepository = {
   getHomePreview: vi.fn(),

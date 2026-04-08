@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import router from '@/router'
-import { shopCategories } from '@/widgets/app-header/navigationConfig'
+import { shopCategories } from '@/widgets/app-header'
 
 const STATIC_ROUTES = ['/gallery', '/contact', '/login', '/cart']
 

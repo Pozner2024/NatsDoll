@@ -15,6 +15,7 @@
 
   // UI
   --color-white: #ffffff;
+  --color-error: #c0392b;
 
   // Typography
   --font-display: 'Playfair Display', serif;
@@ -27,7 +28,8 @@
   --z-slider-slide: 0;
   --z-slider-overlay: calc(var(--z-slider-slide) + 1);
   --z-slider-controls: calc(var(--z-slider-overlay) + 1);
-  --z-gallery-cta: 1;
+  --z-gallery-img-top: calc(var(--z-slider-slide) + 1);
+  --z-gallery-grid-button: calc(var(--z-gallery-img-top) + 1);
   --z-header: 10;
   --z-dropdown: calc(var(--z-header) + 1);
   // --z-modal: calc(var(--z-dropdown) + 1);

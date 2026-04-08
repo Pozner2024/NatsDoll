@@ -1,54 +1,84 @@
 <template>
   <div class="gallery-grid">
-    <div
-      v-for="item in items"
-      :key="item.id"
-      :class="`gallery-grid__cell gallery-grid__cell--${item.position}`"
-    >
-      <img :src="item.imageUrl" :alt="`Gallery image ${item.position}`" class="gallery-grid__img" />
-    </div>
+    <div v-if="isLoading" class="gallery-grid__state">Loading...</div>
+    <div v-else-if="hasError" class="gallery-grid__state gallery-grid__state--error">Failed to load gallery</div>
 
-    <div class="gallery-grid__overlay">
-      <AppButton to="/gallery">The Gallery</AppButton>
-    </div>
+    <template v-else>
+      <div
+        v-for="(_, i) in GALLERY_GRID_SIZE"
+        :key="i + 1"
+        :class="`gallery-grid__cell gallery-grid__cell--${i + 1}`"
+      >
+        <img
+          :src="previewCells[i]?.imageUrl"
+          :alt="`Gallery image ${i + 1}`"
+          class="gallery-grid__img"
+          :class="{ 'gallery-grid__img--hidden': flipped[i] }"
+        />
+        <img
+          v-if="poolCells[i]"
+          :src="poolCells[i]!.imageUrl"
+          aria-hidden="true"
+          class="gallery-grid__img gallery-grid__img--top"
+          :class="{ 'gallery-grid__img--hidden': !flipped[i] }"
+        />
+      </div>
+
+      <div class="gallery-grid__overlay">
+        <AppButton to="/gallery">The Gallery</AppButton>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { z } from 'zod'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { AppButton } from '@/shared'
+import { useGalleryGrid } from './useGalleryGrid'
+import { GALLERY_GRID_SIZE } from './galleryApi'
 
-const GalleryItemSchema = z.object({
-  id: z.string(),
-  imageUrl: z.string(),
-  position: z.number().int().min(1).max(9),
+const MIN_DELAY_MS = 1_500
+const MAX_DELAY_MS = 8_000
+
+function randomDelay() {
+  return MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS)
+}
+
+const { preview, pool, isLoading, hasError } = useGalleryGrid()
+
+const previewCells = computed(() => {
+  const byPosition = new Map(preview.value.map(item => [item.position, item]))
+  return Array.from({ length: GALLERY_GRID_SIZE }, (_, i) => byPosition.get(i + 1) ?? null)
 })
 
-const GalleryHomeSchema = z.object({
-  preview: z.array(GalleryItemSchema),
+const poolCells = computed(() => {
+  const byPosition = new Map(pool.value.map(item => [item.position, item]))
+  return Array.from({ length: GALLERY_GRID_SIZE }, (_, i) => byPosition.get(i + 1) ?? null)
 })
 
-type GalleryItem = z.infer<typeof GalleryItemSchema>
+const flipped = ref<boolean[]>(Array(GALLERY_GRID_SIZE).fill(false))
 
-const items = ref<GalleryItem[]>([])
-const isLoading = ref(false)
-const hasError = ref(false)
+// Храним только активные (pending) таймеры — по одному на ячейку
+const timers: (ReturnType<typeof setTimeout> | null)[] = Array(GALLERY_GRID_SIZE).fill(null)
 
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    const res = await fetch('/api/gallery/home')
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data: unknown = await res.json()
-    items.value = GalleryHomeSchema.parse(data).preview
-  } catch (err) {
-    console.error('Failed to load gallery', err)
-    hasError.value = true
-  } finally {
-    isLoading.value = false
-  }
-})
+function scheduleFlip(i: number) {
+  timers[i] = setTimeout(() => {
+    flipped.value[i] = !flipped.value[i]
+    scheduleFlip(i)
+  }, randomDelay())
+}
+
+// Таймеры стартуют только после загрузки pool, чтобы не было src="undefined"
+watch(
+  pool,
+  (newPool) => {
+    if (newPool.length === 0) return
+    for (let i = 0; i < GALLERY_GRID_SIZE; i++) scheduleFlip(i)
+  },
+  { once: true },
+)
+
+onUnmounted(() => timers.forEach(id => { if (id !== null) clearTimeout(id) }))
 </script>
 
 <style scoped lang="scss">
@@ -77,11 +107,37 @@ onMounted(async () => {
     "p6 p6 p8 p8 p9 p9 p9 p9 p9"
     "p6 p6 p8 p8 p9 p9 p9 p9 p9";
 
+  &__state {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-brand);
+    color: var(--color-text-muted);
+
+    &--error {
+      color: var(--color-error);
+    }
+  }
+
   &__img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    opacity: 1;
+    transition: opacity 450ms linear;
+
+    &--top {
+      z-index: var(--z-gallery-img-top);
+    }
+
+    &--hidden {
+      opacity: 0;
+    }
   }
 
   &__overlay {
@@ -89,7 +145,7 @@ onMounted(async () => {
     top: calc(100% / 15 * 3 + 2rem);
     left: 50%;
     transform: translateX(-50%);
-    z-index: var(--z-gallery-cta);
+    z-index: var(--z-gallery-grid-button);
   }
 
   @for $i from 1 through 9 {
@@ -97,6 +153,7 @@ onMounted(async () => {
       grid-area: p#{$i};
       background: var(--color-border);
       overflow: hidden;
+      position: relative;
     }
   }
 }

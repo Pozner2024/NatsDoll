@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { PrismaClient } from '@prisma/client'
+import { GallerySection, type PrismaClient } from '@prisma/client'
 import { makeGalleryRepository } from './galleryRepository'
 
 const mockFindMany = vi.fn()
@@ -24,7 +24,7 @@ describe('galleryRepository', () => {
       const result = await repo.getHomePreview()
 
       expect(mockFindMany).toHaveBeenCalledWith({
-        where: { gallery: 'HOME_PREVIEW', isActive: true },
+        where: { gallery: GallerySection.HOME_PREVIEW, isActive: true },
         orderBy: { position: 'asc' },
         select: { id: true, imageUrl: true, position: true },
       })
@@ -43,7 +43,7 @@ describe('galleryRepository', () => {
       const result = await repo.getHomePool()
 
       expect(mockFindMany).toHaveBeenCalledWith({
-        where: { gallery: 'HOME_POOL', isActive: true },
+        where: { gallery: GallerySection.HOME_POOL, isActive: true },
         orderBy: { position: 'asc' },
         select: { id: true, imageUrl: true, position: true },
       })

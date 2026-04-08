@@ -2,7 +2,7 @@
   <Transition name="slide-fade">
     <nav
       ref="navRef"
-      v-show="isOpen"
+      v-if="isOpen"
       class="burger-menu"
       aria-label="Navigation menu"
       tabindex="-1"
@@ -24,7 +24,7 @@
           aria-haspopup="true"
           :aria-expanded="shopOpen"
           aria-controls="shop-submenu"
-          @click="shopOpen = !shopOpen"
+          @click="toggleShop"
         >
           The shop
           <svg
@@ -42,7 +42,7 @@
 
         <Transition name="slide-fade">
           <div
-            v-show="shopOpen"
+            v-if="shopOpen"
             id="shop-submenu"
             role="menu"
             class="burger-menu__submenu"
@@ -96,13 +96,11 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-function closeMenu() {
-  emit("close");
-}
-
 const route = useRoute();
 const shopOpen = ref(false);
 const navRef = ref<HTMLElement | null>(null);
+
+const isShopActive = computed(() => route.path.startsWith("/shop"));
 
 watch(
   () => props.isOpen,
@@ -116,7 +114,13 @@ watch(
   },
 );
 
-const isShopActive = computed(() => route.path.startsWith("/shop"));
+function closeMenu() {
+  emit("close");
+}
+
+function toggleShop() {
+  shopOpen.value = !shopOpen.value
+}
 
 </script>
 
@@ -205,8 +209,6 @@ const isShopActive = computed(() => route.path.startsWith("/shop"));
       transform: rotate(180deg);
     }
   }
-
-
 
   &__subitem {
     display: block;

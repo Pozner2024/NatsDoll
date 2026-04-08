@@ -1,16 +1,14 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { prisma } from './shared/infrastructure'
-import { makeGalleryRepository } from './features/gallery/infrastructure/galleryRepository'
-import { makeGetHomeGallery } from './features/gallery/application/getHomeGallery'
-import { makeGalleryRouter } from './features/gallery/presentation/galleryRouter'
+import { makeGalleryRepository, makeGetHomeGallery, makeGalleryRouter } from './features/gallery'
 
 export function createApp() {
   const app = new Hono()
 
   app.use('*', cors({
     origin: process.env.NODE_ENV === 'production'
-      ? process.env.FRONTEND_URL!
+      ? process.env.FRONTEND_URL!.replace(/\/$/, '')
       : 'http://localhost:5173',
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

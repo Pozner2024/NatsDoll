@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import type { makeGetHomeGallery } from '../application/getHomeGallery'
+import { AppError } from '../../../shared/errors'
 
-type GetHomeGallery = ReturnType<typeof makeGetHomeGallery>
+type GetHomeGallery = () => Promise<unknown>
 
 export function makeGalleryRouter(getHomeGallery: GetHomeGallery) {
   const router = new Hono()
@@ -11,6 +11,9 @@ export function makeGalleryRouter(getHomeGallery: GetHomeGallery) {
       const data = await getHomeGallery()
       return c.json(data)
     } catch (err) {
+      if (err instanceof AppError) {
+        return c.json({ error: err.message }, err.statusCode as 400 | 401 | 404 | 500)
+      }
       console.error('getHomeGallery failed', err)
       return c.json({ error: 'Internal server error' }, 500)
     }

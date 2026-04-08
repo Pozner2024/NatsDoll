@@ -1,12 +1,12 @@
 <template>
   <header ref="headerRef" class="app-header">
-    <AppLogo />
+    <AppLogo @click="closeMenu" />
     <button
       ref="burgerRef"
       class="app-header__burger"
       :class="{ 'app-header__burger--open': isOpen }"
       :aria-label="isOpen ? 'Close menu' : 'Open menu'"
-      @click="isOpen = !isOpen"
+      @click="toggleMenu"
     >
       <span class="app-header__burger-line"></span>
       <span class="app-header__burger-line"></span>
@@ -17,7 +17,7 @@
       <BurgerMenu
         :is-open="isOpen"
         :trigger-ref="burgerRef"
-        @close="isOpen = false"
+        @close="closeMenu"
       />
     </div>
   </header>
@@ -31,6 +31,14 @@ import { AppLogo } from '@/shared'
 const isOpen = ref(false);
 const headerRef = ref<HTMLElement | null>(null);
 const burgerRef = ref<HTMLElement | null>(null);
+
+function toggleMenu() {
+  isOpen.value = !isOpen.value
+}
+
+function closeMenu() {
+  isOpen.value = false
+}
 
 function handleOutsideClick(event: MouseEvent) {
   if (
@@ -59,10 +67,12 @@ onUnmounted(() => document.removeEventListener("click", handleOutsideClick));
   top: 0;
   z-index: var(--z-header);
 
+  $burger-line-gap: 5px;
+
   &__burger {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: $burger-line-gap;
     background: none;
     border: none;
     padding: 0.625rem 0.5rem;
@@ -72,32 +82,32 @@ onUnmounted(() => document.removeEventListener("click", handleOutsideClick));
       outline-offset: 2px;
       border-radius: 2px;
     }
+  }
 
-    &-line {
-      display: block;
-      width: 22px;
-      height: 2px;
-      background: var(--color-text);
-      border-radius: 1px;
-      transform: translateZ(0);
-      transition:
-        transform 0.25s ease,
-        opacity 0.25s ease;
-      transform-origin: center;
-    }
+  &__burger-line {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--color-text);
+    border-radius: 1px;
+    transform: translateZ(0);
+    transition:
+      transform 0.25s ease,
+      opacity 0.25s ease;
+    transform-origin: center;
+  }
 
-    &--open &-line:nth-child(1) {
-      transform: translateY(7px) rotate(45deg);
-    }
+  &__burger--open &__burger-line:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
 
-    &--open &-line:nth-child(2) {
-      opacity: 0;
-      transform: scaleX(0);
-    }
+  &__burger--open &__burger-line:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+  }
 
-    &--open &-line:nth-child(3) {
-      transform: translateY(-7px) rotate(-45deg);
-    }
+  &__burger--open &__burger-line:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
   }
 
   &__nav-wrapper {

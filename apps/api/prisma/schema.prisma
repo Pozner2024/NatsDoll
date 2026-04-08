@@ -72,8 +72,7 @@ model Product {
   reviews     Review[]
 
   @@index([categoryId])
-  @@index([isPublished])
-  @@index([deletedAt])
+  @@index([isPublished, deletedAt])
 }
 
 // ─── Cart ─────────────────────────────────────────────
@@ -165,7 +164,7 @@ model GalleryItem {
   updatedAt DateTime       @updatedAt
 
   @@unique([gallery, position])
-  @@index([gallery])
+  @@index([gallery, isActive, position])
 }
 
 // ─── Reviews ──────────────────────────────────────────

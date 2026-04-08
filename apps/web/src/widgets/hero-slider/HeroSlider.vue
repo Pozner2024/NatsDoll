@@ -12,7 +12,9 @@
 
     <div class="hero-slider__overlay">
       <p class="hero-slider__text">Find a unique gift here</p>
-      <AppButton to="/shop">The shop</AppButton>
+      <div class="hero-slider__cta">
+        <AppButton to="/shop">The shop</AppButton>
+      </div>
     </div>
 
     <button
@@ -48,12 +50,16 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { AppButton } from '@/shared'
 import slide1 from '@/assets/slides/slide1.jpg'
 import slide2 from '@/assets/slides/slide2.jpg'
+import slide3 from '@/assets/slides/slide3.jpg'
+import slide4 from '@/assets/slides/slide4.jpg'
 
 const AUTOPLAY_INTERVAL_MS = 4000
 
 const slides = [
   { id: 1, image: slide1 },
   { id: 2, image: slide2 },
+  { id: 3, image: slide3 },
+  { id: 4, image: slide4 },
 ]
 
 const currentIndex = ref(0)
@@ -123,6 +129,8 @@ onUnmounted(() => {
     }
   }
 
+  $overlay-vertical-nudge: 20px;
+
   &__overlay {
     position: absolute;
     inset: 0;
@@ -130,12 +138,12 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: flex-end;
     justify-content: flex-start;
-    padding: calc(2.5rem - 20px) 2.5rem 0;
+    padding: calc(2.5rem - $overlay-vertical-nudge) 2.5rem 0;
     gap: 1rem;
     z-index: var(--z-slider-overlay);
 
-    .app-button {
-      margin-top: -10px;
+    &__cta {
+      margin-top: calc($overlay-vertical-nudge / -2);
     }
   }
 

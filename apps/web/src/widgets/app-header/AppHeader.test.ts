@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import AppHeader from './AppHeader.vue'
-import BurgerMenu from './BurgerMenu.vue'
+import BurgerMenu from './components/BurgerMenu.vue'
 
 const router = createRouter({
   history: createMemoryHistory(),
