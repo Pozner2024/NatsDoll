@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onUnmounted } from 'vue'
+import { computed, reactive, watch, onUnmounted } from 'vue'
 import { AppButton } from '@/shared'
 import { useGalleryGrid } from './useGalleryGrid'
 import { GALLERY_GRID_SIZE } from './galleryApi'
@@ -56,18 +56,14 @@ const poolCells = computed(() => {
   return Array.from({ length: GALLERY_GRID_SIZE }, (_, i) => byPosition.get(i + 1) ?? null)
 })
 
-const flipped = ref<boolean[]>(Array(GALLERY_GRID_SIZE).fill(false))
+const flipped = reactive<boolean[]>(Array(GALLERY_GRID_SIZE).fill(false))
 
 // Храним только активные (pending) таймеры — по одному на ячейку
 const timers: (ReturnType<typeof setTimeout> | null)[] = Array(GALLERY_GRID_SIZE).fill(null)
-let stopped = false
 
 function scheduleFlip(i: number) {
   timers[i] = setTimeout(() => {
-    if (stopped) return
-    const next = [...flipped.value]
-    next[i] = !next[i]
-    flipped.value = next
+    flipped[i] = !flipped[i]
     scheduleFlip(i)
   }, randomDelay())
 }
@@ -83,7 +79,6 @@ watch(
 )
 
 onUnmounted(() => {
-  stopped = true
   timers.forEach(id => { if (id !== null) clearTimeout(id) })
 })
 </script>

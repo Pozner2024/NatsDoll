@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, watch, onUnmounted } from "vue";
 import { BurgerMenu } from './components'
 import { AppLogo } from '@/shared'
 
@@ -50,8 +50,11 @@ function handleOutsideClick(event: MouseEvent) {
   }
 }
 
-onMounted(() => document.addEventListener("click", handleOutsideClick));
-onUnmounted(() => document.removeEventListener("click", handleOutsideClick));
+watch(isOpen, (open) => {
+  if (open) document.addEventListener('click', handleOutsideClick)
+  else document.removeEventListener('click', handleOutsideClick)
+})
+onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 </script>
 
 <style scoped lang="scss">

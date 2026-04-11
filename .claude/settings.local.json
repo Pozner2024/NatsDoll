@@ -56,7 +56,9 @@
       "Bash(C:\\\\Users\\\\user\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.7\\\\scripts\\\\start-server.sh:*)",
       "Bash(echo \"EXIT: $?\")",
       "Bash(find:*)",
-      "Skill(code-review:code-review)"
+      "Skill(code-review:code-review)",
+      "Bash(xargs grep:*)",
+      "Bash(npm list:*)"
     ]
   }
 }

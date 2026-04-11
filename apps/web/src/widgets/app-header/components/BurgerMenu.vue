@@ -85,7 +85,7 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import { navItems, shopCategories, homeItem } from "../navigationConfig";
-import CartLink from './CartLink.vue';
+import { CartLink } from '.';
 
 const props = defineProps<{
   isOpen: boolean;

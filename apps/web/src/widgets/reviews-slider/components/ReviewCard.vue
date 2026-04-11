@@ -10,7 +10,6 @@
     </div>
     <p class="review-card__text">{{ text }}</p>
     <div class="review-card__footer">
-      <span class="review-card__counter">{{ counter }}</span>
       <div class="review-card__author">
         <span class="review-card__name">{{ name }}</span>
         <span class="review-card__country">{{ country }}</span>
@@ -25,7 +24,6 @@ defineProps<{
   name: string
   country: string
   rating: number
-  counter: string
 }>()
 </script>
 

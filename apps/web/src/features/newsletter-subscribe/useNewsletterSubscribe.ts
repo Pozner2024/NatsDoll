@@ -16,7 +16,7 @@ export function useNewsletterSubscribe() {
       state.value = 'success'
       email.value = ''
     } catch (err) {
-      errorMessage.value = err instanceof Error ? err.message : 'Ошибка подписки'
+      errorMessage.value = err instanceof Error ? err.message : 'Subscription failed'
       state.value = 'error'
     }
   }

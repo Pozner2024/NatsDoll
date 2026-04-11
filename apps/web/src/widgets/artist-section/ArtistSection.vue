@@ -3,7 +3,7 @@
     <div class="artist-section__header">
       <img
         class="artist-section__photo"
-        :src="photo"
+        :src="artistPhoto"
         :alt="artist.name"
       />
       <div class="artist-section__title">
@@ -22,8 +22,6 @@
 import { AppButton } from '@/shared'
 import artistPhoto from '@/assets/images/artist.jpg'
 import { artist } from './artist'
-
-const photo = artistPhoto
 </script>
 
 <style scoped lang="scss">

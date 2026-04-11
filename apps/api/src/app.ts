@@ -6,7 +6,6 @@ import { makeGalleryRepository, makeGetHomeGallery, makeGalleryRouter } from './
 import {
   makeNewsletterRepository,
   makeSubscribe,
-  makeGetSubscribers,
   makeNewsletterRouter,
 } from './features/newsletter'
 
@@ -14,9 +13,7 @@ export function createApp() {
   const app = new Hono()
 
   app.use('*', cors({
-    origin: process.env.NODE_ENV === 'production'
-      ? process.env.FRONTEND_URL!.replace(/\/$/, '')
-      : 'http://localhost:5173',
+    origin: process.env.FRONTEND_URL?.replace(/\/$/, '') ?? 'http://localhost:5173',
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
@@ -42,9 +39,7 @@ export function createApp() {
   // Newsletter
   const newsletterRepo = makeNewsletterRepository(prisma)
   const subscribe = makeSubscribe(newsletterRepo)
-  const getSubscribers = makeGetSubscribers(newsletterRepo)
-  const deleteSubscriber = (id: string) => newsletterRepo.deleteById(id)
-  app.route('/newsletter', makeNewsletterRouter(subscribe, getSubscribers, deleteSubscriber))
+  app.route('/newsletter', makeNewsletterRouter(subscribe))
 
   return app
 }

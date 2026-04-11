@@ -11,8 +11,8 @@
   "scripts": {
     "dev": "npm run dev -w apps/web & npm run dev -w apps/api",
     "build": "npm run build -w apps/web && npm run build -w apps/api",
-    "test": "npm run test -w",
-    "lint": "npm run lint -w"
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.58.0",

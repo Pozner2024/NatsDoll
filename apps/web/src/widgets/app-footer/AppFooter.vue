@@ -34,21 +34,7 @@
 
     <!-- Stay Connected -->
     <div class="app-footer__subscribe">
-      <p class="app-footer__subscribe-title">Stay Connected</p>
-      <p class="app-footer__subscribe-sub">New pieces & discounts - straight to your inbox.</p>
-      <form v-if="state !== 'success'" class="app-footer__form" @submit.prevent="handleSubmit">
-        <input
-          v-model="email"
-          class="app-footer__input"
-          type="email"
-          placeholder="Your email"
-          :disabled="state === 'loading'"
-          required
-        />
-        <button class="app-footer__btn" type="submit" :disabled="state === 'loading'" aria-label="Subscribe">→</button>
-      </form>
-      <p v-if="state === 'success'" class="app-footer__subscribe-success">You're in!</p>
-      <p v-if="state === 'error'" class="app-footer__subscribe-error">Something went wrong. Try again.</p>
+      <NewsletterSubscribe />
     </div>
 
     <!-- Копирайт -->
@@ -58,7 +44,7 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { useNewsletterSubscribe } from '@/shared'
+import { NewsletterSubscribe } from '@/features/newsletter-subscribe'
 
 const navLinks = [
   { label: 'The Shop', to: '/shop' },
@@ -76,7 +62,7 @@ const socialLinks = [
   { label: 'Etsy', href: '#' },
 ]
 
-const { email, state, handleSubmit } = useNewsletterSubscribe()
+
 </script>
 
 <style scoped lang="scss">
@@ -156,91 +142,6 @@ const { email, state, handleSubmit } = useNewsletterSubscribe()
     }
   }
 
-  // Подписка
-  &__subscribe-title {
-    font-family: var(--font-display);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-text);
-    margin: 0 0 0.4rem;
-  }
-
-  &__subscribe-sub {
-    font-size: 0.78rem;
-    color: var(--color-text-muted);
-    margin: 0 0 0.875rem;
-    line-height: 1.5;
-  }
-
-  &__form {
-    --btn-angle: 90deg;
-
-    display: flex;
-    border: 2px solid;
-    border-image: conic-gradient(
-      from var(--btn-angle),
-      rgb(var(--btn-gradient-dark) / 0.4),
-      rgb(var(--btn-gradient-mid) / 1) 0.07turn,
-      rgb(var(--btn-gradient-light) / 1) 0.12turn,
-      rgb(var(--btn-gradient-mid) / 1) 0.17turn,
-      rgb(var(--btn-gradient-dark) / 0.4) 0.25turn
-    ) 1;
-    animation: footer-btn-rotate 3000ms linear infinite forwards;
-  }
-
-  &__input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    padding: 0.6rem 0.875rem;
-    font-family: var(--font-display);
-    font-size: 0.78rem;
-    color: var(--color-text-muted);
-    outline: none;
-    min-width: 0;
-
-    &::placeholder {
-      opacity: 0.5;
-    }
-  }
-
-  &__btn {
-    border: none;
-    border-left: 1px solid var(--color-border);
-    background: none;
-    padding: 0.6rem 1rem;
-    font-size: 1rem;
-    color: var(--color-accent);
-    display: flex;
-    align-items: center;
-
-    transition: color 0.2s ease, background-color 0.2s ease;
-
-    &:hover {
-      color: var(--color-text);
-      background-color: rgb(var(--btn-gradient-mid) / 0.12);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--color-accent);
-      outline-offset: 2px;
-    }
-  }
-
-  &__subscribe-success {
-    font-size: 0.82rem;
-    color: var(--color-accent);
-    margin: 0;
-  }
-
-  &__subscribe-error {
-    font-size: 0.78rem;
-    color: #e53e3e;
-    margin: 0.4rem 0 0;
-  }
-
   // Копирайт
   &__copyright {
     border-top: 1px solid var(--color-border);
@@ -253,9 +154,5 @@ const { email, state, handleSubmit } = useNewsletterSubscribe()
   }
 }
 
-@keyframes footer-btn-rotate {
-  100% {
-    --btn-angle: 420deg;
-  }
-}
+
 </style>

@@ -16,9 +16,10 @@
     "generate": "prisma generate"
   },
   "dependencies": {
+    "@hono/node-server": "^1.11.1",
+    "@hono/zod-validator": "^0.7.6",
     "@natsdoll/shared": "*",
     "@prisma/client": "^6.6.0",
-    "@hono/node-server": "^1.11.1",
     "hono": "^4.7.0",
     "zod": "^3.22.4"
   },

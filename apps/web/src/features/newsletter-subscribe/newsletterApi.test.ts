@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
 import { subscribeToNewsletter } from './newsletterApi'
+
+beforeAll(() => {
+  vi.stubEnv('VITE_API_URL', 'http://localhost:3000')
+})
 
 function mockFetch(overrides: Partial<Response> & { jsonBody?: unknown } = {}) {
   const { jsonBody, ...rest } = overrides
@@ -63,6 +67,6 @@ describe('subscribeToNewsletter — ошибочный ответ с телом'
 describe('subscribeToNewsletter — ошибочный ответ без тела', () => {
   it('использует fallback-сообщение когда json() бросает исключение', async () => {
     mockFetch({ ok: false })
-    await expect(subscribeToNewsletter('test@example.com')).rejects.toThrow('Ошибка подписки')
+    await expect(subscribeToNewsletter('test@example.com')).rejects.toThrow('Subscription failed')
   })
 })

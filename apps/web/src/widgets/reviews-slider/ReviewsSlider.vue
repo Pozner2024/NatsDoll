@@ -21,11 +21,12 @@
             :name="review.name"
             :country="review.country"
             :rating="review.rating"
-            :counter="counterLabel"
           />
         </div>
       </div>
     </div>
+
+    <span class="reviews-slider__counter">{{ counterLabel }}</span>
   </section>
 </template>
 
@@ -102,6 +103,12 @@ function onTouchEnd(e: TouchEvent) {
 
   &__slide {
     min-width: 100%;
+  }
+
+  &__counter {
+    display: block;
+    margin-top: 0.75rem;
+    padding-left: 1.4rem;
   }
 }
 </style>
