@@ -1,6 +1,9 @@
 <template>
   <section class="reviews-slider">
-    <h2 class="reviews-slider__title">The Reviews</h2>
+    <h2 class="reviews-slider__title">
+      <span class="reviews-slider__title-sub">the reviews</span>
+      <span class="reviews-slider__title-brand">Watch Collectors Say</span>
+    </h2>
 
     <div
       class="reviews-slider__viewport"
@@ -63,11 +66,29 @@ function onTouchEnd(e: TouchEvent) {
   padding: 3rem 1.5rem;
 
   &__title {
+    text-align: right;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  &__title-sub {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    opacity: 0.75;
+  }
+
+  &__title-brand {
     font-family: var(--font-brand);
     font-size: 2.2rem;
     font-weight: 700;
-    text-align: center;
-    margin-bottom: 1.5rem;
+    color: var(--color-text);
+    line-height: 1.1;
   }
 
   &__viewport {

@@ -33,26 +33,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { subscribeToNewsletter } from './newsletterSubscribeApi'
+import { useNewsletterSubscribe } from '@/shared'
 
-type State = 'idle' | 'loading' | 'success' | 'error'
-
-const state = ref<State>('idle')
-const email = ref('')
-const errorMessage = ref('')
-
-async function handleSubmit() {
-  state.value = 'loading'
-  errorMessage.value = ''
-  try {
-    await subscribeToNewsletter(email.value)
-    state.value = 'success'
-  } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : 'Ошибка подписки'
-    state.value = 'error'
-  }
-}
+const { email, state, handleSubmit } = useNewsletterSubscribe()
 </script>
 
 <style scoped lang="scss">

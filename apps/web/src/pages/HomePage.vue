@@ -5,6 +5,8 @@
     <ArtistSection />
     <hr class="home-page__divider" />
     <ReviewsSlider />
+    <hr class="home-page__divider" />
+    <FaqSection />
   </div>
 </template>
 
@@ -13,6 +15,7 @@ import { HeroSlider } from '@/widgets/hero-slider'
 import { GalleryGrid } from '@/widgets/gallery-grid'
 import { ArtistSection } from '@/widgets/artist-section'
 import { ReviewsSlider } from '@/widgets/reviews-slider'
+import { FaqSection } from '@/widgets/faq-section'
 </script>
 
 <style scoped lang="scss">

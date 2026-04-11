@@ -24,7 +24,7 @@ export function makeGalleryRepository(prisma: PrismaClient) {
           select: GALLERY_SELECT,
         })
       } catch (err) {
-        handlePrismaError(err)
+        return handlePrismaError(err)
       }
     },
 
@@ -36,7 +36,7 @@ export function makeGalleryRepository(prisma: PrismaClient) {
           select: GALLERY_SELECT,
         })
       } catch (err) {
-        handlePrismaError(err)
+        return handlePrismaError(err)
       }
     },
   }

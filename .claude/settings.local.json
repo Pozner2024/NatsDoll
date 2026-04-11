@@ -55,7 +55,8 @@
       "Bash(npx playwright:*)",
       "Bash(C:\\\\Users\\\\user\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.7\\\\scripts\\\\start-server.sh:*)",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Skill(code-review:code-review)"
     ]
   }
 }
