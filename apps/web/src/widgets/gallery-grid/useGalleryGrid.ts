@@ -14,7 +14,7 @@ export function useGalleryGrid() {
       preview.value = data.preview
       pool.value = data.pool
     } catch (err) {
-      console.error('Failed to load gallery', err)
+      console.error('Failed to load gallery', err instanceof Error ? err.message : String(err))
       hasError.value = true
     } finally {
       isLoading.value = false

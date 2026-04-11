@@ -1,6 +1,4 @@
-import type { GalleryItem, GalleryRepository } from '../types'
-
-type HomeGallery = { preview: GalleryItem[]; pool: GalleryItem[] }
+import type { GalleryRepository, HomeGallery } from '../types'
 
 export function makeGetHomeGallery(repo: GalleryRepository) {
   return async function getHomeGallery(): Promise<HomeGallery> {

@@ -60,10 +60,14 @@ const flipped = ref<boolean[]>(Array(GALLERY_GRID_SIZE).fill(false))
 
 // Храним только активные (pending) таймеры — по одному на ячейку
 const timers: (ReturnType<typeof setTimeout> | null)[] = Array(GALLERY_GRID_SIZE).fill(null)
+let stopped = false
 
 function scheduleFlip(i: number) {
   timers[i] = setTimeout(() => {
-    flipped.value[i] = !flipped.value[i]
+    if (stopped) return
+    const next = [...flipped.value]
+    next[i] = !next[i]
+    flipped.value = next
     scheduleFlip(i)
   }, randomDelay())
 }
@@ -78,7 +82,10 @@ watch(
   { once: true },
 )
 
-onUnmounted(() => timers.forEach(id => { if (id !== null) clearTimeout(id) }))
+onUnmounted(() => {
+  stopped = true
+  timers.forEach(id => { if (id !== null) clearTimeout(id) })
+})
 </script>
 
 <style scoped lang="scss">

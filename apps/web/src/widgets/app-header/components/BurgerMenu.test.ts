@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import { flushPromises } from "@vue/test-utils";
 import { mount } from "@vue/test-utils";
 import { createRouter, createMemoryHistory } from "vue-router";
-import BurgerMenu from './BurgerMenu.vue'
+import { BurgerMenu } from '.'
 
 const router = createRouter({
   history: createMemoryHistory(),
@@ -20,7 +20,7 @@ function mountMenu(props = {}) {
 describe("BurgerMenu — видимость", () => {
   it("скрыто при isOpen: false", () => {
     const wrapper = mountMenu({ isOpen: false });
-    expect(wrapper.find("nav").isVisible()).toBe(false);
+    expect(wrapper.find("nav").exists()).toBe(false);
   });
 
   it("видно при isOpen: true", () => {
@@ -46,7 +46,7 @@ describe("BurgerMenu — эмиты", () => {
 describe("BurgerMenu — подменю Shop", () => {
   it("подменю закрыто по умолчанию", () => {
     const wrapper = mountMenu({ isOpen: true });
-    expect(wrapper.find("#shop-submenu").isVisible()).toBe(false);
+    expect(wrapper.find("#shop-submenu").exists()).toBe(false);
   });
 
   it("клик на кнопку Shop открывает подменю", async () => {
@@ -60,37 +60,33 @@ describe("BurgerMenu — подменю Shop", () => {
     const btn = wrapper.find("button");
     await btn.trigger("click");
     await btn.trigger("click");
-    expect(wrapper.find("#shop-submenu").isVisible()).toBe(false);
+    expect(wrapper.find("#shop-submenu").exists()).toBe(false);
   });
 
   it("подменю сбрасывается при закрытии меню", async () => {
     const wrapper = mountMenu({ isOpen: true });
     await wrapper.find("button").trigger("click");
-    expect(
-      (wrapper.find("#shop-submenu").element as HTMLElement).style.display,
-    ).not.toBe("none");
+    expect(wrapper.find("#shop-submenu").exists()).toBe(true);
 
     await wrapper.setProps({ isOpen: false });
     await flushPromises();
     await wrapper.setProps({ isOpen: true });
     await flushPromises();
 
-    expect(
-      (wrapper.find("#shop-submenu").element as HTMLElement).style.display,
-    ).toBe("none");
+    expect(wrapper.find("#shop-submenu").exists()).toBe(false);
   });
 });
 
 describe("BurgerMenu — управление фокусом", () => {
   it("фокус перемещается на nav при открытии", async () => {
-    const wrapper = mountMenu({ isOpen: false });
-    const navEl = wrapper.find("nav").element as HTMLElement;
-    const focusSpy = vi.spyOn(navEl, "focus");
+    const focusSpy = vi.spyOn(HTMLElement.prototype, "focus");
 
+    const wrapper = mountMenu({ isOpen: false });
     await wrapper.setProps({ isOpen: true });
     await new Promise((r) => setTimeout(r, 0)); // nextTick
 
     expect(focusSpy).toHaveBeenCalled();
+    focusSpy.mockRestore();
   });
 
   it("фокус возвращается на triggerRef при закрытии", async () => {
@@ -99,6 +95,7 @@ describe("BurgerMenu — управление фокусом", () => {
 
     const wrapper = mountMenu({ isOpen: true, triggerRef: trigger });
     await wrapper.setProps({ isOpen: false });
+    await wrapper.vm.$nextTick();
 
     expect(focusSpy).toHaveBeenCalled();
   });

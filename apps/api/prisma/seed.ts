@@ -3,14 +3,20 @@ import { PrismaClient, GallerySection } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const categories = [
-  { name: 'Dolls', slug: 'dolls' },
-  { name: 'Animals', slug: 'animals' },
-  { name: 'Miniatures', slug: 'miniatures' },
-  { name: 'Jewelry', slug: 'jewelry' },
-  { name: 'Custom Orders', slug: 'custom-orders' },
+  { name: 'Art Dolls', slug: 'art-dolls' },
+  { name: 'Birthday Gifts', slug: 'birthday-gifts' },
+  { name: 'Christmas Gifts', slug: 'christmas-gifts' },
+  { name: 'Valentines Day Gifts', slug: 'valentines-day-gifts' },
+  { name: 'Halloween Gifts', slug: 'halloween-gifts' },
+  { name: 'Graduation Gifts', slug: 'graduation-gifts' },
+  { name: 'Cake Toppers', slug: 'cake-toppers' },
+  { name: 'Dollhouse Miniature', slug: 'dollhouse-miniature' },
+  { name: 'Party favors BULK', slug: 'party-favors-bulk' },
 ]
 
-const BASE_URL = 'https://storage.yandexcloud.net/natsdoll'
+const BASE_URL =
+  process.env.YANDEX_STORAGE_URL ??
+  `${process.env.YANDEX_S3_ENDPOINT}/${process.env.YANDEX_S3_BUCKET}`
 
 const galleryItems = [
   ...Array.from({ length: 9 }, (_, i) => ({

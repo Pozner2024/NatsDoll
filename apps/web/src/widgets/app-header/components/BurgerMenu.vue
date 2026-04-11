@@ -9,12 +9,12 @@
       @keydown.escape="closeMenu"
     >
       <RouterLink
-        to="/"
+        :to="homeItem.to"
         class="burger-menu__item"
         exact-active-class="burger-menu__item--active"
         @click="closeMenu"
       >
-        Home
+        {{ homeItem.label }}
       </RouterLink>
 
       <div class="burger-menu__group">
@@ -84,8 +84,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
 import { RouterLink, useRoute } from "vue-router";
-import { navItems, shopCategories } from "../navigationConfig";
-import CartLink from "./CartLink.vue";
+import { navItems, shopCategories, homeItem } from "../navigationConfig";
+import CartLink from './CartLink.vue';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -109,7 +109,7 @@ watch(
       nextTick(() => navRef.value?.focus());
     } else {
       shopOpen.value = false;
-      props.triggerRef?.focus();
+      nextTick(() => props.triggerRef?.focus());
     }
   },
 );

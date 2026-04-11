@@ -46,8 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { AppButton } from '@/shared'
+import { useSlider, AppButton } from '@/shared'
 import slide1 from '@/assets/slides/slide1.jpg'
 import slide2 from '@/assets/slides/slide2.jpg'
 import slide3 from '@/assets/slides/slide3.jpg'
@@ -62,39 +61,7 @@ const slides = [
   { id: 4, image: slide4 },
 ]
 
-const currentIndex = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
-
-function startTimer() {
-  timer = setInterval(() => {
-    currentIndex.value = (currentIndex.value + 1) % slides.length
-  }, AUTOPLAY_INTERVAL_MS)
-}
-
-function resetTimer() {
-  if (timer) clearInterval(timer)
-  startTimer()
-}
-
-function next() {
-  currentIndex.value = (currentIndex.value + 1) % slides.length
-  resetTimer()
-}
-
-function prev() {
-  currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length
-  resetTimer()
-}
-
-function goTo(index: number) {
-  currentIndex.value = index
-  resetTimer()
-}
-
-onMounted(startTimer)
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-})
+const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INTERVAL_MS)
 </script>
 
 <style scoped lang="scss">
@@ -141,10 +108,10 @@ onUnmounted(() => {
     padding: calc(2.5rem - $overlay-vertical-nudge) 2.5rem 0;
     gap: 1rem;
     z-index: var(--z-slider-overlay);
+  }
 
-    &__cta {
-      margin-top: calc($overlay-vertical-nudge / -2);
-    }
+  &__cta {
+    margin-top: calc($overlay-vertical-nudge / -2);
   }
 
   &__text {
