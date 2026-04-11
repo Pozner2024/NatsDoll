@@ -38,6 +38,9 @@ lerna-debug.log*
 # Superpowers
 .superpowers/
 
+# Git worktrees
+.worktrees/
+
 # Docs
 docs/
 
