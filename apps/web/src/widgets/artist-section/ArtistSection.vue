@@ -14,7 +14,12 @@
 
     <p class="artist-section__bio">{{ artist.bio }}</p>
 
-    <AppButton class="artist-section__btn" to="/contact">Contact</AppButton>
+    <AppButton
+      class="artist-section__btn"
+      @click="openContactModal"
+    >
+      Contact
+    </AppButton>
   </section>
 </template>
 
@@ -22,6 +27,9 @@
 import { AppButton } from '@/shared'
 import artistPhoto from '@/assets/images/artist.jpg'
 import { artist } from './artist'
+import { useContactModal } from '@/features/contact-modal'
+
+const { open: openContactModal } = useContactModal()
 </script>
 
 <style scoped lang="scss">
