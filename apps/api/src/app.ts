@@ -8,6 +8,7 @@ import {
   makeSubscribe,
   makeNewsletterRouter,
 } from './features/newsletter'
+import { makeContactRepository, makeSubmit, makeContactRouter } from './features/contact'
 
 export function createApp() {
   const app = new Hono()
@@ -40,6 +41,11 @@ export function createApp() {
   const newsletterRepo = makeNewsletterRepository(prisma)
   const subscribe = makeSubscribe(newsletterRepo)
   app.route('/newsletter', makeNewsletterRouter(subscribe))
+
+  // Contact
+  const contactRepo = makeContactRepository(prisma)
+  const submit = makeSubmit(contactRepo)
+  app.route('/contact', makeContactRouter(submit))
 
   return app
 }
