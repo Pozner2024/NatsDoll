@@ -1,12 +1,16 @@
 <template>
   <div id="app">
     <AppHeader />
-    <router-view />
+    <main>
+      <router-view />
+    </main>
     <AppFooter />
+    <ContactModal />
   </div>
 </template>
 
 <script setup lang="ts">
 import { AppHeader } from '@/widgets/app-header'
 import { AppFooter } from '@/widgets/app-footer'
+import { ContactModal } from '@/features/contact-modal'
 </script>
