@@ -7,7 +7,6 @@ export const homeItem: NavItem = { label: 'Home', to: '/' }
 
 export const navItems: NavItem[] = [
   { label: 'The gallery', to: '/gallery' },
-  { label: 'Contact',     to: '/contact' },
   { label: 'Login',       to: '/login' },
 ]
 

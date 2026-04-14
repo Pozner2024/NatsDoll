@@ -73,6 +73,13 @@
         {{ item.label }}
       </RouterLink>
 
+      <button
+        class="burger-menu__item"
+        @click="() => { openContactModal(); closeMenu() }"
+      >
+        Contact
+      </button>
+
       <CartLink
         class="burger-menu__item"
         @navigate="closeMenu"
@@ -86,6 +93,9 @@ import { ref, computed, watch, nextTick } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import { navItems, shopCategories, homeItem } from "../navigationConfig";
 import { CartLink } from '.';
+import { useContactModal } from '@/features/contact-modal'
+
+const { open: openContactModal } = useContactModal()
 
 const props = defineProps<{
   isOpen: boolean;
