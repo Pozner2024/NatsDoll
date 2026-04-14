@@ -17,6 +17,14 @@
           <li v-for="link in navLinks" :key="link.to">
             <RouterLink class="app-footer__link" :to="link.to">{{ link.label }}</RouterLink>
           </li>
+          <li>
+            <button
+              class="app-footer__link app-footer__link--btn"
+              @click="openContactModal"
+            >
+              Contact
+            </button>
+          </li>
         </ul>
       </nav>
 
@@ -45,13 +53,15 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { NewsletterSubscribe } from '@/features/newsletter-subscribe'
+import { useContactModal } from '@/features/contact-modal'
+
+const { open: openContactModal } = useContactModal()
 
 const navLinks = [
   { label: 'The Shop', to: '/shop' },
   { label: 'The Gallery', to: '/gallery' },
   { label: 'The Artist', to: '/' },
   { label: 'FAQ', to: '/#faq' },
-  { label: 'Contact', to: '/contact' },
 ]
 
 const socialLinks = [
@@ -139,6 +149,19 @@ const socialLinks = [
 
     &:hover {
       color: var(--color-accent);
+    }
+
+    &--btn {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: var(--fs-sm);
+      color: var(--color-text-muted);
+      text-align: left;
+
+      &:hover {
+        color: var(--color-accent);
+      }
     }
   }
 
