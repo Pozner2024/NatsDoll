@@ -1,5 +1,8 @@
 <template>
-  <header ref="headerRef" class="app-header">
+  <header
+    ref="headerRef"
+    class="app-header"
+  >
     <AppLogo @click="closeMenu" />
     <button
       ref="burgerRef"
@@ -8,9 +11,9 @@
       :aria-label="isOpen ? 'Close menu' : 'Open menu'"
       @click="toggleMenu"
     >
-      <span class="app-header__burger-line"></span>
-      <span class="app-header__burger-line"></span>
-      <span class="app-header__burger-line"></span>
+      <span class="app-header__burger-line" />
+      <span class="app-header__burger-line" />
+      <span class="app-header__burger-line" />
     </button>
 
     <div class="app-header__nav-wrapper">

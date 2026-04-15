@@ -13,8 +13,12 @@ import { makeContactRepository, makeSubmit, makeContactRouter } from './features
 export function createApp() {
   const app = new Hono()
 
+  const frontendOrigin = process.env.FRONTEND_URL
+    ? new URL(process.env.FRONTEND_URL).origin
+    : 'http://localhost:5173'
+
   app.use('*', cors({
-    origin: process.env.FRONTEND_URL?.replace(/\/$/, '') ?? 'http://localhost:5173',
+    origin: frontendOrigin,
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
@@ -22,7 +26,7 @@ export function createApp() {
 
   app.onError((err, c) => {
     if (err instanceof AppError) {
-      return c.json({ error: err.message }, err.statusCode as 400 | 401 | 403 | 404 | 422 | 500)
+      return c.json({ error: err.message }, err.statusCode)
     }
     console.error('Unhandled error:', err)
     return c.json({ error: 'Internal server error' }, 500)

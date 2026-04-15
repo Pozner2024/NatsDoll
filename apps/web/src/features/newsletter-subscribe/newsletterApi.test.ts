@@ -1,9 +1,5 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { subscribeToNewsletter } from './newsletterApi'
-
-beforeAll(() => {
-  vi.stubEnv('VITE_API_URL', 'http://localhost:3000')
-})
 
 function mockFetch(overrides: Partial<Response> & { jsonBody?: unknown } = {}) {
   const { jsonBody, ...rest } = overrides
@@ -23,12 +19,12 @@ afterEach(() => {
 })
 
 describe('subscribeToNewsletter — успешный вызов', () => {
-  it('вызывает fetch с путём /newsletter/subscribe и методом POST', async () => {
+  it('вызывает fetch с путём /api/newsletter/subscribe и методом POST', async () => {
     mockFetch({ ok: true })
     await subscribeToNewsletter('test@example.com')
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      expect.stringContaining('/newsletter/subscribe'),
+      '/api/newsletter/subscribe',
       expect.objectContaining({ method: 'POST' }),
     )
   })

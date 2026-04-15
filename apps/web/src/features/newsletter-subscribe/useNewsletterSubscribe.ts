@@ -1,7 +1,17 @@
+//Этот хук организует процесс подписки на рассылку,
+//включая валидацию, отправку данных на сервер и управление 
+//состоянием компонента в случае успеха или ошибки
 import { ref } from 'vue'
+import { z } from 'zod'
 import { subscribeToNewsletter } from './newsletterApi'
 
 type State = 'idle' | 'loading' | 'success' | 'error'
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Please enter your email' })
+  .email({ message: 'Invalid email format' })
 
 export function useNewsletterSubscribe() {
   const email = ref('')
@@ -9,10 +19,17 @@ export function useNewsletterSubscribe() {
   const errorMessage = ref('')
 
   async function handleSubmit() {
+    const parsed = emailSchema.safeParse(email.value)
+    if (!parsed.success) {
+      errorMessage.value = parsed.error.issues[0]?.message ?? 'Invalid email format'
+      state.value = 'error'
+      return
+    }
+
     state.value = 'loading'
     errorMessage.value = ''
     try {
-      await subscribeToNewsletter(email.value)
+      await subscribeToNewsletter(parsed.data)
       state.value = 'success'
       email.value = ''
     } catch (err) {

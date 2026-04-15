@@ -1,8 +1,8 @@
 <template>
   <Transition name="slide-fade">
     <nav
-      ref="navRef"
       v-if="isOpen"
+      ref="navRef"
       class="burger-menu"
       aria-label="Navigation menu"
       tabindex="-1"
@@ -74,7 +74,7 @@
       </RouterLink>
 
       <button
-        class="burger-menu__item"
+        class="burger-menu__item burger-menu__item--btn"
         @click="() => { openContactModal(); closeMenu() }"
       >
         Contact
@@ -163,7 +163,7 @@ function toggleShop() {
     display: block;
     padding: 0.8rem 1.375rem;
     font-family: var(--font-display);
-    font-size: 1rem;
+    font-size: var(--fs-base);
     color: var(--color-text);
     border-bottom: 1px solid var(--color-border);
     text-decoration: none;
@@ -189,6 +189,14 @@ function toggleShop() {
     &--active {
       font-style: italic;
       color: var(--color-accent);
+    }
+
+    &--btn {
+      width: 100%;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      text-align: left;
     }
 
     &--toggle {
@@ -224,7 +232,7 @@ function toggleShop() {
     display: block;
     padding: 0.75rem 1.375rem 0.75rem 2.25rem;
     font-family: var(--font-display);
-    font-size: 0.875rem;
+    font-size: var(--fs-base);
     color: var(--color-text-muted);
     text-decoration: none;
     border-bottom: 1px solid var(--color-border);

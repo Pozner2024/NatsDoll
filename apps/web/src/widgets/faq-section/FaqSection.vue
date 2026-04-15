@@ -2,7 +2,9 @@
   <section class="faq-section">
     <div class="faq-section__header">
       <span class="faq-section__tag">FAQ</span>
-      <h2 class="faq-section__title">Common questions</h2>
+      <h2 class="faq-section__title">
+        Common questions
+      </h2>
     </div>
 
     <ul class="faq-section__list">
@@ -19,7 +21,10 @@
           @click="toggle(item.id)"
         >
           {{ item.question }}
-          <span class="faq-section__icon" aria-hidden="true" />
+          <span
+            class="faq-section__icon"
+            aria-hidden="true"
+          />
         </button>
 
         <div
@@ -27,7 +32,9 @@
           class="faq-section__answer"
           role="region"
         >
-          <p class="faq-section__answer-text">{{ item.answer }}</p>
+          <p class="faq-section__answer-text">
+            {{ item.answer }}
+          </p>
         </div>
       </li>
     </ul>
@@ -61,7 +68,7 @@ function toggle(id: number) {
 
   &__tag {
     font-family: var(--font-display);
-    font-size: 0.65rem;
+    font-size: var(--fs-xs);
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--color-accent);
@@ -70,7 +77,7 @@ function toggle(id: number) {
 
   &__title {
     font-family: var(--font-brand);
-    font-size: 2.2rem;
+    font-size: var(--fs-section-heading);
     font-weight: 700;
     line-height: 1.15;
     color: var(--color-text);
@@ -101,7 +108,7 @@ function toggle(id: number) {
     border: none;
     text-align: left;
     font-family: var(--font-display);
-    font-size: 0.95rem;
+    font-size: var(--fs-base);
     font-weight: 600;
     color: var(--color-text);
     transition: color 0.2s ease;
@@ -167,7 +174,7 @@ function toggle(id: number) {
   &__answer-text {
     overflow: hidden;
     font-family: var(--font-display);
-    font-size: 0.9rem;
+    font-size: var(--fs-base);
     line-height: 1.7;
     color: var(--color-text-muted);
     padding-bottom: 1.1rem;

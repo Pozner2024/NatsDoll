@@ -57,7 +57,8 @@ describe('useNewsletterSubscribe — ошибка при отправке', () =
   it('переходит в error и сохраняет сообщение ошибки', async () => {
     vi.mocked(subscribeToNewsletter).mockRejectedValue(new Error('Email already subscribed'))
 
-    const { state, errorMessage, handleSubmit } = useNewsletterSubscribe()
+    const { email, state, errorMessage, handleSubmit } = useNewsletterSubscribe()
+    email.value = 'test@example.com'
 
     await handleSubmit()
 
@@ -68,7 +69,8 @@ describe('useNewsletterSubscribe — ошибка при отправке', () =
   it('использует fallback-сообщение если err не является Error', async () => {
     vi.mocked(subscribeToNewsletter).mockRejectedValue('unexpected')
 
-    const { state, errorMessage, handleSubmit } = useNewsletterSubscribe()
+    const { email, state, errorMessage, handleSubmit } = useNewsletterSubscribe()
+    email.value = 'test@example.com'
 
     await handleSubmit()
 
@@ -81,12 +83,37 @@ describe('useNewsletterSubscribe — ошибка при отправке', () =
       .mockRejectedValueOnce(new Error('First error'))
       .mockResolvedValue(undefined)
 
-    const { errorMessage, handleSubmit } = useNewsletterSubscribe()
+    const { email, errorMessage, handleSubmit } = useNewsletterSubscribe()
+    email.value = 'test@example.com'
 
     await handleSubmit()
     expect(errorMessage.value).toBe('First error')
 
+    email.value = 'test@example.com'
     await handleSubmit()
     expect(errorMessage.value).toBe('')
+  })
+})
+
+describe('useNewsletterSubscribe — клиентская валидация', () => {
+  it('показывает ошибку при пустом email и не вызывает API', async () => {
+    const { state, errorMessage, handleSubmit } = useNewsletterSubscribe()
+
+    await handleSubmit()
+
+    expect(state.value).toBe('error')
+    expect(errorMessage.value).toBe('Please enter your email')
+    expect(subscribeToNewsletter).not.toHaveBeenCalled()
+  })
+
+  it('показывает ошибку при неверном формате email', async () => {
+    const { email, state, errorMessage, handleSubmit } = useNewsletterSubscribe()
+    email.value = 'not-an-email'
+
+    await handleSubmit()
+
+    expect(state.value).toBe('error')
+    expect(errorMessage.value).toBe('Invalid email format')
+    expect(subscribeToNewsletter).not.toHaveBeenCalled()
   })
 })

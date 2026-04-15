@@ -8,8 +8,11 @@
         :class="{ 'review-card__star--filled': i <= rating }"
       >★</span>
     </div>
-    <p class="review-card__text">{{ text }}</p>
+    <p class="review-card__text">
+      {{ text }}
+    </p>
     <div class="review-card__footer">
+      <span class="review-card__counter">{{ counter }}</span>
       <div class="review-card__author">
         <span class="review-card__name">{{ name }}</span>
         <span class="review-card__country">{{ country }}</span>
@@ -24,6 +27,7 @@ defineProps<{
   name: string
   country: string
   rating: number
+  counter: string
 }>()
 </script>
 
@@ -40,7 +44,7 @@ defineProps<{
   }
 
   &__star {
-    font-size: 1.2rem;
+    font-size: var(--fs-stars);
     color: rgb(44 44 44 / 0.15);
 
     &--filled {
@@ -66,7 +70,7 @@ defineProps<{
   }
 
   &__text {
-    font-size: 0.85rem;
+    font-size: var(--fs-base);
     text-align: justify;
     line-height: 1.6;
     margin-bottom: 1rem;
@@ -80,7 +84,7 @@ defineProps<{
   }
 
   &__counter {
-    font-size: 0.7rem;
+    font-size: var(--fs-sm);
     color: var(--color-text-muted);
   }
 
@@ -88,17 +92,18 @@ defineProps<{
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    text-align: right;
     gap: 0.1rem;
   }
 
   &__name {
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: var(--fs-base);
     color: var(--color-text);
   }
 
   &__country {
-    font-size: 0.72rem;
+    font-size: var(--fs-sm);
     color: var(--color-gold);
   }
 }

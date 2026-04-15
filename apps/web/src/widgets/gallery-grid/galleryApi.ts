@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { apiFetch } from '@/shared'
 
 export const GALLERY_GRID_SIZE = 9
 
@@ -17,7 +18,7 @@ export type GalleryItem = z.infer<typeof GalleryItemSchema>
 export type HomeGallery = z.infer<typeof GalleryHomeSchema>
 
 export async function fetchHomeGallery(): Promise<HomeGallery> {
-  const res = await fetch('/api/gallery/home')
+  const res = await apiFetch('/gallery/home')
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data: unknown = await res.json()
   return GalleryHomeSchema.parse(data)

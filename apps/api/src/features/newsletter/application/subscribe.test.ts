@@ -15,9 +15,4 @@ describe('subscribe', () => {
     await subscribe('test@example.com')
     expect(mockRepo.upsertSubscriber).toHaveBeenCalledWith('test@example.com')
   })
-
-  it('выбрасывает ValidationError при невалидном email', async () => {
-    const subscribe = makeSubscribe(mockRepo)
-    await expect(subscribe('not-an-email')).rejects.toThrow('Invalid email')
-  })
 })

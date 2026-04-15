@@ -7,6 +7,12 @@
   cursor: default;
 }
 
+input,
+textarea,
+[contenteditable='true'] {
+  cursor: text;
+}
+
 body {
   color: var(--color-text);
   font-family: var(--font-display);

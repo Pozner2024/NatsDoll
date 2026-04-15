@@ -6,9 +6,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    env: {
-      VITE_API_URL: "http://localhost:3000",
-    },
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
   },
   plugins: [vue()],
   resolve: {

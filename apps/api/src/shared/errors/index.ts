@@ -1,6 +1,8 @@
+export type AppErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500
+
 export class AppError extends Error {
   constructor(
-    public readonly statusCode: number,
+    public readonly statusCode: AppErrorStatus,
     message: string,
   ) {
     super(message)
@@ -17,11 +19,5 @@ export class NotFoundError extends AppError {
 export class ValidationError extends AppError {
   constructor(message = 'Validation failed') {
     super(400, message)
-  }
-}
-
-export class UnauthorizedError extends AppError {
-  constructor(message = 'Unauthorized') {
-    super(401, message)
   }
 }

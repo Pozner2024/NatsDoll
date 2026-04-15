@@ -8,8 +8,13 @@ const GALLERY_SELECT = {
 } as const
 
 function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError || err instanceof Prisma.PrismaClientUnknownRequestError) {
-    throw new Error('Database error')
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error('Prisma known error:', { code: err.code, meta: err.meta, message: err.message })
+    throw new Error('Database error', { cause: err })
+  }
+  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
+    console.error('Prisma unknown error:', err.message)
+    throw new Error('Database error', { cause: err })
   }
   throw err
 }

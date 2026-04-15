@@ -1,7 +1,11 @@
 <template>
   <div class="placeholder-page">
-    <h1 class="placeholder-page__title">{{ title }}</h1>
-    <p class="placeholder-page__note">Coming soon</p>
+    <h1 class="placeholder-page__title">
+      {{ title }}
+    </h1>
+    <p class="placeholder-page__note">
+      Coming soon
+    </p>
   </div>
 </template>
 
@@ -24,7 +28,7 @@ defineProps<{ title: string }>()
 
   &__note {
     font-family: var(--font-display);
-    font-size: 1rem;
+    font-size: var(--fs-base);
     color: var(--color-accent);
     font-style: italic;
   }

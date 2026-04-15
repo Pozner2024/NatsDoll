@@ -21,6 +21,13 @@
   // Typography
   --font-display: 'Playfair Display', serif;
   --font-brand: 'Corinthia', cursive;
+  --fs-xs: 0.65rem;             // теги, бейджи, копирайт
+  --fs-sm: 0.8rem;             // uppercase-метки, текст кнопок, мелкие подписи
+  --fs-md: 0.9rem;             // основной мелкий текст, инпуты
+  --fs-base: 1rem;            // основной текст, ссылки, вопросы FAQ
+  --fs-stars: 1.2rem;           // звёздочки рейтинга
+  --fs-logo: 2rem;              // логотип
+  --fs-section-heading: 2.2rem; // заголовки секций
 
   // Layout
   --header-height: 45px;

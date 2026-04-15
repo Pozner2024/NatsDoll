@@ -5,14 +5,18 @@
         class="artist-section__photo"
         :src="artistPhoto"
         :alt="artist.name"
-      />
+      >
       <div class="artist-section__title">
         <span class="artist-section__tag">The artist</span>
-        <h2 class="artist-section__name">{{ artist.name }}</h2>
+        <h2 class="artist-section__name">
+          {{ artist.name }}
+        </h2>
       </div>
     </div>
 
-    <p class="artist-section__bio">{{ artist.bio }}</p>
+    <p class="artist-section__bio">
+      {{ artist.bio }}
+    </p>
 
     <AppButton
       class="artist-section__btn"
@@ -62,7 +66,7 @@ const { open: openContactModal } = useContactModal()
 
   &__tag {
     font-family: var(--font-display);
-    font-size: 0.65rem;
+    font-size: var(--fs-xs);
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--color-accent);
@@ -71,14 +75,14 @@ const { open: openContactModal } = useContactModal()
 
   &__name {
     font-family: var(--font-brand);
-    font-size: 2.2rem;
+    font-size: var(--fs-section-heading);
     font-weight: 700;
     line-height: 1.15;
     color: var(--color-text);
   }
 
   &__bio {
-    font-size: 0.9rem;
+    font-size: var(--fs-base);
     line-height: 1.7;
     color: var(--color-text-muted);
     text-align: justify;

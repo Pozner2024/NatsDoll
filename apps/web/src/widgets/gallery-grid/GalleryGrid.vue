@@ -1,7 +1,17 @@
 <template>
-  <div class="gallery-grid">
-    <div v-if="isLoading" class="gallery-grid__state">Loading...</div>
-    <div v-else-if="hasError" class="gallery-grid__state gallery-grid__state--error">Failed to load gallery</div>
+  <section class="gallery-grid" aria-label="Gallery">
+    <div
+      v-if="isLoading"
+      class="gallery-grid__state"
+    >
+      Loading...
+    </div>
+    <div
+      v-else-if="hasError"
+      class="gallery-grid__state gallery-grid__state--error"
+    >
+      Failed to load gallery
+    </div>
 
     <template v-else>
       <div
@@ -14,21 +24,23 @@
           :alt="`Gallery image ${i + 1}`"
           class="gallery-grid__img"
           :class="{ 'gallery-grid__img--hidden': flipped[i] }"
-        />
+        >
         <img
           v-if="poolCells[i]"
           :src="poolCells[i]!.imageUrl"
           aria-hidden="true"
           class="gallery-grid__img gallery-grid__img--top"
           :class="{ 'gallery-grid__img--hidden': !flipped[i] }"
-        />
+        >
       </div>
 
       <div class="gallery-grid__overlay">
-        <AppButton to="/gallery">The Gallery</AppButton>
+        <AppButton to="/gallery">
+          The Gallery
+        </AppButton>
       </div>
     </template>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -60,6 +72,7 @@ const flipped = reactive<boolean[]>(Array(GALLERY_GRID_SIZE).fill(false))
 
 // Храним только активные (pending) таймеры — по одному на ячейку
 const timers: (ReturnType<typeof setTimeout> | null)[] = Array(GALLERY_GRID_SIZE).fill(null)
+let timersStarted = false
 
 function scheduleFlip(i: number) {
   timers[i] = setTimeout(() => {
@@ -68,15 +81,13 @@ function scheduleFlip(i: number) {
   }, randomDelay())
 }
 
-// Таймеры стартуют только после загрузки pool, чтобы не было src="undefined"
-watch(
-  pool,
-  (newPool) => {
-    if (newPool.length === 0) return
-    for (let i = 0; i < GALLERY_GRID_SIZE; i++) scheduleFlip(i)
-  },
-  { once: true },
-)
+// Таймеры стартуют один раз — как только в pool появятся данные,
+// чтобы не было src="undefined" на первом кадре.
+watch(pool, (newPool) => {
+  if (timersStarted || newPool.length === 0) return
+  timersStarted = true
+  for (let i = 0; i < GALLERY_GRID_SIZE; i++) scheduleFlip(i)
+})
 
 onUnmounted(() => {
   timers.forEach(id => { if (id !== null) clearTimeout(id) })

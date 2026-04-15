@@ -1,0 +1,26 @@
+@property --btn-angle {
+  syntax: '<angle>';
+  initial-value: 90deg;
+  inherits: false;
+}
+
+@mixin animated-border {
+  --btn-angle: 90deg;
+
+  border: 2px solid;
+  border-image: conic-gradient(
+    from var(--btn-angle),
+    rgb(var(--btn-gradient-dark) / 0.4),
+    rgb(var(--btn-gradient-mid) / 1) 0.07turn,
+    rgb(var(--btn-gradient-light) / 1) 0.12turn,
+    rgb(var(--btn-gradient-mid) / 1) 0.17turn,
+    rgb(var(--btn-gradient-dark) / 0.4) 0.25turn
+  ) 1;
+  animation: animated-border-rotate 3000ms linear infinite forwards;
+}
+
+@keyframes animated-border-rotate {
+  100% {
+    --btn-angle: 420deg;
+  }
+}

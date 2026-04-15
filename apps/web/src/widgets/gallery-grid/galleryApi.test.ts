@@ -31,7 +31,7 @@ describe('fetchHomeGallery', () => {
 
     const result = await fetchHomeGallery()
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/gallery/home')
+    expect(mockFetch).toHaveBeenCalledWith('/api/gallery/home', expect.any(Object))
     expect(result.preview).toEqual(previewItems)
     expect(result.pool).toEqual(poolItems)
   })

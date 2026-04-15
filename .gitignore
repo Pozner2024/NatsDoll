@@ -30,6 +30,11 @@ lerna-debug.log*
 
 # Testing
 /coverage
+test-results/
+playwright-report/
+
+# TypeScript incremental build artifacts
+*.tsbuildinfo
 
 # Prisma
 .env.local

@@ -3,9 +3,9 @@
     <HeroSlider />
     <GalleryGrid />
     <ArtistSection />
-    <hr class="home-page__divider" />
+    <hr class="home-page__divider">
     <ReviewsSlider />
-    <hr class="home-page__divider" />
+    <hr class="home-page__divider">
     <FaqSection />
   </div>
 </template>

@@ -8,7 +8,11 @@
   >
     <CartIcon class="cart-link__icon" />
     Cart
-    <span v-if="cartCount > 0" class="cart-link__badge" aria-hidden="true">{{ cartCount }}</span>
+    <span
+      v-if="cartCount > 0"
+      class="cart-link__badge"
+      aria-hidden="true"
+    >{{ cartCount }}</span>
   </RouterLink>
 </template>
 
@@ -47,7 +51,7 @@ const ariaLabel = computed(() =>
     background: var(--color-text);
     color: var(--color-white);
     font-family: sans-serif;
-    font-size: 0.625rem;
+    font-size: var(--fs-xs);
     font-weight: 400;
     width: 18px;
     height: 18px;

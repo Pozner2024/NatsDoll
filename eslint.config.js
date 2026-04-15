@@ -1,52 +1,73 @@
 import tseslint from "typescript-eslint";
 import pluginVue from "eslint-plugin-vue";
+import vueParser from "vue-eslint-parser";
 
 const deepImportRule = {
   "no-restricted-imports": [
-    "warn",
+    "error",
     {
       patterns: [
-        "**/features/*/*",
-        "**/features/*/*/*",
-        "**/global/*/*",
-        "**/global/*/*/*",
-        "**/shared/*/*",
+        {
+          group: [
+            "**/features/*/*",
+            "**/features/*/*/*",
+            "**/widgets/*/*",
+            "**/widgets/*/*/*",
+            "**/shared/*/*",
+          ],
+          message:
+            "Deep imports are forbidden. Use the feature/widget/shared public API (index.ts) instead. " +
+            'For example: \'import { Component } from "@/features/cart"\' ' +
+            'instead of \'import Component from "@/features/cart/ui/Component.vue"\'',
+        },
       ],
-      message:
-        "Deep imports are forbidden. Use the feature/global public API (index.ts) instead. " +
-        "For example: 'import { Component } from \"@/features/cart\"' " +
-        "instead of 'import Component from \"@/features/cart/ui/Component.vue\"'",
     },
   ],
 };
 
 export default [
-  // Ignore build artifacts
   {
-    ignores: ["**/dist/**", "**/node_modules/**"],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/*.tsbuildinfo"],
   },
 
-  // Vue 3 flat config (includes vue-eslint-parser + vue rules)
-  ...pluginVue.configs["flat/recommended"],
+  // TypeScript base rules for .ts files
+  ...tseslint.configs.recommended.map((cfg) => ({
+    ...cfg,
+    files: ["**/*.ts"],
+  })),
 
-  // TypeScript support for .ts and .vue files
-  ...tseslint.configs.recommended,
+  // Vue flat-recommended — только для .vue файлов
+  ...pluginVue.configs["flat/recommended"].map((cfg) => ({
+    ...cfg,
+    files: ["**/*.vue"],
+  })),
 
-  // Override parser for .vue files to keep vue-eslint-parser on top
+  // Принудительно ставим vue-eslint-parser с TS-парсером для скриптов
   {
     files: ["**/*.vue"],
     languageOptions: {
+      parser: vueParser,
       parserOptions: {
         parser: tseslint.parser,
         ecmaVersion: "latest",
         sourceType: "module",
+        extraFileExtensions: [".vue"],
       },
     },
   },
 
-  // Project-wide rules
+  // Ослабляем строгие правила для тестов
   {
-    files: ["apps/**/*.{ts,vue}", "packages/**/*.ts"],
+    files: ["**/*.test.ts", "**/*.spec.ts"],
+    rules: {
+      "@typescript-eslint/triple-slash-reference": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+
+  // Запрет глубоких импортов — только для исходников приложений
+  {
+    files: ["apps/**/*.{ts,vue}"],
     rules: {
       ...deepImportRule,
     },

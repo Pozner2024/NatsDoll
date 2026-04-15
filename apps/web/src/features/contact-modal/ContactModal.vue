@@ -119,13 +119,23 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 import { useContactModal } from './useContactModal'
 
 const { isOpen, submitStatus, close, submit } = useContactModal()
 
 const form = reactive({ name: '', email: '', message: '' })
 const errors = reactive({ name: '', email: '', message: '' })
+
+watch(isOpen, (open) => {
+  if (!open) return
+  form.name = ''
+  form.email = ''
+  form.message = ''
+  errors.name = ''
+  errors.email = ''
+  errors.message = ''
+})
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -147,6 +157,7 @@ async function handleSubmit() {
 </script>
 
 <style scoped lang="scss">
+@use '@/shared/lib/animated-border' as *;
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 0.2s ease;
@@ -252,7 +263,10 @@ async function handleSubmit() {
   }
 
   &__submit {
+    @include animated-border;
+
     align-self: center;
+    display: inline-block;
     font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--fs-sm);
@@ -260,9 +274,8 @@ async function handleSubmit() {
     text-transform: uppercase;
     padding: 0.6rem 2rem;
     background: none;
-    border: 1px solid var(--color-text);
     color: var(--color-text);
-    transition: background-color 0.2s ease;
+    transition: background-color 0.3s ease;
 
     &:hover:not(:disabled) {
       background-color: rgb(var(--btn-gradient-mid) / 0.12);
@@ -270,6 +283,7 @@ async function handleSubmit() {
 
     &:disabled {
       opacity: 0.5;
+      animation: none;
     }
   }
 

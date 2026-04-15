@@ -1,17 +1,11 @@
-function getApiUrl(): string {
-  const url = import.meta.env.VITE_API_URL
-  if (!url) throw new Error('VITE_API_URL is not defined')
-  return url
-}
+import { apiFetch, apiErrorMessage } from '@/shared'
 
 export async function subscribeToNewsletter(email: string): Promise<void> {
-  const res = await fetch(`${getApiUrl()}/newsletter/subscribe`, {
+  const res = await apiFetch('/newsletter/subscribe', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    json: { email },
   })
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error((data as { error?: string }).error ?? 'Subscription failed')
+    throw new Error(await apiErrorMessage(res, 'Subscription failed'))
   }
 }

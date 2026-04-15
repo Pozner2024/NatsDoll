@@ -1,5 +1,9 @@
 <template>
-  <RouterLink to="/" class="app-logo" aria-label="NatsDoll — Home">
+  <RouterLink
+    to="/"
+    class="app-logo"
+    aria-label="NatsDoll — Home"
+  >
     NatsDoll
   </RouterLink>
 </template>
@@ -12,7 +16,7 @@ import { RouterLink } from 'vue-router'
 .app-logo {
   font-family: var(--font-brand);
   font-weight: 700;
-  font-size: 2rem;
+  font-size: var(--fs-logo);
   color: var(--color-text);
   letter-spacing: 0.06rem;
   line-height: 1;

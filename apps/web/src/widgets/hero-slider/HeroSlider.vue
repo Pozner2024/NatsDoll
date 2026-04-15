@@ -1,5 +1,5 @@
 <template>
-  <div class="hero-slider">
+  <section class="hero-slider" aria-label="Hero banner">
     <div class="hero-slider__track">
       <div
         v-for="(slide, i) in slides"
@@ -11,9 +11,13 @@
     </div>
 
     <div class="hero-slider__overlay">
-      <p class="hero-slider__text">Find a unique gift here</p>
+      <p class="hero-slider__text">
+        Find a unique gift here
+      </p>
       <div class="hero-slider__cta">
-        <AppButton to="/shop">The shop</AppButton>
+        <AppButton to="/shop">
+          The shop
+        </AppButton>
       </div>
     </div>
 
@@ -42,7 +46,7 @@
         @click="goTo(i)"
       />
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

@@ -10,7 +10,10 @@
       @touchstart.passive="onTouchStart"
       @touchend.passive="onTouchEnd"
     >
-      <div class="reviews-slider__track" :style="trackStyle">
+      <div
+        class="reviews-slider__track"
+        :style="trackStyle"
+      >
         <div
           v-for="review in REVIEWS"
           :key="review.id"
@@ -21,12 +24,11 @@
             :name="review.name"
             :country="review.country"
             :rating="review.rating"
+            :counter="counterLabel"
           />
         </div>
       </div>
     </div>
-
-    <span class="reviews-slider__counter">{{ counterLabel }}</span>
   </section>
 </template>
 
@@ -76,7 +78,7 @@ function onTouchEnd(e: TouchEvent) {
 
   &__title-sub {
     font-family: var(--font-display);
-    font-size: 0.65rem;
+    font-size: var(--fs-xs);
     font-weight: 400;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -86,7 +88,7 @@ function onTouchEnd(e: TouchEvent) {
 
   &__title-brand {
     font-family: var(--font-brand);
-    font-size: 2.2rem;
+    font-size: var(--fs-section-heading);
     font-weight: 700;
     color: var(--color-text);
     line-height: 1.1;
@@ -105,10 +107,5 @@ function onTouchEnd(e: TouchEvent) {
     min-width: 100%;
   }
 
-  &__counter {
-    display: block;
-    margin-top: 0.75rem;
-    padding-left: 1.4rem;
-  }
 }
 </style>
