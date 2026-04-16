@@ -80,6 +80,13 @@
         Contact
       </button>
 
+      <button
+        class="burger-menu__item burger-menu__item--btn"
+        @click="handleAuthClick"
+      >
+        {{ authStore.isLoggedIn ? 'My account' : 'Login' }}
+      </button>
+
       <CartLink
         class="burger-menu__item"
         @navigate="closeMenu"
@@ -90,12 +97,16 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { navItems, shopCategories, homeItem } from "../navigationConfig";
 import { CartLink } from '.';
 import { useContactModal } from '@/features/contact-modal'
+import { useAuthModal } from '@/features/auth-modal'
+import { useAuthStore } from '@/features/auth'
 
 const { open: openContactModal } = useContactModal()
+const { open: openAuthModal } = useAuthModal()
+const authStore = useAuthStore()
 
 const props = defineProps<{
   isOpen: boolean;
@@ -107,6 +118,7 @@ const emit = defineEmits<{
 }>();
 
 const route = useRoute();
+const router = useRouter();
 const shopOpen = ref(false);
 const navRef = ref<HTMLElement | null>(null);
 
@@ -130,6 +142,16 @@ function closeMenu() {
 
 function toggleShop() {
   shopOpen.value = !shopOpen.value
+}
+
+function handleAuthClick() {
+  if (authStore.isLoggedIn) {
+    router.push('/account')
+    closeMenu()
+  } else {
+    openAuthModal()
+    closeMenu()
+  }
 }
 
 </script>

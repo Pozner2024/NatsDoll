@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import { flushPromises } from "@vue/test-utils";
 import { mount } from "@vue/test-utils";
 import { createRouter, createMemoryHistory } from "vue-router";
+import { createPinia } from "pinia";
 import { BurgerMenu } from '.'
 
 const router = createRouter({
@@ -13,7 +14,7 @@ const router = createRouter({
 function mountMenu(props = {}) {
   return mount(BurgerMenu, {
     props: { isOpen: false, ...props },
-    global: { plugins: [router] },
+    global: { plugins: [router, createPinia()] },
   });
 }
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
+import { createPinia } from 'pinia'
 import AppHeader from './AppHeader.vue'
 import BurgerMenu from './components/BurgerMenu.vue'
 
@@ -19,7 +20,7 @@ const router = createRouter({
 
 function mountHeader() {
   return mount(AppHeader, {
-    global: { plugins: [router] },
+    global: { plugins: [router, createPinia()] },
     attachTo: document.body,
   })
 }
@@ -36,13 +37,13 @@ describe('AppHeader — бургер-кнопка', () => {
 
   it('клик на бургер открывает меню', async () => {
     const wrapper = mountHeader()
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('.app-header__burger').trigger('click')
     expect(burgerProps(wrapper).isOpen).toBe(true)
   })
 
   it('повторный клик закрывает меню', async () => {
     const wrapper = mountHeader()
-    const btn = wrapper.find('button')
+    const btn = wrapper.find('.app-header__burger')
     await btn.trigger('click')
     await btn.trigger('click')
     expect(burgerProps(wrapper).isOpen).toBe(false)
@@ -52,7 +53,7 @@ describe('AppHeader — бургер-кнопка', () => {
 describe('AppHeader — клик вне header', () => {
   it('закрывает меню при клике вне', async () => {
     const wrapper = mountHeader()
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('.app-header__burger').trigger('click')
     expect(burgerProps(wrapper).isOpen).toBe(true)
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
