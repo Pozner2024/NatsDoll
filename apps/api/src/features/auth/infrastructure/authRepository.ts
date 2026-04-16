@@ -7,6 +7,7 @@ export type AuthRepository = {
   saveRefreshToken(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
   findTokenByHash(tokenHash: string): Promise<RefreshToken | null>
   deleteToken(id: string): Promise<void>
+  revokeToken(id: string): Promise<void>
   revokeAllUserTokens(userId: string): Promise<void>
 }
 
@@ -67,6 +68,17 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
     async deleteToken(id) {
       try {
         await prisma.refreshToken.delete({ where: { id } })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async revokeToken(id) {
+      try {
+        await prisma.refreshToken.update({
+          where: { id },
+          data: { revokedAt: new Date() },
+        })
       } catch (err) {
         return handlePrismaError(err)
       }

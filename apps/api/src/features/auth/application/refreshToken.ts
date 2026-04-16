@@ -32,7 +32,7 @@ export function makeRefreshToken(repo: AuthRepository) {
     const user = await repo.findById(stored.userId)
     if (!user) throw new AppError(401, 'User not found')
 
-    await repo.deleteToken(stored.id)
+    await repo.revokeToken(stored.id)
 
     const newRawToken = generateRefreshToken()
     const newTokenHash = hashToken(newRawToken)

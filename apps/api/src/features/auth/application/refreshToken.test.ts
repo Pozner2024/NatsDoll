@@ -41,6 +41,7 @@ const mockRepo: AuthRepository = {
   saveRefreshToken: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
+  revokeToken: vi.fn(),
   revokeAllUserTokens: vi.fn(),
 }
 
@@ -74,13 +75,13 @@ describe('refreshToken', () => {
   it('ротирует токен и возвращает новые токены', async () => {
     vi.mocked(mockRepo.findTokenByHash).mockResolvedValue(validToken)
     vi.mocked(mockRepo.findById).mockResolvedValue(mockUser)
-    vi.mocked(mockRepo.deleteToken).mockResolvedValue(undefined)
+    vi.mocked(mockRepo.revokeToken).mockResolvedValue(undefined)
     vi.mocked(mockRepo.saveRefreshToken).mockResolvedValue(undefined)
 
     const refresh = makeRefreshToken(mockRepo)
     const result = await refresh('raw_token')
 
-    expect(mockRepo.deleteToken).toHaveBeenCalledWith('token1')
+    expect(mockRepo.revokeToken).toHaveBeenCalledWith('token1')
     expect(mockRepo.saveRefreshToken).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user1', tokenHash: 'hash_of_new_raw_refresh' })
     )

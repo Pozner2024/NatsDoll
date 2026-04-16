@@ -56,7 +56,7 @@ export function makeAuthRouter(
     const result = await register(data)
     setCookie(c, COOKIE_NAME, result.refreshToken, {
       httpOnly: true,
-      path: '/auth',
+      path: '/api/auth',
       sameSite: 'Strict',
       maxAge: REFRESH_TOKEN_TTL_SECONDS,
       secure: isProduction,
@@ -69,7 +69,7 @@ export function makeAuthRouter(
     const result = await login(data)
     setCookie(c, COOKIE_NAME, result.refreshToken, {
       httpOnly: true,
-      path: '/auth',
+      path: '/api/auth',
       sameSite: 'Strict',
       maxAge: REFRESH_TOKEN_TTL_SECONDS,
       secure: isProduction,
@@ -83,7 +83,7 @@ export function makeAuthRouter(
     const result = await refreshToken(rawToken)
     setCookie(c, COOKIE_NAME, result.refreshToken, {
       httpOnly: true,
-      path: '/auth',
+      path: '/api/auth',
       sameSite: 'Strict',
       maxAge: REFRESH_TOKEN_TTL_SECONDS,
       secure: isProduction,
