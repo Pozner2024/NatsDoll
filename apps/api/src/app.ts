@@ -9,6 +9,15 @@ import {
   makeNewsletterRouter,
 } from './features/newsletter'
 import { makeContactRepository, makeSubmit, makeContactRouter } from './features/contact'
+import {
+  makeAuthRepository,
+  makeRegister,
+  makeLogin,
+  makeRefreshToken,
+  makeLogout,
+  makeGetMe,
+  makeAuthRouter,
+} from './features/auth'
 
 export function createApp() {
   const app = new Hono()
@@ -50,6 +59,15 @@ export function createApp() {
   const contactRepo = makeContactRepository(prisma)
   const submit = makeSubmit(contactRepo)
   app.route('/contact', makeContactRouter(submit))
+
+  // Auth
+  const authRepo = makeAuthRepository(prisma)
+  const register = makeRegister(authRepo)
+  const login = makeLogin(authRepo)
+  const refreshToken = makeRefreshToken(authRepo)
+  const logout = makeLogout(authRepo)
+  const getMe = makeGetMe(authRepo)
+  app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe))
 
   return app
 }
