@@ -89,7 +89,7 @@
 
             <p class="auth-modal__switch">
               No account?
-              <button type="button" class="auth-modal__switch-btn" @click="mode = 'register'">
+              <button type="button" class="auth-modal__switch-btn" @click="open('register')">
                 Create one
               </button>
             </p>
@@ -155,7 +155,7 @@
 
             <p class="auth-modal__switch">
               Already have an account?
-              <button type="button" class="auth-modal__switch-btn" @click="mode = 'login'">
+              <button type="button" class="auth-modal__switch-btn" @click="open('login')">
                 Sign in
               </button>
             </p>
@@ -172,7 +172,7 @@ import { useRouter } from 'vue-router'
 import { useAuthModal } from './useAuthModal'
 import { useAuthStore } from '@/features/auth'
 
-const { isOpen, mode, close } = useAuthModal()
+const { isOpen, mode, open, close } = useAuthModal()
 const authStore = useAuthStore()
 const router = useRouter()
 
@@ -257,10 +257,7 @@ async function handleRegister() {
 }
 
 function handleGoogle() {
-  // TODO: подключить Google OAuth
-  authStore.login({ email: 'google@example.com', password: '' })
-  close()
-  router.push('/account')
+  // TODO: подключить Google OAuth (реализовать OAuth flow, убрать заглушку)
 }
 </script>
 
