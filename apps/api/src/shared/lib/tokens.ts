@@ -19,8 +19,8 @@ function getJwtSecret(): Uint8Array {
 }
 
 function getHmacSecret(): string {
-  const secret = process.env.JWT_SECRET
-  if (!secret) throw new Error('JWT_SECRET is not set')
+  const secret = process.env.HMAC_SECRET ?? process.env.JWT_SECRET
+  if (!secret) throw new Error('HMAC_SECRET or JWT_SECRET must be set')
   return secret
 }
 
@@ -34,8 +34,14 @@ export async function signAccessToken(payload: AccessTokenPayload): Promise<stri
 export async function verifyAccessToken(token: string): Promise<AccessTokenPayload> {
   try {
     const { payload } = await jwtVerify(token, getJwtSecret())
-    return { sub: payload.sub as string, role: payload.role as string }
-  } catch {
+    const sub = payload.sub
+    const role = payload.role as string | undefined
+    if (typeof sub !== 'string' || typeof role !== 'string') {
+      throw new AppError(401, 'Invalid token payload')
+    }
+    return { sub, role }
+  } catch (err) {
+    if (err instanceof AppError) throw err
     throw new AppError(401, 'Invalid or expired token')
   }
 }
