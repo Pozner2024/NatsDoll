@@ -78,7 +78,8 @@ export function makeAuthRouter(
   })
 
   router.post('/refresh', async (c) => {
-    const rawToken = getCookie(c, COOKIE_NAME) ?? ''
+    const rawToken = getCookie(c, COOKIE_NAME)
+    if (!rawToken) return c.json({ error: 'Missing refresh token' }, 401)
     const result = await refreshToken(rawToken)
     setCookie(c, COOKIE_NAME, result.refreshToken, {
       httpOnly: true,
