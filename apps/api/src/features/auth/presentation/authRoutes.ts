@@ -94,8 +94,8 @@ export function makeAuthRouter(
   router.post('/logout', async (c) => {
     const rawToken = getCookie(c, COOKIE_NAME) ?? ''
     await logout(rawToken)
-    deleteCookie(c, COOKIE_NAME, { path: '/auth' })
-    return new Response(null, { status: 204 })
+    deleteCookie(c, COOKIE_NAME, { path: '/api/auth' })
+    return c.body(null, 204)
   })
 
   router.get('/me', requireAuth, async (c) => {

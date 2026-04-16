@@ -2,12 +2,22 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User } from './types'
-import { apiFetch, apiErrorMessage } from '@/shared'
+import { apiFetch, apiErrorMessage, setupAuthInterceptor } from '@/shared'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const accessToken = ref<string | null>(null)
   const isLoggedIn = computed(() => user.value !== null)
+  const authReady = ref(false)
+
+  let initPromise: Promise<void> | null = null
+
+  // Подключаем interceptor для auto-refresh при 401
+  setupAuthInterceptor({
+    getAccessToken: () => accessToken.value,
+    setAccessToken: (token: string) => { accessToken.value = token },
+    clearAuth: () => { accessToken.value = null; user.value = null },
+  })
 
   async function login(data: { email: string; password: string }): Promise<void> {
     const res = await apiFetch('/auth/login', { method: 'POST', json: data })
@@ -26,12 +36,21 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
-    await apiFetch('/auth/logout', { method: 'POST', accessToken: accessToken.value ?? undefined })
-    accessToken.value = null
-    user.value = null
+    try {
+      await apiFetch('/auth/logout', { method: 'POST', accessToken: accessToken.value ?? undefined })
+    } finally {
+      accessToken.value = null
+      user.value = null
+    }
   }
 
   async function initAuth(): Promise<void> {
+    if (initPromise) return initPromise
+    initPromise = _doInitAuth()
+    return initPromise
+  }
+
+  async function _doInitAuth(): Promise<void> {
     try {
       const res = await apiFetch('/auth/refresh', { method: 'POST' })
       if (!res.ok) return
@@ -44,8 +63,10 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = meBody.user
     } catch {
       // тихий фейл — пользователь просто остаётся неавторизованным
+    } finally {
+      authReady.value = true
     }
   }
 
-  return { user, accessToken, isLoggedIn, login, register, logout, initAuth }
+  return { user, accessToken, isLoggedIn, authReady, login, register, logout, initAuth }
 })

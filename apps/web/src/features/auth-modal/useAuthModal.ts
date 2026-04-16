@@ -1,4 +1,5 @@
 import { ref, watch } from 'vue'
+import { lockScroll, unlockScroll } from '@/shared'
 
 type AuthMode = 'login' | 'register'
 
@@ -15,7 +16,7 @@ function close() {
 }
 
 watch(isOpen, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
+  open ? lockScroll() : unlockScroll()
 })
 
 export function useAuthModal() {

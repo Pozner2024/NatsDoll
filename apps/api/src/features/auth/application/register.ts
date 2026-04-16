@@ -1,4 +1,5 @@
 import { hash } from '@node-rs/argon2'
+import { Prisma } from '@prisma/client'
 import type { AuthRepository } from '../infrastructure/authRepository'
 import {
   signAccessToken,
@@ -21,7 +22,16 @@ export function makeRegister(repo: AuthRepository) {
     if (existing) throw new AppError(409, 'Email already in use')
 
     const passwordHash = await hash(data.password)
-    const user = await repo.createUser({ name: data.name, email: data.email, passwordHash })
+
+    let user: { id: string; name: string; email: string; role: string }
+    try {
+      user = await repo.createUser({ name: data.name, email: data.email, passwordHash })
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new AppError(409, 'Email already in use')
+      }
+      throw err
+    }
 
     const rawRefreshToken = generateRefreshToken()
     const tokenHash = hashToken(rawRefreshToken)

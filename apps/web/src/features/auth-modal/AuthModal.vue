@@ -194,6 +194,10 @@ watch(isOpen, (open) => {
   resetForms()
 })
 
+watch(mode, () => {
+  resetForms()
+})
+
 function resetForms() {
   loginForm.email = ''
   loginForm.password = ''
@@ -238,8 +242,8 @@ async function handleLogin() {
     await authStore.login({ email: loginForm.email, password: loginForm.password })
     close()
     router.push({ name: 'account' })
-  } catch {
-    submitError.value = 'Something went wrong. Please try again.'
+  } catch (err) {
+    submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
   } finally {
     isLoading.value = false
   }
@@ -253,8 +257,8 @@ async function handleRegister() {
     await authStore.register({ name: registerForm.name, email: registerForm.email, password: registerForm.password })
     close()
     router.push({ name: 'account' })
-  } catch {
-    submitError.value = 'Something went wrong. Please try again.'
+  } catch (err) {
+    submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
   } finally {
     isLoading.value = false
   }
@@ -281,7 +285,7 @@ function handleGoogle() {
 .auth-modal {
   background: var(--color-white);
   border: 1px solid var(--color-border);
-  padding: 2rem 1.5rem;
+  padding: 3rem 1.5rem 2rem;
   width: min(90vw, 420px);
   position: relative;
   display: flex;
