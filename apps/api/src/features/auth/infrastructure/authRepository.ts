@@ -52,7 +52,7 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
       try {
         await prisma.refreshToken.create({ data })
       } catch (err) {
-        handlePrismaError(err)
+        return handlePrismaError(err)
       }
     },
 
@@ -68,7 +68,7 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
       try {
         await prisma.refreshToken.delete({ where: { id } })
       } catch (err) {
-        handlePrismaError(err)
+        return handlePrismaError(err)
       }
     },
 
@@ -76,7 +76,7 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
       try {
         await prisma.refreshToken.deleteMany({ where: { userId } })
       } catch (err) {
-        handlePrismaError(err)
+        return handlePrismaError(err)
       }
     },
   }
