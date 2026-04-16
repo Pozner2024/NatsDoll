@@ -1,5 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+  }
+}
 import { useAuthStore } from '@/features/auth'
 import { useAuthModal } from '@/features/auth-modal'
 
