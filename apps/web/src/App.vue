@@ -6,6 +6,7 @@
     </main>
     <AppFooter />
     <ContactModal />
+    <AuthModal />
   </div>
 </template>
 
@@ -13,4 +14,5 @@
 import { AppHeader } from '@/widgets/app-header'
 import { AppFooter } from '@/widgets/app-footer'
 import { ContactModal } from '@/features/contact-modal'
+import { AuthModal } from '@/features/auth-modal'
 </script>
