@@ -146,7 +146,7 @@ function toggleShop() {
 
 function handleAuthClick() {
   if (authStore.isLoggedIn) {
-    router.push('/account')
+    router.push({ name: 'account' })
     closeMenu()
   } else {
     openAuthModal()

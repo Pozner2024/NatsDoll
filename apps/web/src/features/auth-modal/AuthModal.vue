@@ -213,7 +213,9 @@ function validateLogin(): boolean {
   loginErrors.email = !loginForm.email.trim()
     ? 'Email is required'
     : !EMAIL_RE.test(loginForm.email) ? 'Invalid email' : ''
-  loginErrors.password = loginForm.password ? '' : 'Password is required'
+  loginErrors.password = !loginForm.password
+    ? 'Password is required'
+    : loginForm.password.length < 8 ? 'Password must be at least 8 characters' : ''
   return !loginErrors.email && !loginErrors.password
 }
 
@@ -222,7 +224,9 @@ function validateRegister(): boolean {
   registerErrors.email = !registerForm.email.trim()
     ? 'Email is required'
     : !EMAIL_RE.test(registerForm.email) ? 'Invalid email' : ''
-  registerErrors.password = registerForm.password ? '' : 'Password is required'
+  registerErrors.password = !registerForm.password
+    ? 'Password is required'
+    : registerForm.password.length < 8 ? 'Password must be at least 8 characters' : ''
   return !registerErrors.name && !registerErrors.email && !registerErrors.password
 }
 
@@ -233,7 +237,7 @@ async function handleLogin() {
   try {
     await authStore.login({ email: loginForm.email, password: loginForm.password })
     close()
-    router.push('/account')
+    router.push({ name: 'account' })
   } catch {
     submitError.value = 'Something went wrong. Please try again.'
   } finally {
@@ -248,7 +252,7 @@ async function handleRegister() {
   try {
     await authStore.register({ name: registerForm.name, email: registerForm.email, password: registerForm.password })
     close()
-    router.push('/account')
+    router.push({ name: 'account' })
   } catch {
     submitError.value = 'Something went wrong. Please try again.'
   } finally {

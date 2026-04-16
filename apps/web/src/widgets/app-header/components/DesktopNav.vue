@@ -100,7 +100,7 @@ const isShopActive = computed(() => route.path.startsWith('/shop'))
 
 function handleAuthClick() {
   if (authStore.isLoggedIn) {
-    router.push('/account')
+    router.push({ name: 'account' })
   } else {
     openAuthModal()
   }
