@@ -7,12 +7,12 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => user.value !== null)
 
   async function login(data: { email: string; password: string }) {
-    // TODO: заменить на API-запрос
+    // TODO: заменить на API-запрос — получить { id, name, email } из ответа сервера
     user.value = { id: '1', name: data.email.split('@')[0], email: data.email }
   }
 
   async function register(data: { name: string; email: string; password: string }) {
-    // TODO: заменить на API-запрос
+    // TODO: заменить на API-запрос — получить { id, name, email } из ответа сервера
     user.value = { id: '1', name: data.name, email: data.email }
   }
 
