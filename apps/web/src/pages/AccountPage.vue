@@ -1,5 +1,5 @@
 <template>
-  <PlaceholderPage title="Login" />
+  <PlaceholderPage title="My account" />
 </template>
 
 <script setup lang="ts">

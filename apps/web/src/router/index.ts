@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/features/auth'
+import { useAuthModal } from '@/features/auth-modal'
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -12,9 +15,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/GalleryPage.vue'),
   },
   {
-    path: '/login',
-    name: 'login',
-    component: () => import('@/pages/LoginPage.vue'),
+    path: '/account',
+    name: 'account',
+    component: () => import('@/pages/AccountPage.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/cart',
@@ -28,8 +32,19 @@ const routes: RouteRecordRaw[] = [
   },
 ]
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
   routes,
 })
+
+router.beforeEach((to) => {
+  if (!to.meta.requiresAuth) return true
+  const authStore = useAuthStore()
+  if (authStore.isLoggedIn) return true
+  const { open } = useAuthModal()
+  open()
+  return { name: 'home' }
+})
+
+export default router
