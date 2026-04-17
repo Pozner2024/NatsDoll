@@ -5,11 +5,12 @@ import { zValidator } from '@hono/zod-validator'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { requireAuth } from '../../../shared/middleware/requireAuth'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
+import { getGoogleAuthUrl } from '../infrastructure/googleClient'
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(8).max(128),
+  password: z.string().min(1).max(128),
 })
 
 const loginSchema = z.object({
@@ -42,12 +43,19 @@ type GetMeFn = (userId: string) => Promise<{
   id: string; name: string; email: string; role: string
 } | null>
 
+type GoogleAuthFn = (code: string) => Promise<{
+  accessToken: string
+  refreshToken: string
+  user: { id: string; name: string; email: string; role: string }
+}>
+
 export function makeAuthRouter(
   register: RegisterFn,
   login: LoginFn,
   refreshToken: RefreshTokenFn,
   logout: LogoutFn,
   getMe: GetMeFn,
+  googleAuth: GoogleAuthFn,
 ) {
   const router = new Hono()
 
@@ -103,6 +111,28 @@ export function makeAuthRouter(
     const user = await getMe(userId)
     if (!user) return c.json({ error: 'User not found' }, 404)
     return c.json({ user })
+  })
+
+  router.get('/google', (c) => {
+    const url = getGoogleAuthUrl()
+    return c.redirect(url)
+  })
+
+  router.get('/google/callback', async (c) => {
+    const code = c.req.query('code')
+    if (!code) return c.json({ error: 'Missing code' }, 400)
+
+    const result = await googleAuth(code)
+    setCookie(c, COOKIE_NAME, result.refreshToken, {
+      httpOnly: true,
+      path: '/api/auth',
+      sameSite: 'Strict',
+      maxAge: REFRESH_TOKEN_TTL_SECONDS,
+      secure: isProduction,
+    })
+
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+    return c.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`)
   })
 
   return router

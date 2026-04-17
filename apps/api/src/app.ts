@@ -16,8 +16,10 @@ import {
   makeRefreshToken,
   makeLogout,
   makeGetMe,
+  makeGoogleAuth,
   makeAuthRouter,
 } from './features/auth'
+import { makeGetGoogleProfile } from './features/auth/infrastructure/googleClient'
 
 export function createApp() {
   const app = new Hono()
@@ -67,7 +69,9 @@ export function createApp() {
   const refreshToken = makeRefreshToken(authRepo)
   const logout = makeLogout(authRepo)
   const getMe = makeGetMe(authRepo)
-  app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe))
+  const getGoogleProfile = makeGetGoogleProfile()
+  const googleAuth = makeGoogleAuth(authRepo, getGoogleProfile)
+  app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe, googleAuth))
 
   return app
 }
