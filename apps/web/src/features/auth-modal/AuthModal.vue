@@ -219,7 +219,7 @@ function validateLogin(): boolean {
     : !EMAIL_RE.test(loginForm.email) ? 'Invalid email' : ''
   loginErrors.password = !loginForm.password
     ? 'Password is required'
-    : loginForm.password.length < 8 ? 'Password must be at least 8 characters' : ''
+    : ''
   return !loginErrors.email && !loginErrors.password
 }
 
@@ -230,7 +230,7 @@ function validateRegister(): boolean {
     : !EMAIL_RE.test(registerForm.email) ? 'Invalid email' : ''
   registerErrors.password = !registerForm.password
     ? 'Password is required'
-    : registerForm.password.length < 8 ? 'Password must be at least 8 characters' : ''
+    : ''
   return !registerErrors.name && !registerErrors.email && !registerErrors.password
 }
 
@@ -265,7 +265,7 @@ async function handleRegister() {
 }
 
 function handleGoogle() {
-  // TODO: подключить Google OAuth (реализовать OAuth flow, убрать заглушку)
+  window.location.href = '/api/auth/google'
 }
 </script>
 
