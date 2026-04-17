@@ -1,6 +1,8 @@
-// apps/web/src/shared/lib/apiClient.ts
-// В dev `/api` проксируется Vite-сервером (vite.config.ts), в prod — nginx.
+import { z } from 'zod'
+
 const API_BASE = '/api'
+
+const refreshSchema = z.object({ accessToken: z.string() })
 
 type ApiRequestInit = Omit<RequestInit, 'body'> & {
   json?: unknown
@@ -27,22 +29,14 @@ export async function apiErrorMessage(res: Response, fallback: string): Promise<
   return (data as { error?: string }).error ?? fallback
 }
 
-/**
- * Обёртка для авторизованных запросов: при 401 пытается обновить токен и повторить.
- * getAccessToken / setAccessToken / clearAuth — замыкания на store, передаются при инициализации.
- */
 let authCallbacks: {
   getAccessToken: () => string | null
   setAccessToken: (token: string) => void
   clearAuth: () => void
 } | null = null
 
-export function setupAuthInterceptor(callbacks: {
-  getAccessToken: () => string | null
-  setAccessToken: (token: string) => void
-  clearAuth: () => void
-}) {
-  authCallbacks = callbacks
+export function setupAuthInterceptor(cb: typeof authCallbacks & {}) {
+  authCallbacks = cb
 }
 
 let refreshPromise: Promise<string | null> | null = null
@@ -50,7 +44,7 @@ let refreshPromise: Promise<string | null> | null = null
 async function doRefresh(): Promise<string | null> {
   const res = await apiFetch('/auth/refresh', { method: 'POST' })
   if (!res.ok) return null
-  const body = await res.json() as { accessToken: string }
+  const body = refreshSchema.parse(await res.json())
   return body.accessToken
 }
 
@@ -62,7 +56,6 @@ export async function authFetch(path: string, init: ApiRequestInit = {}): Promis
 
   if (res.status !== 401 || !token) return res
 
-  // Singleton refresh — параллельные 401 делят один запрос
   if (!refreshPromise) {
     refreshPromise = doRefresh().finally(() => { refreshPromise = null })
   }

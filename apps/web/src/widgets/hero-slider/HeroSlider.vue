@@ -69,6 +69,8 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints' as *;
+
 .hero-slider {
   position: relative;
   width: 100vw;
@@ -76,6 +78,7 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
   transform: translateX(-50%);
   height: calc(100dvh - var(--header-height));
   overflow: hidden;
+
 
   &__track {
     position: relative;
@@ -97,6 +100,10 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
     &--active {
       opacity: 1;
       transform: scale(1.06);
+
+      @include desktop {
+        transform: scale(1.1);
+      }
     }
   }
 
@@ -143,16 +150,29 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
     opacity: 0.7;
     transition: opacity 0.2s;
 
+    @include tablet {
+      font-size: 2.5rem;
+      padding: 0.5rem 1rem;
+    }
+
     &:hover {
       opacity: 1;
     }
 
     &--prev {
       left: 0.25rem;
+
+      @include tablet {
+        left: 1rem;
+      }
     }
 
     &--next {
       right: 0.25rem;
+
+      @include tablet {
+        right: 1rem;
+      }
     }
   }
 

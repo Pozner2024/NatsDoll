@@ -31,7 +31,7 @@ describe('ReviewsSlider', () => {
 
   it('показывает счётчик в формате "1 / N"', () => {
     const wrapper = mountSlider()
-    const counter = wrapper.find('.reviews-slider__counter')
+    const counter = wrapper.find('.review-card__counter')
     expect(counter.text()).toMatch(/^1 \/ \d+$/)
   })
 })

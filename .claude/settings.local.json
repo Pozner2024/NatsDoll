@@ -84,7 +84,23 @@
       "Bash(DATABASE_URL=\"postgresql://natsdoll:letsmakemoney@db:5432/natsdoll\" npx prisma migrate dev --name add_contact_message)",
       "Bash(DATABASE_URL=\"postgresql://natsdoll:letsmakemoney@localhost:5432/natsdoll\" npx prisma migrate dev --name add_contact_message)",
       "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate dev --name add_contact_message)",
-      "Bash(echo \"Exit: $?\")"
+      "Bash(echo \"Exit: $?\")",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_tabs",
+      "Bash(cd /d \"D:/Наташа/NatsDoll/apps/web\")",
+      "Bash(cd \"D:\\\\\\\\Наташа\\\\\\\\NatsDoll\\\\\\\\apps\\\\\\\\api\")",
+      "Bash(npm ls *)",
+      "Bash(cd /d \"D:\\\\Наташа\\\\NatsDoll\\\\apps\\\\api\")",
+      "Bash(cat C:\\\\\\\\Users\\\\\\\\user\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\D---------NatsDoll\\\\\\\\81ece379-5b9a-42d1-9bb7-aa5d9ec21e92\\\\\\\\tasks\\\\\\\\bc8b52ham.output)",
+      "Bash(jobs -l)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //PID 8912 //F)",
+      "Bash(taskkill //PID 26976 //F)",
+      "Bash(taskkill //PID 20236 //F)",
+      "Bash(taskkill //PID 15016 //F)",
+      "Bash(tasklist //FI \"PID eq 4488\")",
+      "Bash(tasklist /FI \"PID eq 4488\")",
+      "Bash(taskkill *)"
     ]
   }
 }

@@ -117,7 +117,7 @@ export function makeAuthRouter(
     const { url, state } = getGoogleAuthUrl()
     setCookie(c, 'oauth_state', state, {
       httpOnly: true,
-      path: '/api/auth',
+      path: '/auth',
       sameSite: 'Lax',
       maxAge: 300,
       secure: isProduction,
@@ -130,7 +130,7 @@ export function makeAuthRouter(
     const state = c.req.query('state')
     const storedState = getCookie(c, 'oauth_state')
 
-    deleteCookie(c, 'oauth_state', { path: '/api/auth' })
+    deleteCookie(c, 'oauth_state', { path: '/auth' })
 
     if (!code) return c.json({ error: 'Missing code' }, 400)
     if (!state || !storedState || state !== storedState) {

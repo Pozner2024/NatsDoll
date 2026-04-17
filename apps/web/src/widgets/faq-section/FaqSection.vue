@@ -7,42 +7,48 @@
       </h2>
     </div>
 
-    <ul class="faq-section__list">
-      <li
-        v-for="item in FAQ_ITEMS"
-        :key="item.id"
-        class="faq-section__item"
-        :class="{ 'faq-section__item--open': openId === item.id }"
+    <div class="faq-section__columns">
+      <ul
+        v-for="(col, colIndex) in columns"
+        :key="colIndex"
+        class="faq-section__list"
       >
-        <button
-          class="faq-section__question"
-          :aria-expanded="openId === item.id"
-          :aria-controls="`faq-answer-${item.id}`"
-          @click="toggle(item.id)"
+        <li
+          v-for="item in col"
+          :key="item.id"
+          class="faq-section__item"
+          :class="{ 'faq-section__item--open': openId === item.id }"
         >
-          {{ item.question }}
-          <span
-            class="faq-section__icon"
-            aria-hidden="true"
-          />
-        </button>
+          <button
+            class="faq-section__question"
+            :aria-expanded="openId === item.id"
+            :aria-controls="`faq-answer-${item.id}`"
+            @click="toggle(item.id)"
+          >
+            {{ item.question }}
+            <span
+              class="faq-section__icon"
+              aria-hidden="true"
+            />
+          </button>
 
-        <div
-          :id="`faq-answer-${item.id}`"
-          class="faq-section__answer"
-          role="region"
-        >
-          <p class="faq-section__answer-text">
-            {{ item.answer }}
-          </p>
-        </div>
-      </li>
-    </ul>
+          <div
+            :id="`faq-answer-${item.id}`"
+            class="faq-section__answer"
+            role="region"
+          >
+            <p class="faq-section__answer-text">
+              {{ item.answer }}
+            </p>
+          </div>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { FAQ_ITEMS } from './faq'
 
 const openId = ref<number | null>(null)
@@ -50,15 +56,34 @@ const openId = ref<number | null>(null)
 function toggle(id: number) {
   openId.value = openId.value === id ? null : id
 }
+
+const half = Math.ceil(FAQ_ITEMS.length / 2)
+const columns = computed(() => [
+  FAQ_ITEMS.slice(0, half),
+  FAQ_ITEMS.slice(half),
+])
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints' as *;
+
 .faq-section {
   width: 100%;
   padding: 2.5rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+
+  @include tablet {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 2.5rem 0;
+  }
+
+  @include desktop {
+    max-width: 1400px;
+    padding: 3rem 0;
+  }
 
   &__header {
     display: flex;
@@ -81,6 +106,14 @@ function toggle(id: number) {
     font-weight: 700;
     line-height: 1.15;
     color: var(--color-text);
+  }
+
+  &__columns {
+    @include desktop {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 4rem;
+    }
   }
 
   &__list {

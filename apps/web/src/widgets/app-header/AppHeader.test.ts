@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createPinia } from 'pinia'
 import AppHeader from './AppHeader.vue'
-import BurgerMenu from './components/BurgerMenu.vue'
+import { BurgerMenu } from './components'
 
 const router = createRouter({
   history: createMemoryHistory(),

@@ -80,11 +80,28 @@
         Contact
       </button>
 
+      <template v-if="authStore.isLoggedIn">
+        <RouterLink
+          to="/account"
+          class="burger-menu__item"
+          exact-active-class="burger-menu__item--active"
+          @click="closeMenu"
+        >
+          My account
+        </RouterLink>
+        <button
+          class="burger-menu__item burger-menu__item--btn"
+          @click="handleLogout"
+        >
+          Sign out
+        </button>
+      </template>
       <button
+        v-else
         class="burger-menu__item burger-menu__item--btn"
         @click="handleAuthClick"
       >
-        {{ authStore.isLoggedIn ? 'My account' : 'Login' }}
+        Login
       </button>
 
       <CartLink
@@ -99,7 +116,7 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { navItems, shopCategories, homeItem } from "../navigationConfig";
-import { CartLink } from '.';
+import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
 import { useAuthStore } from '@/features/auth'
@@ -118,7 +135,6 @@ const emit = defineEmits<{
 }>();
 
 const route = useRoute();
-const router = useRouter();
 const shopOpen = ref(false);
 const navRef = ref<HTMLElement | null>(null);
 
@@ -145,13 +161,13 @@ function toggleShop() {
 }
 
 function handleAuthClick() {
-  if (authStore.isLoggedIn) {
-    router.push({ name: 'account' })
-    closeMenu()
-  } else {
-    openAuthModal()
-    closeMenu()
-  }
+  openAuthModal()
+  closeMenu()
+}
+
+async function handleLogout() {
+  closeMenu()
+  await authStore.logout()
 }
 
 </script>

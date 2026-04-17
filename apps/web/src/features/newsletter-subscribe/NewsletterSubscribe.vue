@@ -27,7 +27,8 @@
         :disabled="state === 'loading'"
         aria-label="Subscribe"
       >
-        →
+        <span class="newsletter-subscribe__btn-arrow">→</span>
+        <span class="newsletter-subscribe__btn-text">Subscribe</span>
       </button>
     </form>
     <p
@@ -55,6 +56,7 @@ const { email, state, errorMessage, handleSubmit } = useNewsletterSubscribe()
 
 <style scoped lang="scss">
 @use '@/shared/lib/animated-border' as *;
+@use '@/assets/styles/breakpoints' as *;
 
 .newsletter-subscribe {
   &__title {
@@ -107,6 +109,25 @@ const { email, state, errorMessage, handleSubmit } = useNewsletterSubscribe()
     align-items: center;
 
     transition: color 0.2s ease, background-color 0.2s ease;
+
+    &-arrow {
+      @include tablet {
+        display: none;
+      }
+    }
+
+    &-text {
+      display: none;
+      font-family: var(--font-display);
+      font-size: var(--fs-sm);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+
+      @include tablet {
+        display: inline;
+      }
+    }
 
     &:hover {
       color: var(--color-text);

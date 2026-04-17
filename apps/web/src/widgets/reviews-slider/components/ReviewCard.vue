@@ -37,6 +37,9 @@ defineProps<{
   background: var(--color-bg);
   border-radius: 16px;
   padding: 1.5rem 1.4rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 
   &__stars {
     text-align: center;
@@ -75,11 +78,13 @@ defineProps<{
     line-height: 1.6;
     margin-bottom: 1rem;
     color: var(--color-text);
+    flex: 1;
   }
 
   &__footer {
     display: flex;
     justify-content: space-between;
+    margin-top: auto;
     align-items: flex-end;
   }
 

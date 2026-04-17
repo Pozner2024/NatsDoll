@@ -1,4 +1,4 @@
-import { apiFetch } from '@/shared'
+import { apiFetch, apiErrorMessage } from '@/shared'
 
 export async function sendContactMessage(data: {
   name: string
@@ -9,5 +9,5 @@ export async function sendContactMessage(data: {
     method: 'POST',
     json: data,
   })
-  if (!res.ok) throw new Error('Failed to send message')
+  if (!res.ok) throw new Error(await apiErrorMessage(res, 'Failed to send message'))
 }

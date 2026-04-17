@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted, isRef } from 'vue'
+import { ref, watch, onMounted, onUnmounted, isRef } from 'vue'
 import type { Ref } from 'vue'
 
 const MIN_INTERVAL_MS = 100
@@ -54,6 +54,14 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
 
   function resume() {
     if (!timer) startTimer()
+  }
+
+  if (isRef(count)) {
+    watch(count, (newCount) => {
+      if (currentIndex.value >= newCount) {
+        currentIndex.value = Math.max(0, newCount - 1)
+      }
+    })
   }
 
   onMounted(startTimer)

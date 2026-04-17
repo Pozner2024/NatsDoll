@@ -3,7 +3,9 @@
     <Transition name="modal">
       <div
         v-if="isOpen"
+        ref="overlayRef"
         class="contact-modal__overlay"
+        tabindex="-1"
         @click.self="close"
         @keydown.escape="close"
       >
@@ -101,7 +103,7 @@
               v-if="submitStatus === 'error'"
               class="contact-modal__error contact-modal__error--global"
             >
-              Something went wrong. Please try again.
+              {{ errorMessage || 'Something went wrong. Please try again.' }}
             </p>
 
             <button
@@ -119,16 +121,18 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, ref, watch, nextTick } from 'vue'
 import { useContactModal } from './useContactModal'
 
-const { isOpen, submitStatus, close, submit } = useContactModal()
+const { isOpen, submitStatus, errorMessage, close, submit } = useContactModal()
+const overlayRef = ref<HTMLElement | null>(null)
 
 const form = reactive({ name: '', email: '', message: '' })
 const errors = reactive({ name: '', email: '', message: '' })
 
 watch(isOpen, (open) => {
   if (!open) return
+  nextTick(() => overlayRef.value?.focus())
   form.name = ''
   form.email = ''
   form.message = ''
@@ -249,13 +253,13 @@ async function handleSubmit() {
     }
 
     &--error {
-      border-color: #c0392b;
+      border-color: var(--color-error);
     }
   }
 
   &__error {
     font-size: var(--fs-xs);
-    color: #c0392b;
+    color: var(--color-error);
 
     &--global {
       text-align: center;

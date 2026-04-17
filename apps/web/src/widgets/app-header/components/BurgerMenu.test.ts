@@ -8,7 +8,13 @@ import { BurgerMenu } from '.'
 
 const router = createRouter({
   history: createMemoryHistory(),
-  routes: [{ path: "/", component: { template: "<div />" } }],
+  routes: [
+    { path: '/', component: { template: '<div />' } },
+    { path: '/shop/:category?', component: { template: '<div />' } },
+    { path: '/gallery', component: { template: '<div />' } },
+    { path: '/cart', component: { template: '<div />' } },
+    { path: '/account', name: 'account', component: { template: '<div />' } },
+  ],
 });
 
 function mountMenu(props = {}) {

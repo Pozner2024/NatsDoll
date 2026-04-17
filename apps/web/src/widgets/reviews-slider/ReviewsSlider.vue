@@ -15,7 +15,7 @@
         :style="trackStyle"
       >
         <div
-          v-for="review in REVIEWS"
+          v-for="(review, i) in REVIEWS"
           :key="review.id"
           class="reviews-slider__slide"
         >
@@ -24,7 +24,7 @@
             :name="review.name"
             :country="review.country"
             :rating="review.rating"
-            :counter="counterLabel"
+            :counter="`${i + 1} / ${REVIEWS.length}`"
           />
         </div>
       </div>
@@ -33,21 +33,37 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useSlider } from '@/shared'
 import { ReviewCard } from './components'
 import { REVIEWS } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD_PX = 40
+const TABLET_QUERY = '(min-width: 768px)'
+const DESKTOP_QUERY = '(min-width: 1200px)'
 
-const { currentIndex, next, prev } = useSlider(REVIEWS.length, AUTOPLAY_INTERVAL_MS)
+const visibleCount = ref(1)
 
+function updateVisibleCount() {
+  visibleCount.value = window.matchMedia(DESKTOP_QUERY).matches ? 3
+    : window.matchMedia(TABLET_QUERY).matches ? 2
+    : 1
+}
+
+onMounted(() => {
+  updateVisibleCount()
+  window.addEventListener('resize', updateVisibleCount)
+})
+onUnmounted(() => window.removeEventListener('resize', updateVisibleCount))
+
+const slideCount = computed(() => Math.max(1, REVIEWS.length - visibleCount.value + 1))
+const { currentIndex, next, prev } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)
+
+const slideWidth = computed(() => 100 / visibleCount.value)
 const trackStyle = computed(() => ({
-  transform: `translateX(-${currentIndex.value * 100}%)`,
+  transform: `translateX(-${currentIndex.value * slideWidth.value}%)`,
 }))
-
-const counterLabel = computed(() => `${currentIndex.value + 1} / ${REVIEWS.length}`)
 
 const touchStartX = ref(0)
 
@@ -64,6 +80,8 @@ function onTouchEnd(e: TouchEvent) {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints' as *;
+
 .reviews-slider {
   width: 100%;
   padding: 3rem 1.5rem;
@@ -71,9 +89,18 @@ function onTouchEnd(e: TouchEvent) {
   &__title {
     text-align: right;
     margin-bottom: 1.5rem;
+    padding-right: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
+
+    @include tablet {
+      padding-right: 2rem;
+    }
+
+    @include desktop {
+      padding-right: 3rem;
+    }
   }
 
   &__title-sub {
@@ -100,12 +127,24 @@ function onTouchEnd(e: TouchEvent) {
 
   &__track {
     display: flex;
+    align-items: stretch;
     transition: transform 0.4s ease-in-out;
   }
 
   &__slide {
+    display: flex;
     min-width: 100%;
-  }
+    padding: 0 0.25rem;
 
+    @include tablet {
+      min-width: 50%;
+      padding: 0 0.5rem;
+    }
+
+    @include desktop {
+      min-width: 33.333%;
+      padding: 0 0.75rem;
+    }
+  }
 }
 </style>

@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref, watch, effectScope } from 'vue'
 import { lockScroll, unlockScroll } from '@/shared'
 import { sendContactMessage } from './contactApi'
 
@@ -6,6 +6,7 @@ type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const isOpen = ref(false)
 const submitStatus = ref<SubmitStatus>('idle')
+const errorMessage = ref('')
 let closeTimerId: ReturnType<typeof setTimeout> | null = null
 
 function clearCloseTimer() {
@@ -19,6 +20,7 @@ function open() {
   clearCloseTimer()
   isOpen.value = true
   submitStatus.value = 'idle'
+  errorMessage.value = ''
 }
 
 function close() {
@@ -28,19 +30,24 @@ function close() {
 
 async function submit(data: { name: string; email: string; message: string }) {
   submitStatus.value = 'loading'
+  errorMessage.value = ''
   try {
     await sendContactMessage(data)
     submitStatus.value = 'success'
     closeTimerId = setTimeout(close, 2000)
-  } catch {
+  } catch (err) {
+    errorMessage.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
     submitStatus.value = 'error'
   }
 }
 
-watch(isOpen, (open) => {
-  open ? lockScroll() : unlockScroll()
+const scope = effectScope(true)
+scope.run(() => {
+  watch(isOpen, (v) => {
+    v ? lockScroll() : unlockScroll()
+  })
 })
 
 export function useContactModal() {
-  return { isOpen, submitStatus, open, close, submit }
+  return { isOpen, submitStatus, errorMessage, open, close, submit }
 }

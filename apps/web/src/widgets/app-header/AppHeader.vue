@@ -4,6 +4,9 @@
     class="app-header"
   >
     <AppLogo @click="closeMenu" />
+
+    <DesktopNav class="app-header__desktop-nav" />
+
     <button
       ref="burgerRef"
       class="app-header__burger"
@@ -28,7 +31,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onUnmounted } from "vue";
-import { BurgerMenu } from './components'
+import { BurgerMenu, DesktopNav } from './components'
 import { AppLogo } from '@/shared'
 
 const isOpen = ref(false);
@@ -61,6 +64,8 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints' as *;
+
 .app-header {
   display: flex;
   justify-content: space-between;
@@ -73,7 +78,19 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   top: 0;
   z-index: var(--z-header);
 
+  @include desktop {
+    padding: 0 2.5rem;
+  }
+
   $burger-line-gap: 5px;
+
+  &__desktop-nav {
+    display: none;
+
+    @include desktop {
+      display: flex;
+    }
+  }
 
   &__burger {
     display: flex;
@@ -82,6 +99,10 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
     background: none;
     border: none;
     padding: 0.625rem 0.5rem;
+
+    @include desktop {
+      display: none;
+    }
 
     &:focus-visible {
       outline: 2px solid var(--color-accent);
@@ -121,6 +142,10 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
     top: 100%;
     left: 0;
     right: 0;
+
+    @include desktop {
+      display: none;
+    }
   }
 }
 </style>

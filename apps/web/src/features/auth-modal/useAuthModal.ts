@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref, watch, effectScope } from 'vue'
 import { lockScroll, unlockScroll } from '@/shared'
 
 type AuthMode = 'login' | 'register'
@@ -15,8 +15,11 @@ function close() {
   isOpen.value = false
 }
 
-watch(isOpen, (open) => {
-  open ? lockScroll() : unlockScroll()
+const scope = effectScope(true)
+scope.run(() => {
+  watch(isOpen, (v) => {
+    v ? lockScroll() : unlockScroll()
+  })
 })
 
 export function useAuthModal() {

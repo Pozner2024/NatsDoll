@@ -9,15 +9,18 @@
     </RouterLink>
 
     <div
+      ref="dropdownRef"
       class="desktop-nav__dropdown"
       @mouseenter="shopOpen = true"
       @mouseleave="shopOpen = false"
+      @focusout="onDropdownFocusOut"
     >
       <button
         class="desktop-nav__link desktop-nav__link--toggle"
         :class="{ 'desktop-nav__link--active': isShopActive }"
         :aria-expanded="shopOpen"
         aria-haspopup="true"
+        @keydown.escape="closeShop"
         @click="shopOpen = !shopOpen"
       >
         The shop
@@ -70,11 +73,72 @@
       Contact
     </button>
 
-    <button
-      class="desktop-nav__link desktop-nav__link--btn"
-      @click="handleAuthClick"
+    <div
+      v-if="authStore.isLoggedIn"
+      ref="profileDropdownRef"
+      class="desktop-nav__dropdown"
+      @mouseenter="profileOpen = true"
+      @mouseleave="profileOpen = false"
+      @focusout="onProfileFocusOut"
     >
-      {{ authStore.isLoggedIn ? 'My account' : 'Login' }}
+      <button
+        class="desktop-nav__link desktop-nav__link--toggle"
+        :aria-expanded="profileOpen"
+        aria-haspopup="true"
+        @keydown.escape="profileOpen = false"
+        @click="profileOpen = !profileOpen"
+      >
+        My account
+        <svg
+          class="desktop-nav__chevron"
+          :class="{ 'desktop-nav__chevron--open': profileOpen }"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      <Transition name="dropdown-fade">
+        <div
+          v-if="profileOpen"
+          class="desktop-nav__submenu"
+        >
+          <RouterLink
+            to="/account"
+            class="desktop-nav__sublink"
+            exact-active-class="desktop-nav__sublink--active"
+            @click="profileOpen = false"
+          >
+            My profile
+          </RouterLink>
+          <RouterLink
+            to="/account/orders"
+            class="desktop-nav__sublink"
+            exact-active-class="desktop-nav__sublink--active"
+            @click="profileOpen = false"
+          >
+            Orders
+          </RouterLink>
+          <button
+            class="desktop-nav__sublink desktop-nav__sublink--btn"
+            @click="handleLogout"
+          >
+            Sign out
+          </button>
+        </div>
+      </Transition>
+    </div>
+
+    <button
+      v-else
+      class="desktop-nav__link desktop-nav__link--btn"
+      @click="openAuthModal"
+    >
+      Login
     </button>
 
     <CartLink />
@@ -82,10 +146,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { navItems, shopCategories, homeItem } from '../navigationConfig'
-import { CartLink } from '.'
+import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
 import { useAuthStore } from '@/features/auth'
@@ -96,14 +160,49 @@ const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const shopOpen = ref(false)
+const profileOpen = ref(false)
 const isShopActive = computed(() => route.path.startsWith('/shop'))
+const dropdownRef = ref<HTMLElement | null>(null)
+const profileDropdownRef = ref<HTMLElement | null>(null)
 
-function handleAuthClick() {
-  if (authStore.isLoggedIn) {
-    router.push({ name: 'account' })
-  } else {
-    openAuthModal()
-  }
+function closeShop() {
+  shopOpen.value = false
+}
+
+function handleDocumentClick(event: MouseEvent) {
+  if (!shopOpen.value) return
+  const el = dropdownRef.value
+  if (!el) return
+  if (!el.contains(event.target as Node)) closeShop()
+}
+
+function onDropdownFocusOut(e: FocusEvent) {
+  if (!shopOpen.value) return
+  const el = dropdownRef.value
+  if (!el) return
+  const next = e.relatedTarget as Node | null
+  if (!next || !el.contains(next)) closeShop()
+}
+
+function onProfileFocusOut(e: FocusEvent) {
+  if (!profileOpen.value) return
+  const el = profileDropdownRef.value
+  if (!el) return
+  const next = e.relatedTarget as Node | null
+  if (!next || !el.contains(next)) profileOpen.value = false
+}
+
+watch(shopOpen, (open) => {
+  if (open) document.addEventListener('click', handleDocumentClick)
+  else document.removeEventListener('click', handleDocumentClick)
+})
+
+onUnmounted(() => document.removeEventListener('click', handleDocumentClick))
+
+async function handleLogout() {
+  profileOpen.value = false
+  await authStore.logout()
+  router.push({ name: 'home' })
 }
 </script>
 
@@ -196,6 +295,14 @@ function handleAuthClick() {
     &--active {
       font-style: italic;
       color: var(--color-accent);
+    }
+
+    &--btn {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
     }
   }
 }

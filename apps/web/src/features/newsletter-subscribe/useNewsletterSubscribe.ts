@@ -1,6 +1,3 @@
-//Этот хук организует процесс подписки на рассылку,
-//включая валидацию, отправку данных на сервер и управление 
-//состоянием компонента в случае успеха или ошибки
 import { ref } from 'vue'
 import { z } from 'zod'
 import { subscribeToNewsletter } from './newsletterApi'

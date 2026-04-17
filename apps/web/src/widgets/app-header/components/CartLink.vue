@@ -39,6 +39,8 @@ const ariaLabel = computed(() =>
   align-items: center;
   gap: 0.5rem;
   font-style: italic;
+  color: var(--color-text);
+  text-decoration: none;
 
   &__icon {
     width: 18px;

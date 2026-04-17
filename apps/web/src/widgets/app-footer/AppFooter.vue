@@ -92,6 +92,8 @@ const socialLinks = [
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints' as *;
+
 .app-footer {
   width: 100%;
   background: var(--color-bg);
@@ -101,8 +103,46 @@ const socialLinks = [
   flex-direction: column;
   gap: 1.75rem;
 
+  @include tablet {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "subscribe  subscribe"
+      "brand      columns"
+      "copyright  copyright";
+    column-gap: 3rem;
+    row-gap: 1.75rem;
+    padding: 2rem 2rem 1.5rem;
+  }
+
+  @include desktop {
+    grid-template-columns: 1fr auto auto 1fr;
+    grid-template-areas:
+      "brand  columns  columns  subscribe"
+      "copy   copy     copy     copy";
+    row-gap: 2rem;
+    padding: 3rem 2.5rem 1.5rem;
+  }
+
+  &__subscribe {
+    @include tablet {
+      grid-area: subscribe;
+    }
+
+    @include desktop {
+      grid-area: subscribe;
+      align-self: start;
+    }
+  }
+
   &__brand {
     text-align: right;
+
+    @include tablet {
+      grid-area: brand;
+      text-align: left;
+      align-self: start;
+    }
   }
 
   &__logo {
@@ -129,6 +169,18 @@ const socialLinks = [
   &__columns {
     display: flex;
     justify-content: space-between;
+
+    @include tablet {
+      grid-area: columns;
+      justify-content: flex-start;
+      gap: 3rem;
+      align-self: start;
+    }
+
+    @include desktop {
+      justify-content: center;
+      gap: 4rem;
+    }
   }
 
   &__col-title {
@@ -181,6 +233,14 @@ const socialLinks = [
     opacity: 0.7;
     text-align: center;
     margin: 0;
+
+    @include tablet {
+      grid-area: copyright;
+    }
+
+    @include desktop {
+      grid-area: copy;
+    }
   }
 }
 

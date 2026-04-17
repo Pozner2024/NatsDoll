@@ -14,8 +14,8 @@ const ipHits = new Map<string, { count: number; resetAt: number }>()
 
 function extractClientIp(header: string | undefined): string {
   if (!header) return 'unknown'
-  const first = header.split(',')[0].trim()
-  return first || 'unknown'
+  const parts = header.split(',').map((s) => s.trim()).filter(Boolean)
+  return parts.at(-1) ?? 'unknown'
 }
 
 function cleanupExpiredEntries() {
