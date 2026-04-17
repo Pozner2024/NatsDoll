@@ -4,6 +4,9 @@ export type AuthRepository = {
   findByEmail(email: string): Promise<User | null>
   findById(id: string): Promise<User | null>
   createUser(data: { name: string; email: string; passwordHash: string }): Promise<User>
+  findByGoogleId(googleId: string): Promise<User | null>
+  linkGoogleId(userId: string, googleId: string): Promise<User>
+  createGoogleUser(data: { name: string; email: string; googleId: string }): Promise<User>
   saveRefreshToken(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
   findTokenByHash(tokenHash: string): Promise<RefreshToken | null>
   deleteToken(id: string): Promise<void>
@@ -42,6 +45,30 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
     },
 
     async createUser(data) {
+      try {
+        return await prisma.user.create({ data })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async findByGoogleId(googleId) {
+      try {
+        return await prisma.user.findUnique({ where: { googleId } })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async linkGoogleId(userId, googleId) {
+      try {
+        return await prisma.user.update({ where: { id: userId }, data: { googleId } })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async createGoogleUser(data) {
       try {
         return await prisma.user.create({ data })
       } catch (err) {
