@@ -17,9 +17,9 @@ import {
   makeLogout,
   makeGetMe,
   makeGoogleAuth,
+  makeGetGoogleProfile,
   makeAuthRouter,
 } from './features/auth'
-import { makeGetGoogleProfile } from './features/auth/infrastructure/googleClient'
 
 export function createApp() {
   const app = new Hono()

@@ -9,17 +9,22 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RouterLink, useRouter, useRoute } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
 
 const router = useRouter()
-const route = useRoute()
 const authStore = useAuthStore()
 const failed = ref(false)
 
 onMounted(async () => {
-  const token = route.query.token
-  if (typeof token !== 'string' || !token) {
+  const hash = window.location.hash
+  const match = hash.match(/[#&]token=([^&]+)/)
+  const token = match ? match[1] : null
+
+  // Немедленно очистить hash из URL
+  history.replaceState(null, '', window.location.pathname)
+
+  if (!token) {
     failed.value = true
     return
   }

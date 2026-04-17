@@ -114,13 +114,28 @@ export function makeAuthRouter(
   })
 
   router.get('/google', (c) => {
-    const url = getGoogleAuthUrl()
+    const { url, state } = getGoogleAuthUrl()
+    setCookie(c, 'oauth_state', state, {
+      httpOnly: true,
+      path: '/api/auth',
+      sameSite: 'Lax',
+      maxAge: 300,
+      secure: isProduction,
+    })
     return c.redirect(url)
   })
 
   router.get('/google/callback', async (c) => {
     const code = c.req.query('code')
+    const state = c.req.query('state')
+    const storedState = getCookie(c, 'oauth_state')
+
+    deleteCookie(c, 'oauth_state', { path: '/api/auth' })
+
     if (!code) return c.json({ error: 'Missing code' }, 400)
+    if (!state || !storedState || state !== storedState) {
+      return c.json({ error: 'Invalid state' }, 400)
+    }
 
     const result = await googleAuth(code)
     setCookie(c, COOKIE_NAME, result.refreshToken, {
@@ -132,7 +147,7 @@ export function makeAuthRouter(
     })
 
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
-    return c.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`)
+    return c.redirect(`${frontendUrl}/auth/callback#token=${result.accessToken}`)
   })
 
   return router

@@ -100,6 +100,8 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = meBody.user
     } catch {
       accessToken.value = null
+    } finally {
+      authReady.value = true
     }
   }
 

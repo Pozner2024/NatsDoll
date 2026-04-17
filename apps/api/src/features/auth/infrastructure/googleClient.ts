@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { google } from 'googleapis'
 import { AppError } from '../../../shared/errors'
 import type { GoogleProfile } from '../application/googleAuth'
@@ -12,12 +13,15 @@ function makeOAuth2Client() {
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri)
 }
 
-export function getGoogleAuthUrl(): string {
+export function getGoogleAuthUrl(): { url: string; state: string } {
   const client = makeOAuth2Client()
-  return client.generateAuthUrl({
+  const state = randomBytes(16).toString('hex')
+  const url = client.generateAuthUrl({
     access_type: 'online',
     scope: ['email', 'profile'],
+    state,
   })
+  return { url, state }
 }
 
 export function makeGetGoogleProfile(): (code: string) => Promise<GoogleProfile> {
