@@ -32,6 +32,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/CartPage.vue'),
   },
   {
+    path: '/auth/callback',
+    name: 'auth-callback',
+    component: () => import('@/pages/AuthCallbackPage.vue'),
+  },
+  {
     path: '/shop/:category?',
     name: 'shop',
     component: () => import('@/pages/ShopPage.vue'),
@@ -44,9 +49,10 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if (!to.meta.requiresAuth) return true
   const authStore = useAuthStore()
+  if (!authStore.authReady) await authStore.initAuth()
   if (authStore.isLoggedIn) return true
   const { open } = useAuthModal()
   open()

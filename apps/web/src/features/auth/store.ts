@@ -1,8 +1,28 @@
-// apps/web/src/features/auth/store.ts
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
+import { z } from 'zod'
 import type { User } from './types'
 import { apiFetch, apiErrorMessage, setupAuthInterceptor } from '@/shared'
+
+const userSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  role: z.string(),
+})
+
+const authResponseSchema = z.object({
+  accessToken: z.string(),
+  user: userSchema,
+})
+
+const refreshResponseSchema = z.object({
+  accessToken: z.string(),
+})
+
+const meResponseSchema = z.object({
+  user: userSchema,
+})
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -12,7 +32,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   let initPromise: Promise<void> | null = null
 
-  // Подключаем interceptor для auto-refresh при 401
   setupAuthInterceptor({
     getAccessToken: () => accessToken.value,
     setAccessToken: (token: string) => { accessToken.value = token },
@@ -22,7 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(data: { email: string; password: string }): Promise<void> {
     const res = await apiFetch('/auth/login', { method: 'POST', json: data })
     if (!res.ok) throw new Error(await apiErrorMessage(res, 'Login failed'))
-    const body = await res.json() as { accessToken: string; user: User }
+    const body = authResponseSchema.parse(await res.json())
     accessToken.value = body.accessToken
     user.value = body.user
   }
@@ -30,7 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function register(data: { name: string; email: string; password: string }): Promise<void> {
     const res = await apiFetch('/auth/register', { method: 'POST', json: data })
     if (!res.ok) throw new Error(await apiErrorMessage(res, 'Registration failed'))
-    const body = await res.json() as { accessToken: string; user: User }
+    const body = authResponseSchema.parse(await res.json())
     accessToken.value = body.accessToken
     user.value = body.user
   }
@@ -41,6 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       accessToken.value = null
       user.value = null
+      initPromise = null
     }
   }
 
@@ -54,12 +74,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const res = await apiFetch('/auth/refresh', { method: 'POST' })
       if (!res.ok) return
-      const body = await res.json() as { accessToken: string }
+      const body = refreshResponseSchema.parse(await res.json())
       accessToken.value = body.accessToken
 
       const meRes = await apiFetch('/auth/me', { accessToken: body.accessToken })
       if (!meRes.ok) return
-      const meBody = await meRes.json() as { user: User }
+      const meBody = meResponseSchema.parse(await meRes.json())
       user.value = meBody.user
     } catch {
       // тихий фейл — пользователь просто остаётся неавторизованным
@@ -68,5 +88,30 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, accessToken, isLoggedIn, authReady, login, register, logout, initAuth }
+  async function loginWithToken(token: string): Promise<void> {
+    accessToken.value = token
+    try {
+      const meRes = await apiFetch('/auth/me', { accessToken: token })
+      if (!meRes.ok) {
+        accessToken.value = null
+        return
+      }
+      const meBody = meResponseSchema.parse(await meRes.json())
+      user.value = meBody.user
+    } catch {
+      accessToken.value = null
+    }
+  }
+
+  return {
+    user: readonly(user),
+    accessToken: readonly(accessToken),
+    isLoggedIn,
+    authReady: readonly(authReady),
+    login,
+    register,
+    logout,
+    initAuth,
+    loginWithToken,
+  }
 })
