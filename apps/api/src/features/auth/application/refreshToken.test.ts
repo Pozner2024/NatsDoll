@@ -43,6 +43,9 @@ const mockRepo: AuthRepository = {
   deleteToken: vi.fn(),
   revokeToken: vi.fn(),
   revokeAllUserTokens: vi.fn(),
+  findByGoogleId: vi.fn().mockResolvedValue(null),
+  linkGoogleId: vi.fn().mockResolvedValue(null),
+  createGoogleUser: vi.fn().mockResolvedValue(null),
 }
 
 describe('refreshToken', () => {

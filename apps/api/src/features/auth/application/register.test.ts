@@ -33,6 +33,10 @@ const mockRepo: AuthRepository = {
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
   revokeAllUserTokens: vi.fn(),
+  findByGoogleId: vi.fn().mockResolvedValue(null),
+  linkGoogleId: vi.fn().mockResolvedValue(null),
+  createGoogleUser: vi.fn().mockResolvedValue(null),
+  revokeToken: vi.fn().mockResolvedValue(undefined),
 }
 
 describe('register', () => {
