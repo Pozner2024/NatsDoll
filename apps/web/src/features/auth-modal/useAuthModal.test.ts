@@ -1,40 +1,45 @@
+import { setActivePinia, createPinia, storeToRefs } from 'pinia'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useAuthModal } from './useAuthModal'
 
 describe('useAuthModal', () => {
   beforeEach(() => {
-    const { close } = useAuthModal()
-    close()
+    setActivePinia(createPinia())
   })
 
   it('изначально закрыт', () => {
-    const { isOpen } = useAuthModal()
+    const store = useAuthModal()
+    const { isOpen } = storeToRefs(store)
     expect(isOpen.value).toBe(false)
   })
 
   it('open открывает модал', () => {
-    const { isOpen, open } = useAuthModal()
-    open()
+    const store = useAuthModal()
+    const { isOpen } = storeToRefs(store)
+    store.open()
     expect(isOpen.value).toBe(true)
   })
 
   it('close закрывает модал', () => {
-    const { isOpen, open, close } = useAuthModal()
-    open()
-    close()
+    const store = useAuthModal()
+    const { isOpen } = storeToRefs(store)
+    store.open()
+    store.close()
     expect(isOpen.value).toBe(false)
   })
 
   it('open сбрасывает mode в login', () => {
-    const { mode, open } = useAuthModal()
-    open('register')
-    open()
+    const store = useAuthModal()
+    const { mode } = storeToRefs(store)
+    store.open('register')
+    store.open()
     expect(mode.value).toBe('login')
   })
 
   it('open принимает mode register', () => {
-    const { mode, open } = useAuthModal()
-    open('register')
+    const store = useAuthModal()
+    const { mode } = storeToRefs(store)
+    store.open('register')
     expect(mode.value).toBe('register')
   })
 })

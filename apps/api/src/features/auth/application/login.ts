@@ -24,6 +24,8 @@ export function makeLogin(repo: AuthRepository) {
     const isValid = await verify(user.passwordHash, data.password)
     if (!isValid) throw new AppError(401, 'Invalid credentials')
 
+    if (!user.emailVerified) throw new AppError(403, 'Please verify your email before signing in')
+
     const rawRefreshToken = generateRefreshToken()
     const tokenHash = hashToken(rawRefreshToken)
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)

@@ -1,11 +1,13 @@
-// apps/api/src/features/auth/presentation/authRoutes.ts
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
+import { timingSafeEqual } from 'node:crypto'
 import { requireAuth } from '../../../shared/middleware/requireAuth'
+import { createRateLimiter } from '../../../shared/middleware/rateLimit'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
 import { getGoogleAuthUrl } from '../infrastructure/googleClient'
+import { FRONTEND_URL } from '../../../shared/lib/config'
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
@@ -20,34 +22,39 @@ const loginSchema = z.object({
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-type RegisterFn = (data: { name: string; email: string; password: string }) => Promise<{
-  accessToken: string
-  refreshToken: string
-  user: { id: string; name: string; email: string; role: string }
-}>
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  path: '/api/auth',
+  sameSite: 'Strict',
+  maxAge: REFRESH_TOKEN_TTL_SECONDS,
+  secure: isProduction,
+} as const
 
-type LoginFn = (data: { email: string; password: string }) => Promise<{
-  accessToken: string
-  refreshToken: string
-  user: { id: string; name: string; email: string; role: string }
-}>
+const FIFTEEN_MIN_MS = 15 * 60_000
+const ONE_HOUR_MS = 60 * 60_000
 
-type RefreshTokenFn = (rawToken: string) => Promise<{
-  accessToken: string
-  refreshToken: string
-}>
+const loginLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
+const registerLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
+const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
+const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 
+function safeStringEqual(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a)
+  const bBuf = Buffer.from(b)
+  if (aBuf.length !== bBuf.length) return false
+  return timingSafeEqual(aBuf, bBuf)
+}
+
+type AuthUser = { id: string; name: string; email: string; role: string }
+type AuthTokens = { accessToken: string; refreshToken: string; user: AuthUser }
+
+type RegisterFn = (data: { name: string; email: string; password: string }) => Promise<{ message: string }>
+type VerifyEmailFn = (rawToken: string) => Promise<AuthTokens>
+type LoginFn = (data: { email: string; password: string }) => Promise<AuthTokens>
+type RefreshTokenFn = (rawToken: string) => Promise<{ accessToken: string; refreshToken: string }>
 type LogoutFn = (rawToken: string) => Promise<void>
-
-type GetMeFn = (userId: string) => Promise<{
-  id: string; name: string; email: string; role: string
-} | null>
-
-type GoogleAuthFn = (code: string) => Promise<{
-  accessToken: string
-  refreshToken: string
-  user: { id: string; name: string; email: string; role: string }
-}>
+type GetMeFn = (userId: string) => Promise<AuthUser | null>
+type GoogleAuthFn = (code: string) => Promise<AuthTokens>
 
 export function makeAuthRouter(
   register: RegisterFn,
@@ -56,32 +63,20 @@ export function makeAuthRouter(
   logout: LogoutFn,
   getMe: GetMeFn,
   googleAuth: GoogleAuthFn,
+  verifyEmail: VerifyEmailFn,
 ) {
   const router = new Hono()
 
-  router.post('/register', zValidator('json', registerSchema), async (c) => {
+  router.post('/register', registerLimiter.middleware, zValidator('json', registerSchema), async (c) => {
     const data = c.req.valid('json')
     const result = await register(data)
-    setCookie(c, COOKIE_NAME, result.refreshToken, {
-      httpOnly: true,
-      path: '/api/auth',
-      sameSite: 'Strict',
-      maxAge: REFRESH_TOKEN_TTL_SECONDS,
-      secure: isProduction,
-    })
-    return c.json({ accessToken: result.accessToken, user: result.user }, 201)
+    return c.json(result, 202)
   })
 
-  router.post('/login', zValidator('json', loginSchema), async (c) => {
+  router.post('/login', loginLimiter.middleware, zValidator('json', loginSchema), async (c) => {
     const data = c.req.valid('json')
     const result = await login(data)
-    setCookie(c, COOKIE_NAME, result.refreshToken, {
-      httpOnly: true,
-      path: '/api/auth',
-      sameSite: 'Strict',
-      maxAge: REFRESH_TOKEN_TTL_SECONDS,
-      secure: isProduction,
-    })
+    setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
     return c.json({ accessToken: result.accessToken, user: result.user })
   })
 
@@ -89,13 +84,7 @@ export function makeAuthRouter(
     const rawToken = getCookie(c, COOKIE_NAME)
     if (!rawToken) return c.json({ error: 'Missing refresh token' }, 401)
     const result = await refreshToken(rawToken)
-    setCookie(c, COOKIE_NAME, result.refreshToken, {
-      httpOnly: true,
-      path: '/api/auth',
-      sameSite: 'Strict',
-      maxAge: REFRESH_TOKEN_TTL_SECONDS,
-      secure: isProduction,
-    })
+    setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
     return c.json({ accessToken: result.accessToken })
   })
 
@@ -113,11 +102,19 @@ export function makeAuthRouter(
     return c.json({ user })
   })
 
+  router.get('/verify-email', verifyEmailLimiter.middleware, async (c) => {
+    const token = c.req.query('token')
+    if (!token) return c.json({ error: 'Missing token' }, 400)
+    const result = await verifyEmail(token)
+    setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
+    return c.json({ accessToken: result.accessToken, user: result.user })
+  })
+
   router.get('/google', (c) => {
     const { url, state } = getGoogleAuthUrl()
     setCookie(c, 'oauth_state', state, {
       httpOnly: true,
-      path: '/auth',
+      path: '/',
       sameSite: 'Lax',
       maxAge: 300,
       secure: isProduction,
@@ -125,29 +122,26 @@ export function makeAuthRouter(
     return c.redirect(url)
   })
 
-  router.get('/google/callback', async (c) => {
+  router.get('/google/callback', googleCallbackLimiter.middleware, async (c) => {
     const code = c.req.query('code')
     const state = c.req.query('state')
     const storedState = getCookie(c, 'oauth_state')
 
-    deleteCookie(c, 'oauth_state', { path: '/auth' })
+    deleteCookie(c, 'oauth_state', { path: '/' })
 
-    if (!code) return c.json({ error: 'Missing code' }, 400)
-    if (!state || !storedState || state !== storedState) {
-      return c.json({ error: 'Invalid state' }, 400)
+    if (!code) return c.redirect(`${FRONTEND_URL}/auth/callback?error=auth_failed`)
+    if (!state || !storedState || !safeStringEqual(state, storedState)) {
+      return c.redirect(`${FRONTEND_URL}/auth/callback?error=invalid_state`)
     }
 
-    const result = await googleAuth(code)
-    setCookie(c, COOKIE_NAME, result.refreshToken, {
-      httpOnly: true,
-      path: '/api/auth',
-      sameSite: 'Strict',
-      maxAge: REFRESH_TOKEN_TTL_SECONDS,
-      secure: isProduction,
-    })
-
-    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
-    return c.redirect(`${frontendUrl}/auth/callback#token=${result.accessToken}`)
+    try {
+      const result = await googleAuth(code)
+      setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
+      return c.redirect(`${FRONTEND_URL}/auth/callback#token=${result.accessToken}`)
+    } catch (err) {
+      console.error('Google OAuth callback failed:', err)
+      return c.redirect(`${FRONTEND_URL}/auth/callback?error=auth_failed`)
+    }
   })
 
   return router

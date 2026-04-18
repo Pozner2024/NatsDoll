@@ -9,7 +9,7 @@ vi.mock('../../../shared/lib/tokens', () => ({
   REFRESH_TOKEN_TTL_MS: 2592000000,
 }))
 
-const mockUser = { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'CUSTOMER', googleId: 'g1', passwordHash: null, createdAt: new Date(), updatedAt: new Date() }
+const mockUser = { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'CUSTOMER', googleId: 'g1', passwordHash: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }
 
 function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
   return {
@@ -24,6 +24,11 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     deleteToken: vi.fn(),
     revokeToken: vi.fn(),
     revokeAllUserTokens: vi.fn(),
+    rotateToken: vi.fn(),
+    createEmailVerification: vi.fn(),
+    findEmailVerification: vi.fn(),
+    deleteEmailVerification: vi.fn(),
+    finalizeEmailVerification: vi.fn(),
     ...overrides,
   }
 }

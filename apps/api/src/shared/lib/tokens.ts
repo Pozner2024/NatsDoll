@@ -5,6 +5,7 @@ import { AppError } from '../errors'
 export const ACCESS_TOKEN_TTL = '15m'
 export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000
 export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60
+export const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000
 export const COOKIE_NAME = 'refresh_token'
 
 export type AccessTokenPayload = {

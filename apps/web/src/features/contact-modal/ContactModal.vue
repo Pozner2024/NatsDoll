@@ -122,9 +122,12 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useContactModal } from './useContactModal'
 
-const { isOpen, submitStatus, errorMessage, close, submit } = useContactModal()
+const contactModal = useContactModal()
+const { isOpen, submitStatus, errorMessage } = storeToRefs(contactModal)
+const { close, submit } = contactModal
 const overlayRef = ref<HTMLElement | null>(null)
 
 const form = reactive({ name: '', email: '', message: '' })

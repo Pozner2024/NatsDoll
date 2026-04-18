@@ -13,7 +13,7 @@
           class="auth-modal"
           role="dialog"
           aria-modal="true"
-          :aria-labelledby="mode === 'login' ? 'auth-modal-login-title' : 'auth-modal-register-title'"
+          :aria-labelledby="mode === 'login' ? 'auth-modal-login-title' : mode === 'register' ? 'auth-modal-register-title' : 'auth-modal-verify-title'"
         >
           <button
             class="auth-modal__close"
@@ -25,6 +25,7 @@
 
           <!-- Google OAuth -->
           <button
+            v-if="mode !== 'verify-pending'"
             class="auth-modal__google"
             type="button"
             @click="handleGoogle"
@@ -38,11 +39,23 @@
             Continue with Google
           </button>
 
-          <div class="auth-modal__divider">
+          <div v-if="mode !== 'verify-pending'" class="auth-modal__divider">
             <span>or</span>
           </div>
 
-          <!-- Login form -->
+          <div
+            v-if="mode === 'verify-pending'"
+            class="auth-modal__verify"
+          >
+            <h2 id="auth-modal-verify-title" class="auth-modal__title">Check your email</h2>
+            <p class="auth-modal__verify-text">
+              We've sent a confirmation link to your email address. Please check your inbox and click the link to activate your account.
+            </p>
+            <button type="button" class="auth-modal__switch-btn" @click="open('login')">
+              Back to sign in
+            </button>
+          </div>
+
           <form
             v-if="mode === 'login'"
             class="auth-modal__form"
@@ -95,9 +108,8 @@
             </p>
           </form>
 
-          <!-- Register form -->
           <form
-            v-else
+            v-if="mode === 'register'"
             class="auth-modal__form"
             novalidate
             @submit.prevent="handleRegister"
@@ -168,11 +180,16 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthModal } from './useAuthModal'
 import { useAuthStore } from '@/features/auth'
 
-const { isOpen, mode, open, close } = useAuthModal()
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const authModal = useAuthModal()
+const { isOpen, mode } = storeToRefs(authModal)
+const { open, close, showVerifyPending } = authModal
 const authStore = useAuthStore()
 const router = useRouter()
 
@@ -185,8 +202,6 @@ const loginErrors = reactive({ email: '', password: '' })
 
 const registerForm = reactive({ name: '', email: '', password: '' })
 const registerErrors = reactive({ name: '', email: '', password: '' })
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 watch(isOpen, (open) => {
   if (!open) return
@@ -255,8 +270,7 @@ async function handleRegister() {
   submitError.value = ''
   try {
     await authStore.register({ name: registerForm.name, email: registerForm.email, password: registerForm.password })
-    close()
-    router.push({ name: 'account' })
+    showVerifyPending()
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
   } finally {
@@ -265,6 +279,7 @@ async function handleRegister() {
 }
 
 function handleGoogle() {
+  sessionStorage.setItem('auth_redirect', window.location.pathname)
   window.location.href = '/api/auth/google'
 }
 </script>
@@ -439,6 +454,22 @@ function handleGoogle() {
     text-align: center;
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  &__verify {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  &__verify-text {
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    line-height: 1.6;
     margin: 0;
   }
 

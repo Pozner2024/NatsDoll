@@ -30,9 +30,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from "vue";
+import { ref } from "vue";
 import { BurgerMenu, DesktopNav } from './components'
-import { AppLogo } from '@/shared'
+import { AppLogo, useClickOutside } from '@/shared'
 
 const isOpen = ref(false);
 const headerRef = ref<HTMLElement | null>(null);
@@ -46,21 +46,7 @@ function closeMenu() {
   isOpen.value = false
 }
 
-function handleOutsideClick(event: MouseEvent) {
-  if (
-    isOpen.value &&
-    headerRef.value &&
-    !headerRef.value.contains(event.target as Node)
-  ) {
-    isOpen.value = false;
-  }
-}
-
-watch(isOpen, (open) => {
-  if (open) document.addEventListener('click', handleOutsideClick)
-  else document.removeEventListener('click', handleOutsideClick)
-})
-onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
+useClickOutside(headerRef, isOpen, closeMenu)
 </script>
 
 <style scoped lang="scss">

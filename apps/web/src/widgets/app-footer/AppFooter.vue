@@ -78,7 +78,7 @@ const { open: openContactModal } = useContactModal()
 const navLinks = [
   { label: 'The Shop', to: '/shop' },
   { label: 'The Gallery', to: '/gallery' },
-  { label: 'The Artist', to: '/' },
+  { label: 'The Artist', to: '/#artist' },
   { label: 'FAQ', to: '/#faq' },
 ]
 
@@ -116,12 +116,13 @@ const socialLinks = [
   }
 
   @include desktop {
-    grid-template-columns: 1fr auto auto 1fr;
+    grid-template-columns: 1fr auto auto;
     grid-template-areas:
-      "brand  columns  columns  subscribe"
-      "copy   copy     copy     copy";
+      "subscribe  columns  brand"
+      "copy       copy     copy";
+    column-gap: 4rem;
     row-gap: 2rem;
-    padding: 3rem 2.5rem 1.5rem;
+    padding: 3rem 4rem 1.5rem;
   }
 
   &__subscribe {
@@ -142,6 +143,10 @@ const socialLinks = [
       grid-area: brand;
       text-align: left;
       align-self: start;
+    }
+
+    @include desktop {
+      text-align: right;
     }
   }
 

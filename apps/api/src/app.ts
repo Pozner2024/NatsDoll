@@ -19,6 +19,8 @@ import {
   makeGoogleAuth,
   makeGetGoogleProfile,
   makeAuthRouter,
+  makeVerifyEmail,
+  makeEmailService,
 } from './features/auth'
 
 export function createApp() {
@@ -64,14 +66,16 @@ export function createApp() {
 
   // Auth
   const authRepo = makeAuthRepository(prisma)
-  const register = makeRegister(authRepo)
+  const emailService = makeEmailService()
+  const register = makeRegister(authRepo, emailService)
   const login = makeLogin(authRepo)
   const refreshToken = makeRefreshToken(authRepo)
   const logout = makeLogout(authRepo)
   const getMe = makeGetMe(authRepo)
   const getGoogleProfile = makeGetGoogleProfile()
   const googleAuth = makeGoogleAuth(authRepo, getGoogleProfile)
-  app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe, googleAuth))
+  const verifyEmail = makeVerifyEmail(authRepo)
+  app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe, googleAuth, verifyEmail))
 
   return app
 }

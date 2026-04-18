@@ -51,11 +51,21 @@ function updateVisibleCount() {
     : 1
 }
 
+let resizeTimer: ReturnType<typeof setTimeout> | null = null
+
+function onResize() {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(updateVisibleCount, 150)
+}
+
 onMounted(() => {
   updateVisibleCount()
-  window.addEventListener('resize', updateVisibleCount)
+  window.addEventListener('resize', onResize)
 })
-onUnmounted(() => window.removeEventListener('resize', updateVisibleCount))
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
+  if (resizeTimer) clearTimeout(resizeTimer)
+})
 
 const slideCount = computed(() => Math.max(1, REVIEWS.length - visibleCount.value + 1))
 const { currentIndex, next, prev } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)

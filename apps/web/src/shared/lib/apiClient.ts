@@ -35,7 +35,7 @@ let authCallbacks: {
   clearAuth: () => void
 } | null = null
 
-export function setupAuthInterceptor(cb: typeof authCallbacks & {}) {
+export function setupAuthInterceptor(cb: NonNullable<typeof authCallbacks>) {
   authCallbacks = cb
 }
 

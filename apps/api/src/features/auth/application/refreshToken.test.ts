@@ -30,6 +30,7 @@ const mockUser: User = {
   passwordHash: 'hash',
   googleId: null,
   role: 'CUSTOMER',
+  emailVerified: true,
   createdAt: now,
   updatedAt: now,
 }
@@ -43,9 +44,14 @@ const mockRepo: AuthRepository = {
   deleteToken: vi.fn(),
   revokeToken: vi.fn(),
   revokeAllUserTokens: vi.fn(),
+  rotateToken: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),
   linkGoogleId: vi.fn().mockResolvedValue(null),
   createGoogleUser: vi.fn().mockResolvedValue(null),
+  createEmailVerification: vi.fn(),
+  findEmailVerification: vi.fn(),
+  deleteEmailVerification: vi.fn(),
+  finalizeEmailVerification: vi.fn(),
 }
 
 describe('refreshToken', () => {
@@ -78,17 +84,28 @@ describe('refreshToken', () => {
   it('ротирует токен и возвращает новые токены', async () => {
     vi.mocked(mockRepo.findTokenByHash).mockResolvedValue(validToken)
     vi.mocked(mockRepo.findById).mockResolvedValue(mockUser)
-    vi.mocked(mockRepo.revokeToken).mockResolvedValue(undefined)
-    vi.mocked(mockRepo.saveRefreshToken).mockResolvedValue(undefined)
+    vi.mocked(mockRepo.rotateToken).mockResolvedValue(true)
 
     const refresh = makeRefreshToken(mockRepo)
     const result = await refresh('raw_token')
 
-    expect(mockRepo.revokeToken).toHaveBeenCalledWith('token1')
-    expect(mockRepo.saveRefreshToken).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user1', tokenHash: 'hash_of_new_raw_refresh' })
+    expect(mockRepo.rotateToken).toHaveBeenCalledWith(
+      'token1',
+      expect.objectContaining({ userId: 'user1', tokenHash: 'hash_of_new_raw_refresh' }),
     )
     expect(result.accessToken).toBe('new_access_token')
     expect(result.refreshToken).toBe('new_raw_refresh')
+  })
+
+  it('выбрасывает 401 и отзывает все токены если rotateToken вернул false (race condition)', async () => {
+    vi.mocked(mockRepo.findTokenByHash).mockResolvedValue(validToken)
+    vi.mocked(mockRepo.findById).mockResolvedValue(mockUser)
+    vi.mocked(mockRepo.rotateToken).mockResolvedValue(false)
+    vi.mocked(mockRepo.revokeAllUserTokens).mockResolvedValue(undefined)
+
+    const refresh = makeRefreshToken(mockRepo)
+    await expect(refresh('raw_token'))
+      .rejects.toMatchObject({ statusCode: 401, message: 'Token reuse detected' })
+    expect(mockRepo.revokeAllUserTokens).toHaveBeenCalledWith('user1')
   })
 })

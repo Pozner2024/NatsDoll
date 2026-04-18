@@ -10,6 +10,7 @@ const mockUser: User = {
   passwordHash: 'hash',
   googleId: null,
   role: 'CUSTOMER',
+  emailVerified: true,
   createdAt: new Date(),
   updatedAt: new Date(),
 }
@@ -26,6 +27,11 @@ const mockRepo: AuthRepository = {
   linkGoogleId: vi.fn().mockResolvedValue(null),
   createGoogleUser: vi.fn().mockResolvedValue(null),
   revokeToken: vi.fn().mockResolvedValue(undefined),
+  rotateToken: vi.fn(),
+  createEmailVerification: vi.fn(),
+  findEmailVerification: vi.fn(),
+  deleteEmailVerification: vi.fn(),
+  finalizeEmailVerification: vi.fn(),
 }
 
 describe('getMe', () => {

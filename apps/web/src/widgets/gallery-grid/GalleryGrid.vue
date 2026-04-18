@@ -1,11 +1,6 @@
 <template>
   <section class="gallery-grid" aria-label="Gallery">
-    <div
-      v-if="isLoading"
-      class="gallery-grid__state"
-    >
-      Loading...
-    </div>
+    <GalleryGridSkeleton v-if="isLoading" />
     <div
       v-else-if="hasError"
       class="gallery-grid__state gallery-grid__state--error"
@@ -47,6 +42,7 @@
 import { computed, reactive, watch, onUnmounted } from 'vue'
 import { AppButton } from '@/shared'
 import { useGalleryGrid } from './useGalleryGrid'
+import GalleryGridSkeleton from './GalleryGridSkeleton.vue'
 import { GALLERY_GRID_SIZE } from './galleryApi'
 
 const MIN_DELAY_MS = 1_500

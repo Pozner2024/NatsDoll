@@ -3,7 +3,7 @@ import { google } from 'googleapis'
 import { AppError } from '../../../shared/errors'
 import type { GoogleProfile } from '../application/googleAuth'
 
-function makeOAuth2Client() {
+function getOAuth2Client() {
   const clientId = process.env.GOOGLE_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
   const redirectUri = process.env.GOOGLE_REDIRECT_URI
@@ -14,7 +14,7 @@ function makeOAuth2Client() {
 }
 
 export function getGoogleAuthUrl(): { url: string; state: string } {
-  const client = makeOAuth2Client()
+  const client = getOAuth2Client()
   const state = randomBytes(16).toString('hex')
   const url = client.generateAuthUrl({
     access_type: 'online',
@@ -26,7 +26,7 @@ export function getGoogleAuthUrl(): { url: string; state: string } {
 
 export function makeGetGoogleProfile(): (code: string) => Promise<GoogleProfile> {
   return async function getGoogleProfile(code: string): Promise<GoogleProfile> {
-    const client = makeOAuth2Client()
+    const client = getOAuth2Client()
     const { tokens } = await client.getToken(code)
     client.setCredentials(tokens)
 

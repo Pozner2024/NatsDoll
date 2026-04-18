@@ -10,19 +10,33 @@ datasource db {
 // ─── Users & Auth ────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String?
-  googleId     String?  @unique
-  name         String
-  role         Role     @default(CUSTOMER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String?
+  googleId      String?  @unique
+  name          String
+  role          Role     @default(CUSTOMER)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  cart          Cart?
-  orders        Order[]
-  reviews       Review[]
-  refreshTokens RefreshToken[]
+  cart               Cart?
+  orders             Order[]
+  reviews            Review[]
+  refreshTokens      RefreshToken[]
+  emailVerifications EmailVerification[]
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum Role {

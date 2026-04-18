@@ -1,4 +1,4 @@
-import { ref, watch, onMounted, onUnmounted, isRef } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, isRef } from 'vue'
 import type { Ref } from 'vue'
 
 const MIN_INTERVAL_MS = 100
@@ -14,14 +14,12 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
   const currentIndex = ref(0)
   let timer: ReturnType<typeof setInterval> | null = null
 
-  function getCount() {
-    return isRef(count) ? count.value : count
-  }
+  const total = computed(() => isRef(count) ? count.value : count)
 
   function startTimer() {
     if (intervalMs < MIN_INTERVAL_MS) return
     timer = setInterval(() => {
-      currentIndex.value = (currentIndex.value + 1) % getCount()
+      currentIndex.value = (currentIndex.value + 1) % total.value
     }, intervalMs)
   }
 
@@ -31,18 +29,17 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
   }
 
   function next() {
-    currentIndex.value = (currentIndex.value + 1) % getCount()
+    currentIndex.value = (currentIndex.value + 1) % total.value
     resetTimer()
   }
 
   function prev() {
-    currentIndex.value = (currentIndex.value - 1 + getCount()) % getCount()
+    currentIndex.value = (currentIndex.value - 1 + total.value) % total.value
     resetTimer()
   }
 
   function goTo(index: number) {
-    const total = getCount()
-    if (index < 0 || index >= total) return
+    if (index < 0 || index >= total.value) return
     currentIndex.value = index
     resetTimer()
   }
@@ -56,13 +53,11 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
     if (!timer) startTimer()
   }
 
-  if (isRef(count)) {
-    watch(count, (newCount) => {
-      if (currentIndex.value >= newCount) {
-        currentIndex.value = Math.max(0, newCount - 1)
-      }
-    })
-  }
+  watch(total, (newTotal) => {
+    if (currentIndex.value >= newTotal) {
+      currentIndex.value = Math.max(0, newTotal - 1)
+    }
+  })
 
   onMounted(startTimer)
   onUnmounted(() => {

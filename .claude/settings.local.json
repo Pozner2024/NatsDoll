@@ -100,7 +100,19 @@
       "Bash(taskkill //PID 15016 //F)",
       "Bash(tasklist //FI \"PID eq 4488\")",
       "Bash(tasklist /FI \"PID eq 4488\")",
-      "Bash(taskkill *)"
+      "Bash(taskkill *)",
+      "Bash(awk -F\"'\" '{print NR\": \"length\\($2\\)\" - \"$2}')",
+      "Bash(sort -t: -k2 -n)",
+      "Bash(sed -n '1126,1129p' \"D:/Наташа/NatsDoll/apps/web/src/widgets/reviews-slider/reviews.ts\")",
+      "Bash(sed -n '1749,1752p' \"D:/Наташа/NatsDoll/apps/web/src/widgets/reviews-slider/reviews.ts\")",
+      "Bash(sed -i \"1128s/country: 'United States'/country: 'France'/\" \"D:/Наташа/NatsDoll/apps/web/src/widgets/reviews-slider/reviews.ts\")",
+      "Bash(sed -i \"1751s/country: 'United States'/country: 'Germany'/\" \"D:/Наташа/NatsDoll/apps/web/src/widgets/reviews-slider/reviews.ts\")",
+      "Bash(sed -n '1127,1129p' \"D:/Наташа/NatsDoll/apps/web/src/widgets/reviews-slider/reviews.ts\")",
+      "Bash(sed -n '1750,1752p' \"D:/Наташа/NatsDoll/apps/web/src/widgets/reviews-slider/reviews.ts\")",
+      "Bash(python3 *)",
+      "Bash(sort -t- -k1 -r)",
+      "Bash(git diff *)",
+      "Read(//tmp/**)"
     ]
   }
 }

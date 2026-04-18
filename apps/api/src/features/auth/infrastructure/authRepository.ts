@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient, type User, type RefreshToken } from '@prisma/client'
+import { Prisma, type PrismaClient, type User, type RefreshToken, type EmailVerification } from '@prisma/client'
 
 export type AuthRepository = {
   findByEmail(email: string): Promise<User | null>
@@ -12,6 +12,13 @@ export type AuthRepository = {
   deleteToken(id: string): Promise<void>
   revokeToken(id: string): Promise<void>
   revokeAllUserTokens(userId: string): Promise<void>
+  /** Атомарно отзывает старый токен и создаёт новый. Возвращает false при повторном использовании. */
+  rotateToken(oldId: string, newData: { userId: string; tokenHash: string; expiresAt: Date }): Promise<boolean>
+  createEmailVerification(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
+  findEmailVerification(tokenHash: string): Promise<EmailVerification | null>
+  deleteEmailVerification(id: string): Promise<void>
+  /** Атомарно помечает email верифицированным и удаляет verification-запись. */
+  finalizeEmailVerification(userId: string, verificationId: string): Promise<void>
 }
 
 function handlePrismaError(err: unknown): never {
@@ -70,7 +77,7 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
 
     async createGoogleUser(data) {
       try {
-        return await prisma.user.create({ data })
+        return await prisma.user.create({ data: { ...data, emailVerified: true } })
       } catch (err) {
         return handlePrismaError(err)
       }
@@ -114,6 +121,57 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
     async revokeAllUserTokens(userId) {
       try {
         await prisma.refreshToken.deleteMany({ where: { userId } })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async rotateToken(oldId, newData) {
+      try {
+        return await prisma.$transaction(async (tx) => {
+          const { count } = await tx.refreshToken.updateMany({
+            where: { id: oldId, revokedAt: null },
+            data: { revokedAt: new Date() },
+          })
+          if (count === 0) return false
+          await tx.refreshToken.create({ data: newData })
+          return true
+        })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async createEmailVerification(data) {
+      try {
+        await prisma.emailVerification.create({ data })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async findEmailVerification(tokenHash) {
+      try {
+        return await prisma.emailVerification.findUnique({ where: { tokenHash } })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async deleteEmailVerification(id) {
+      try {
+        await prisma.emailVerification.delete({ where: { id } })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async finalizeEmailVerification(userId, verificationId) {
+      try {
+        await prisma.$transaction([
+          prisma.user.update({ where: { id: userId }, data: { emailVerified: true } }),
+          prisma.emailVerification.delete({ where: { id: verificationId } }),
+        ])
       } catch (err) {
         return handlePrismaError(err)
       }

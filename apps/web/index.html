@@ -8,6 +8,46 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Corinthia:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --color-bg: #fdf6ef;
+        --color-text: #2c1810;
+        --color-accent: #8b5e52;
+        --color-text-muted: #5a3d35;
+        --color-border: #ecddd5;
+
+        /* Button gradient channels (r g b — for use with rgb(var(--x) / alpha)) */
+        --btn-gradient-dark: 160 90 60;
+        --btn-gradient-mid: 232 180 140;
+        --btn-gradient-light: 255 245 225;
+
+        --color-white: #ffffff;
+        --color-error: #c0392b;
+        --color-gold: #d4a017;
+
+        --font-display: 'Playfair Display', serif;
+        --font-brand: 'Corinthia', cursive;
+        --fs-xs: 0.65rem;
+        --fs-sm: 0.8rem;
+        --fs-md: 0.9rem;
+        --fs-base: 1rem;
+        --fs-stars: 1.2rem;
+        --fs-logo: 2rem;
+        --fs-section-heading: 2.2rem;
+
+        --header-height: 45px;
+
+        --z-slider-slide: 0;
+        --z-slider-overlay: calc(var(--z-slider-slide) + 1);
+        --z-slider-controls: calc(var(--z-slider-overlay) + 1);
+        --z-gallery-img-base: 0;
+        --z-gallery-img-top: calc(var(--z-gallery-img-base) + 1);
+        --z-gallery-grid-button: calc(var(--z-gallery-img-top) + 1);
+        --z-header: 10;
+        --z-dropdown: calc(var(--z-header) + 1);
+        --z-modal: calc(var(--z-dropdown) + 1);
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>

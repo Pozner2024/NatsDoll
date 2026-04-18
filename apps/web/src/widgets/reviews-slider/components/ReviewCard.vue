@@ -36,7 +36,7 @@ defineProps<{
 .review-card {
   background: var(--color-bg);
   border-radius: 16px;
-  padding: 1.5rem 1.4rem;
+  padding: 1rem 1.2rem;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -76,9 +76,12 @@ defineProps<{
     font-size: var(--fs-base);
     text-align: justify;
     line-height: 1.6;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: var(--color-text);
-    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   &__footer {

@@ -1,5 +1,5 @@
 <template>
-  <section class="faq-section">
+  <section id="faq" class="faq-section">
     <div class="faq-section__header">
       <span class="faq-section__tag">FAQ</span>
       <h2 class="faq-section__title">
@@ -10,7 +10,7 @@
     <div class="faq-section__columns">
       <ul
         v-for="(col, colIndex) in columns"
-        :key="colIndex"
+        :key="colIndex === 0 ? 'col-left' : 'col-right'"
         class="faq-section__list"
       >
         <li
@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { FAQ_ITEMS } from './faq'
 
 const openId = ref<number | null>(null)
@@ -58,10 +58,7 @@ function toggle(id: number) {
 }
 
 const half = Math.ceil(FAQ_ITEMS.length / 2)
-const columns = computed(() => [
-  FAQ_ITEMS.slice(0, half),
-  FAQ_ITEMS.slice(half),
-])
+const columns = [FAQ_ITEMS.slice(0, half), FAQ_ITEMS.slice(half)]
 </script>
 
 <style scoped lang="scss">
@@ -82,7 +79,7 @@ const columns = computed(() => [
 
   @include desktop {
     max-width: 1400px;
-    padding: 3rem 0;
+    padding: 3rem 4rem;
   }
 
   &__header {

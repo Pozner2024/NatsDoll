@@ -75,20 +75,49 @@
 
       <button
         class="burger-menu__item burger-menu__item--btn"
-        @click="() => { openContactModal(); closeMenu() }"
+        @click="handleContactClick"
       >
         Contact
       </button>
 
       <template v-if="authStore.isLoggedIn">
-        <RouterLink
-          to="/account"
-          class="burger-menu__item"
-          exact-active-class="burger-menu__item--active"
-          @click="closeMenu"
-        >
-          My account
-        </RouterLink>
+        <template v-if="authStore.user?.role === 'ADMIN'">
+          <RouterLink
+            to="/account"
+            class="burger-menu__item"
+            exact-active-class="burger-menu__item--active"
+            @click="closeMenu"
+          >
+            My account
+          </RouterLink>
+        </template>
+        <template v-else>
+          <RouterLink
+            to="/account"
+            class="burger-menu__item burger-menu__item--profile"
+            exact-active-class="burger-menu__item--active"
+            @click="closeMenu"
+          >
+            <span class="burger-menu__item-name">{{ authStore.user?.name }}</span>
+            <span class="burger-menu__item-hint">View my account</span>
+          </RouterLink>
+          <RouterLink
+            to="/account/purchases"
+            class="burger-menu__item"
+            exact-active-class="burger-menu__item--active"
+            @click="closeMenu"
+          >
+            Purchases & reviews
+          </RouterLink>
+          <RouterLink
+            to="/account/messages"
+            class="burger-menu__item"
+            exact-active-class="burger-menu__item--active"
+            @click="closeMenu"
+          >
+            Messages
+          </RouterLink>
+        </template>
         <button
           class="burger-menu__item burger-menu__item--btn"
           @click="handleLogout"
@@ -135,6 +164,7 @@ const emit = defineEmits<{
 }>();
 
 const route = useRoute();
+const router = useRouter();
 const shopOpen = ref(false);
 const navRef = ref<HTMLElement | null>(null);
 
@@ -156,6 +186,11 @@ function closeMenu() {
   emit("close");
 }
 
+function handleContactClick() {
+  openContactModal()
+  closeMenu()
+}
+
 function toggleShop() {
   shopOpen.value = !shopOpen.value
 }
@@ -168,6 +203,7 @@ function handleAuthClick() {
 async function handleLogout() {
   closeMenu()
   await authStore.logout()
+  router.push({ name: 'home' })
 }
 
 </script>
@@ -253,6 +289,23 @@ async function handleLogout() {
       }
     }
 
+    &--profile {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+  }
+
+  &__item-name {
+    font-size: var(--fs-base);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  &__item-hint {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
   }
 
   &__chevron {

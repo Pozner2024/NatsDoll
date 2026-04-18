@@ -32,12 +32,15 @@ export function makeRefreshToken(repo: AuthRepository) {
     const user = await repo.findById(stored.userId)
     if (!user) throw new AppError(401, 'User not found')
 
-    await repo.revokeToken(stored.id)
-
     const newRawToken = generateRefreshToken()
     const newTokenHash = hashToken(newRawToken)
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-    await repo.saveRefreshToken({ userId: user.id, tokenHash: newTokenHash, expiresAt })
+
+    const rotated = await repo.rotateToken(stored.id, { userId: user.id, tokenHash: newTokenHash, expiresAt })
+    if (!rotated) {
+      await repo.revokeAllUserTokens(stored.userId)
+      throw new AppError(401, 'Token reuse detected')
+    }
 
     const accessToken = await signAccessToken({ sub: user.id, role: user.role })
 

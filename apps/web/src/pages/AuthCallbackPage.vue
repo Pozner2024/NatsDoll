@@ -1,5 +1,6 @@
 <template>
   <div class="auth-callback">
+    <p v-if="!failed && !done">Completing sign in...</p>
     <p v-if="failed">
       Authentication failed.
       <RouterLink to="/">Go home</RouterLink>
@@ -15,13 +16,21 @@ import { useAuthStore } from '@/features/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 const failed = ref(false)
+const done = ref(false)
 
 onMounted(async () => {
+  const searchParams = new URLSearchParams(window.location.search)
+  if (searchParams.get('error')) {
+    history.replaceState(null, '', window.location.pathname)
+    sessionStorage.removeItem('auth_redirect')
+    failed.value = true
+    return
+  }
+
   const hash = window.location.hash
   const match = hash.match(/[#&]token=([^&]+)/)
   const token = match ? match[1] : null
 
-  // Немедленно очистить hash из URL
   history.replaceState(null, '', window.location.pathname)
 
   if (!token) {
@@ -30,9 +39,13 @@ onMounted(async () => {
   }
   await authStore.loginWithToken(token)
   if (authStore.isLoggedIn) {
-    router.replace({ name: 'account' })
+    const stored = sessionStorage.getItem('auth_redirect')
+    sessionStorage.removeItem('auth_redirect')
+    const isSafe = !!stored && stored.startsWith('/') && !stored.startsWith('//')
+    router.replace(isSafe ? stored : '/')
   } else {
     failed.value = true
   }
+  done.value = true
 })
 </script>

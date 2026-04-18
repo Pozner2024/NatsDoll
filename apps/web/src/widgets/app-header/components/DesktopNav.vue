@@ -107,22 +107,43 @@
           v-if="profileOpen"
           class="desktop-nav__submenu"
         >
-          <RouterLink
-            to="/account"
-            class="desktop-nav__sublink"
-            exact-active-class="desktop-nav__sublink--active"
-            @click="profileOpen = false"
-          >
-            My profile
-          </RouterLink>
-          <RouterLink
-            to="/account/orders"
-            class="desktop-nav__sublink"
-            exact-active-class="desktop-nav__sublink--active"
-            @click="profileOpen = false"
-          >
-            Orders
-          </RouterLink>
+          <template v-if="authStore.user?.role === 'ADMIN'">
+            <RouterLink
+              to="/account"
+              class="desktop-nav__sublink"
+              exact-active-class="desktop-nav__sublink--active"
+              @click="profileOpen = false"
+            >
+              My account
+            </RouterLink>
+          </template>
+          <template v-else>
+            <RouterLink
+              to="/account"
+              class="desktop-nav__sublink desktop-nav__sublink--profile"
+              exact-active-class="desktop-nav__sublink--active"
+              @click="profileOpen = false"
+            >
+              <span class="desktop-nav__sublink-name">{{ authStore.user?.name }}</span>
+              <span class="desktop-nav__sublink-hint">View my account</span>
+            </RouterLink>
+            <RouterLink
+              to="/account/purchases"
+              class="desktop-nav__sublink"
+              exact-active-class="desktop-nav__sublink--active"
+              @click="profileOpen = false"
+            >
+              Purchases & reviews
+            </RouterLink>
+            <RouterLink
+              to="/account/messages"
+              class="desktop-nav__sublink"
+              exact-active-class="desktop-nav__sublink--active"
+              @click="profileOpen = false"
+            >
+              Messages
+            </RouterLink>
+          </template>
           <button
             class="desktop-nav__sublink desktop-nav__sublink--btn"
             @click="handleLogout"
@@ -136,7 +157,7 @@
     <button
       v-else
       class="desktop-nav__link desktop-nav__link--btn"
-      @click="openAuthModal"
+      @click="openAuthModal()"
     >
       Login
     </button>
@@ -146,13 +167,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { navItems, shopCategories, homeItem } from '../navigationConfig'
 import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
 import { useAuthStore } from '@/features/auth'
+import { useClickOutside } from '@/shared'
 
 const { open: openContactModal } = useContactModal()
 const { open: openAuthModal } = useAuthModal()
@@ -167,13 +189,6 @@ const profileDropdownRef = ref<HTMLElement | null>(null)
 
 function closeShop() {
   shopOpen.value = false
-}
-
-function handleDocumentClick(event: MouseEvent) {
-  if (!shopOpen.value) return
-  const el = dropdownRef.value
-  if (!el) return
-  if (!el.contains(event.target as Node)) closeShop()
 }
 
 function onDropdownFocusOut(e: FocusEvent) {
@@ -192,17 +207,13 @@ function onProfileFocusOut(e: FocusEvent) {
   if (!next || !el.contains(next)) profileOpen.value = false
 }
 
-watch(shopOpen, (open) => {
-  if (open) document.addEventListener('click', handleDocumentClick)
-  else document.removeEventListener('click', handleDocumentClick)
-})
-
-onUnmounted(() => document.removeEventListener('click', handleDocumentClick))
+useClickOutside(dropdownRef, shopOpen, closeShop)
+useClickOutside(profileDropdownRef, profileOpen, () => { profileOpen.value = false })
 
 async function handleLogout() {
   profileOpen.value = false
   await authStore.logout()
-  router.push({ name: 'home' })
+  await router.push({ name: 'home' })
 }
 </script>
 
@@ -277,6 +288,15 @@ async function handleLogout() {
     z-index: var(--z-dropdown);
     display: flex;
     flex-direction: column;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -0.5rem;
+      left: 0;
+      right: 0;
+      height: 0.5rem;
+    }
   }
 
   &__sublink {
@@ -304,6 +324,26 @@ async function handleLogout() {
       border: none;
       text-align: left;
     }
+
+    &--profile {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+  }
+
+  &__sublink-name {
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+
+  &__sublink-hint {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
   }
 }
 

@@ -37,6 +37,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/AuthCallbackPage.vue'),
   },
   {
+    path: '/verify-email',
+    name: 'verify-email',
+    component: () => import('@/pages/VerifyEmailPage.vue'),
+  },
+  {
     path: '/shop/:category?',
     name: 'shop',
     component: () => import('@/pages/ShopPage.vue'),
@@ -45,7 +50,11 @@ const routes: RouteRecordRaw[] = [
 
 const router = createRouter({
   history: createWebHistory(),
-  scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
+  scrollBehavior: (to, _from, savedPosition) => {
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    return { top: 0 }
+  },
   routes,
 })
 

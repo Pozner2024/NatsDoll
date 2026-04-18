@@ -2,13 +2,13 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { z } from 'zod'
 import type { User } from './types'
-import { apiFetch, apiErrorMessage, setupAuthInterceptor } from '@/shared'
+import { apiFetch, apiErrorMessage } from '@/shared'
 
 const userSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
-  role: z.string(),
+  role: z.enum(['CUSTOMER', 'ADMIN']),
 })
 
 const authResponseSchema = z.object({
@@ -32,11 +32,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   let initPromise: Promise<void> | null = null
 
-  setupAuthInterceptor({
-    getAccessToken: () => accessToken.value,
-    setAccessToken: (token: string) => { accessToken.value = token },
-    clearAuth: () => { accessToken.value = null; user.value = null },
-  })
+  function setAccessToken(token: string) {
+    accessToken.value = token
+  }
 
   async function login(data: { email: string; password: string }): Promise<void> {
     const res = await apiFetch('/auth/login', { method: 'POST', json: data })
@@ -46,12 +44,10 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = body.user
   }
 
-  async function register(data: { name: string; email: string; password: string }): Promise<void> {
+  async function register(data: { name: string; email: string; password: string }): Promise<'pending'> {
     const res = await apiFetch('/auth/register', { method: 'POST', json: data })
     if (!res.ok) throw new Error(await apiErrorMessage(res, 'Registration failed'))
-    const body = authResponseSchema.parse(await res.json())
-    accessToken.value = body.accessToken
-    user.value = body.user
+    return 'pending'
   }
 
   async function logout(): Promise<void> {
@@ -89,6 +85,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function loginWithToken(token: string): Promise<void> {
+    initPromise = _doLoginWithToken(token)
+    return initPromise
+  }
+
+  async function _doLoginWithToken(token: string): Promise<void> {
     accessToken.value = token
     try {
       const meRes = await apiFetch('/auth/me', { accessToken: token })
@@ -115,5 +116,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     initAuth,
     loginWithToken,
+    setAccessToken,
   }
 })

@@ -1,5 +1,5 @@
 <template>
-  <section class="artist-section">
+  <section id="artist" class="artist-section">
     <div class="artist-section__header">
       <img
         class="artist-section__photo"
