@@ -32,6 +32,7 @@ services:
       YANDEX_S3_ENDPOINT: ${YANDEX_S3_ENDPOINT}
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY}
     depends_on:
       db:
         condition: service_healthy
