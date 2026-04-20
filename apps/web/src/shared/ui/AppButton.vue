@@ -36,7 +36,7 @@ defineProps<{
   display: inline-block;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: var(--fs-md);
+  font-size: var(--fs-base);
   color: var(--color-text);
   padding: 0.6rem 2rem;
   text-decoration: none;
