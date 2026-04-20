@@ -112,7 +112,8 @@
       "Bash(python3 *)",
       "Bash(sort -t- -k1 -r)",
       "Bash(git diff *)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(tr '\\\\\\\\' '\\\\n')"
     ]
   }
 }

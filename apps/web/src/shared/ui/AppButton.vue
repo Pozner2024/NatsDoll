@@ -36,11 +36,11 @@ defineProps<{
   display: inline-block;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   color: var(--color-text);
   padding: 0.6rem 2rem;
   text-decoration: none;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   background: none;
   transition: background-color 0.3s ease;
