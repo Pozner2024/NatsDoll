@@ -14,6 +14,8 @@ import { GALLERY_GRID_SIZE } from './galleryApi'
 
 <style scoped lang="scss">
 .gallery-skeleton {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(15, 1fr);
