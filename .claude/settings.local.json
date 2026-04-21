@@ -113,7 +113,8 @@
       "Bash(sort -t- -k1 -r)",
       "Bash(git diff *)",
       "Read(//tmp/**)",
-      "Bash(tr '\\\\\\\\' '\\\\n')"
+      "Bash(tr '\\\\\\\\' '\\\\n')",
+      "Bash(notebooklm list *)"
     ]
   }
 }

@@ -23,13 +23,15 @@ RUN apk add --no-cache tini \
   && addgroup -S appgroup \
   && adduser -S appuser -G appgroup
 
-# Copy pre-built node_modules from builder to avoid re-running npm ci
-# and to preserve Prisma-generated client (native binaries + JS wrapper)
-COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --chown=appuser:appgroup package*.json ./
+COPY --chown=appuser:appgroup apps/api/package.json ./apps/api/
+RUN npm ci --omit=dev
+
+# Copy Prisma-generated client (native binaries compiled in builder stage)
+COPY --from=builder --chown=appuser:appgroup /app/node_modules/.prisma ./node_modules/.prisma
+
 COPY --from=builder --chown=appuser:appgroup /app/apps/api/dist ./apps/api/dist
 COPY --chown=appuser:appgroup apps/api/prisma ./apps/api/prisma
-COPY --chown=appuser:appgroup package.json ./
-COPY --chown=appuser:appgroup apps/api/package.json ./apps/api/
 
 USER appuser
 

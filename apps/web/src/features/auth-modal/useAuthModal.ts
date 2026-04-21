@@ -1,3 +1,6 @@
+// **`useAuthModal.ts`**: Маленький «пульт управления» (Pinia store) для этого окна. Он хранит всего две вещи: 
+// **открыта ли модалка** и **какой режим** сейчас активен (логин, регистрация или ожидание подтверждения почты).
+// Также он блокирует прокрутку сайта, когда окно открыто.
 import { defineStore } from 'pinia'
 import { ref, watch, readonly } from 'vue'
 import { lockScroll, unlockScroll } from '@/shared'

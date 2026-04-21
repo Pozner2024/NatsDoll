@@ -92,7 +92,7 @@ const socialLinks = [
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .app-footer {
   width: 100%;

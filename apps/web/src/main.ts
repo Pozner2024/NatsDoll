@@ -16,7 +16,7 @@ const authStore = useAuthStore()
 setupAuthInterceptor({
   getAccessToken: () => authStore.accessToken,
   setAccessToken: (token) => authStore.setAccessToken(token),
-  clearAuth: () => authStore.logout(),
+  clearAuth: () => authStore.clearState(),
 })
 
 app.mount('#app')

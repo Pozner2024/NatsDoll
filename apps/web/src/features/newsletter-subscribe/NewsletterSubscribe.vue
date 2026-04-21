@@ -56,7 +56,7 @@ const { email, state, errorMessage, handleSubmit } = useNewsletterSubscribe()
 
 <style scoped lang="scss">
 @use '@/shared/lib/animated-border' as *;
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .newsletter-subscribe {
   &__title {

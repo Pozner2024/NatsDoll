@@ -32,7 +32,12 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     await repo.createEmailVerification({ userId: user.id, tokenHash, expiresAt })
 
     const verificationUrl = `${FRONTEND_URL}/verify-email?token=${rawToken}`
-    await emailService.sendVerificationEmail(user.email, verificationUrl)
+    try {
+      await emailService.sendVerificationEmail(user.email, verificationUrl)
+    } catch (err) {
+      console.error('Failed to send verification email to', user.email, err)
+      throw new AppError(500, 'Failed to send verification email. Please try again later.')
+    }
 
     return { message: 'Check your email to verify your account' }
   }

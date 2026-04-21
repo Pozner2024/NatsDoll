@@ -1,22 +1,12 @@
 import { verify } from '@node-rs/argon2'
 import type { AuthRepository } from '../infrastructure/authRepository'
-import {
-  signAccessToken,
-  generateRefreshToken,
-  hashToken,
-  REFRESH_TOKEN_TTL_MS,
-} from '../../../shared/lib/tokens'
 import { AppError } from '../../../shared/errors'
+import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 
 type LoginData = { email: string; password: string }
-type LoginResult = {
-  accessToken: string
-  refreshToken: string
-  user: { id: string; name: string; email: string; role: string }
-}
 
 export function makeLogin(repo: AuthRepository) {
-  return async function login(data: LoginData): Promise<LoginResult> {
+  return async function login(data: LoginData): Promise<AuthTokensResult> {
     const user = await repo.findByEmail(data.email)
     if (!user) throw new AppError(401, 'Invalid credentials')
     if (!user.passwordHash) throw new AppError(401, 'Use Google login')
@@ -26,17 +16,6 @@ export function makeLogin(repo: AuthRepository) {
 
     if (!user.emailVerified) throw new AppError(403, 'Please verify your email before signing in')
 
-    const rawRefreshToken = generateRefreshToken()
-    const tokenHash = hashToken(rawRefreshToken)
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-    await repo.saveRefreshToken({ userId: user.id, tokenHash, expiresAt })
-
-    const accessToken = await signAccessToken({ sub: user.id, role: user.role })
-
-    return {
-      accessToken,
-      refreshToken: rawRefreshToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-    }
+    return issueTokensForUser(repo, user)
   }
 }

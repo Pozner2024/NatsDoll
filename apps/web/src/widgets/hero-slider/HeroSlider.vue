@@ -69,7 +69,7 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .hero-slider {
   position: relative;

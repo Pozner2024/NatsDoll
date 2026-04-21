@@ -34,20 +34,18 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { useSlider } from '@/shared'
+import { useSlider, MEDIA } from '@/shared'
 import { ReviewCard } from './components'
 import { REVIEWS } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD_PX = 40
-const TABLET_QUERY = '(min-width: 768px)'
-const DESKTOP_QUERY = '(min-width: 1200px)'
 
 const visibleCount = ref(1)
 
 function updateVisibleCount() {
-  visibleCount.value = window.matchMedia(DESKTOP_QUERY).matches ? 3
-    : window.matchMedia(TABLET_QUERY).matches ? 2
+  visibleCount.value = window.matchMedia(MEDIA.desktop).matches ? 3
+    : window.matchMedia(MEDIA.tablet).matches ? 2
     : 1
 }
 
@@ -90,7 +88,7 @@ function onTouchEnd(e: TouchEvent) {
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .reviews-slider {
   width: 100%;

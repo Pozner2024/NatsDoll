@@ -37,6 +37,10 @@ export function makeGetGoogleProfile(): (code: string) => Promise<GoogleProfile>
       throw new AppError(400, 'Incomplete Google profile')
     }
 
-    return { googleId: data.id, email: data.email, name: data.name }
+    if (!data.verified_email) {
+      throw new AppError(400, 'Google account email is not verified')
+    }
+
+    return { googleId: data.id, email: data.email, name: data.name, emailVerified: true }
   }
 }

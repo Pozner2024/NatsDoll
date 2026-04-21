@@ -62,7 +62,7 @@ const columns = [FAQ_ITEMS.slice(0, half), FAQ_ITEMS.slice(half)]
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .faq-section {
   width: 100%;

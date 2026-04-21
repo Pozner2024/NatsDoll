@@ -57,6 +57,7 @@ lerna-debug.log*
 /coverage
 test-results/
 playwright-report/
+.playwright-mcp/
 
 # TypeScript incremental build artifacts
 *.tsbuildinfo
@@ -170,14 +171,13 @@ if __name__ == "__main__":
   "name": "@natsdoll/api",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "main": "./dist/index.js",
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc",
+    "build": "tsup src/main.ts --format cjs --out-dir dist --no-splitting",
     "start": "node dist/main.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -198,6 +198,7 @@ if __name__ == "__main__":
   "devDependencies": {
     "@types/node": "^20.10.6",
     "prisma": "^6.6.0",
+    "tsup": "^8.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vitest": "^2.0.0"
@@ -846,7 +847,7 @@ export function createApp() {
   app.use('*', cors({
     origin: frontendOrigin,
     credentials: true,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   }))
 
@@ -1054,24 +1055,13 @@ describe('googleAuth', () => {
 
 === apps/api/src/features/auth/application/googleAuth.ts ===
 import type { AuthRepository } from '../infrastructure/authRepository'
-import {
-  signAccessToken,
-  generateRefreshToken,
-  hashToken,
-  REFRESH_TOKEN_TTL_MS,
-} from '../../../shared/lib/tokens'
+import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 
-export type GoogleProfile = { googleId: string; email: string; name: string }
+export type GoogleProfile = { googleId: string; email: string; name: string; emailVerified: boolean }
 export type GetGoogleProfile = (code: string) => Promise<GoogleProfile>
 
-type GoogleAuthResult = {
-  accessToken: string
-  refreshToken: string
-  user: { id: string; name: string; email: string; role: string }
-}
-
 export function makeGoogleAuth(repo: AuthRepository, getGoogleProfile: GetGoogleProfile) {
-  return async function googleAuth(code: string): Promise<GoogleAuthResult> {
+  return async function googleAuth(code: string): Promise<AuthTokensResult> {
     const profile = await getGoogleProfile(code)
 
     let user = await repo.findByGoogleId(profile.googleId)
@@ -1089,18 +1079,34 @@ export function makeGoogleAuth(repo: AuthRepository, getGoogleProfile: GetGoogle
       }
     }
 
-    const rawRefreshToken = generateRefreshToken()
-    const tokenHash = hashToken(rawRefreshToken)
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-    await repo.saveRefreshToken({ userId: user.id, tokenHash, expiresAt })
+    return issueTokensForUser(repo, user)
+  }
+}
 
-    const accessToken = await signAccessToken({ sub: user.id, role: user.role })
 
-    return {
-      accessToken,
-      refreshToken: rawRefreshToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-    }
+=== apps/api/src/features/auth/application/issueTokens.ts ===
+import type { User } from '@prisma/client'
+import { signAccessToken, generateRefreshToken, hashToken, REFRESH_TOKEN_TTL_MS } from '../../../shared/lib/tokens'
+import type { AuthRepository } from '../infrastructure/authRepository'
+
+export type AuthTokensResult = {
+  accessToken: string
+  refreshToken: string
+  user: { id: string; name: string; email: string; role: string }
+}
+
+export async function issueTokensForUser(repo: AuthRepository, user: User): Promise<AuthTokensResult> {
+  const rawRefreshToken = generateRefreshToken()
+  const tokenHash = hashToken(rawRefreshToken)
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+  await repo.saveRefreshToken({ userId: user.id, tokenHash, expiresAt })
+
+  const accessToken = await signAccessToken({ sub: user.id, role: user.role })
+
+  return {
+    accessToken,
+    refreshToken: rawRefreshToken,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
   }
 }
 
@@ -1207,23 +1213,13 @@ describe('login', () => {
 === apps/api/src/features/auth/application/login.ts ===
 import { verify } from '@node-rs/argon2'
 import type { AuthRepository } from '../infrastructure/authRepository'
-import {
-  signAccessToken,
-  generateRefreshToken,
-  hashToken,
-  REFRESH_TOKEN_TTL_MS,
-} from '../../../shared/lib/tokens'
 import { AppError } from '../../../shared/errors'
+import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 
 type LoginData = { email: string; password: string }
-type LoginResult = {
-  accessToken: string
-  refreshToken: string
-  user: { id: string; name: string; email: string; role: string }
-}
 
 export function makeLogin(repo: AuthRepository) {
-  return async function login(data: LoginData): Promise<LoginResult> {
+  return async function login(data: LoginData): Promise<AuthTokensResult> {
     const user = await repo.findByEmail(data.email)
     if (!user) throw new AppError(401, 'Invalid credentials')
     if (!user.passwordHash) throw new AppError(401, 'Use Google login')
@@ -1233,18 +1229,7 @@ export function makeLogin(repo: AuthRepository) {
 
     if (!user.emailVerified) throw new AppError(403, 'Please verify your email before signing in')
 
-    const rawRefreshToken = generateRefreshToken()
-    const tokenHash = hashToken(rawRefreshToken)
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-    await repo.saveRefreshToken({ userId: user.id, tokenHash, expiresAt })
-
-    const accessToken = await signAccessToken({ sub: user.id, role: user.role })
-
-    return {
-      accessToken,
-      refreshToken: rawRefreshToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-    }
+    return issueTokensForUser(repo, user)
   }
 }
 
@@ -1642,7 +1627,12 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     await repo.createEmailVerification({ userId: user.id, tokenHash, expiresAt })
 
     const verificationUrl = `${FRONTEND_URL}/verify-email?token=${rawToken}`
-    await emailService.sendVerificationEmail(user.email, verificationUrl)
+    try {
+      await emailService.sendVerificationEmail(user.email, verificationUrl)
+    } catch (err) {
+      console.error('Failed to send verification email to', user.email, err)
+      throw new AppError(500, 'Failed to send verification email. Please try again later.')
+    }
 
     return { message: 'Check your email to verify your account' }
   }
@@ -1651,22 +1641,12 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
 
 === apps/api/src/features/auth/application/verifyEmail.ts ===
 import type { AuthRepository } from '../infrastructure/authRepository'
-import {
-  signAccessToken,
-  generateRefreshToken,
-  hashToken,
-  REFRESH_TOKEN_TTL_MS,
-} from '../../../shared/lib/tokens'
+import { hashToken } from '../../../shared/lib/tokens'
 import { AppError } from '../../../shared/errors'
-
-type VerifyResult = {
-  accessToken: string
-  refreshToken: string
-  user: { id: string; name: string; email: string; role: string }
-}
+import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 
 export function makeVerifyEmail(repo: AuthRepository) {
-  return async function verifyEmail(rawToken: string): Promise<VerifyResult> {
+  return async function verifyEmail(rawToken: string): Promise<AuthTokensResult> {
     const tokenHash = hashToken(rawToken)
     const verification = await repo.findEmailVerification(tokenHash)
 
@@ -1682,18 +1662,7 @@ export function makeVerifyEmail(repo: AuthRepository) {
 
     await repo.finalizeEmailVerification(user.id, verification.id)
 
-    const rawRefreshToken = generateRefreshToken()
-    const refreshTokenHash = hashToken(rawRefreshToken)
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-    await repo.saveRefreshToken({ userId: user.id, tokenHash: refreshTokenHash, expiresAt })
-
-    const accessToken = await signAccessToken({ sub: user.id, role: user.role })
-
-    return {
-      accessToken,
-      refreshToken: rawRefreshToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-    }
+    return issueTokensForUser(repo, user)
   }
 }
 
@@ -1714,7 +1683,8 @@ export { makeEmailService } from './infrastructure/emailService'
 
 
 === apps/api/src/features/auth/infrastructure/authRepository.ts ===
-import { Prisma, type PrismaClient, type User, type RefreshToken, type EmailVerification } from '@prisma/client'
+import { type PrismaClient, type User, type RefreshToken, type EmailVerification } from '@prisma/client'
+import { handlePrismaError } from '../../../shared/infrastructure'
 
 export type AuthRepository = {
   findByEmail(email: string): Promise<User | null>
@@ -1735,18 +1705,6 @@ export type AuthRepository = {
   deleteEmailVerification(id: string): Promise<void>
   /** Атомарно помечает email верифицированным и удаляет verification-запись. */
   finalizeEmailVerification(userId: string, verificationId: string): Promise<void>
-}
-
-function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    console.error('Prisma known error:', { code: err.code, meta: err.meta })
-    throw new Error('Database error', { cause: err })
-  }
-  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-    console.error('Prisma unknown error:', err.message)
-    throw new Error('Database error', { cause: err })
-  }
-  throw err
 }
 
 export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
@@ -1966,7 +1924,11 @@ export function makeGetGoogleProfile(): (code: string) => Promise<GoogleProfile>
       throw new AppError(400, 'Incomplete Google profile')
     }
 
-    return { googleId: data.id, email: data.email, name: data.name }
+    if (!data.verified_email) {
+      throw new AppError(400, 'Google account email is not verified')
+    }
+
+    return { googleId: data.id, email: data.email, name: data.name, emailVerified: true }
   }
 }
 
@@ -2034,7 +1996,7 @@ describe('GET /api/auth/google', () => {
 describe('GET /api/auth/google/callback', () => {
   const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
 
-  it('редиректит с токеном в hash при успехе', async () => {
+  it('редиректит на /auth/callback и устанавливает refresh cookie при успехе', async () => {
     const { app } = makeApp()
     const res = await app.request(
       'http://localhost/api/auth/google/callback?code=valid_code&state=mock_state',
@@ -2042,9 +2004,9 @@ describe('GET /api/auth/google/callback', () => {
     )
 
     expect(res.status).toBe(302)
-    const location = res.headers.get('location') ?? ''
-    expect(location).toContain('/auth/callback#token=')
-    expect(location).toContain('access_tok')
+    expect(res.headers.get('location')).toBe(`${frontendUrl}/auth/callback`)
+    const setCookieHeader = res.headers.get('set-cookie') ?? ''
+    expect(setCookieHeader).toContain('refresh_token=refresh_tok')
   })
 
   it('редиректит с ?error=invalid_state при несовпадении state', async () => {
@@ -2111,7 +2073,6 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
-import { timingSafeEqual } from 'node:crypto'
 import { requireAuth } from '../../../shared/middleware/requireAuth'
 import { createRateLimiter } from '../../../shared/middleware/rateLimit'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
@@ -2121,7 +2082,7 @@ import { FRONTEND_URL } from '../../../shared/lib/config'
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(1).max(128),
+  password: z.string().min(8).max(128),
 })
 
 const loginSchema = z.object({
@@ -2133,7 +2094,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  path: '/api/auth',
+  path: '/',
   sameSite: 'Strict',
   maxAge: REFRESH_TOKEN_TTL_SECONDS,
   secure: isProduction,
@@ -2146,13 +2107,6 @@ const loginLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const registerLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
 const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
-
-function safeStringEqual(a: string, b: string): boolean {
-  const aBuf = Buffer.from(a)
-  const bBuf = Buffer.from(b)
-  if (aBuf.length !== bBuf.length) return false
-  return timingSafeEqual(aBuf, bBuf)
-}
 
 type AuthUser = { id: string; name: string; email: string; role: string }
 type AuthTokens = { accessToken: string; refreshToken: string; user: AuthUser }
@@ -2200,7 +2154,7 @@ export function makeAuthRouter(
   router.post('/logout', async (c) => {
     const rawToken = getCookie(c, COOKIE_NAME) ?? ''
     await logout(rawToken)
-    deleteCookie(c, COOKIE_NAME, { path: '/api/auth' })
+    deleteCookie(c, COOKIE_NAME, { path: '/' })
     return c.body(null, 204)
   })
 
@@ -2239,14 +2193,14 @@ export function makeAuthRouter(
     deleteCookie(c, 'oauth_state', { path: '/' })
 
     if (!code) return c.redirect(`${FRONTEND_URL}/auth/callback?error=auth_failed`)
-    if (!state || !storedState || !safeStringEqual(state, storedState)) {
+    if (!state || !storedState || state !== storedState) {
       return c.redirect(`${FRONTEND_URL}/auth/callback?error=invalid_state`)
     }
 
     try {
       const result = await googleAuth(code)
       setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
-      return c.redirect(`${FRONTEND_URL}/auth/callback#token=${result.accessToken}`)
+      return c.redirect(`${FRONTEND_URL}/auth/callback`)
     } catch (err) {
       console.error('Google OAuth callback failed:', err)
       return c.redirect(`${FRONTEND_URL}/auth/callback?error=auth_failed`)
@@ -2299,22 +2253,11 @@ export { makeContactRouter } from './presentation/contactRoutes'
 
 
 === apps/api/src/features/contact/infrastructure/contactRepository.ts ===
-import { Prisma, type PrismaClient } from '@prisma/client'
+import { type PrismaClient } from '@prisma/client'
+import { handlePrismaError } from '../../../shared/infrastructure'
 
 export type ContactRepository = {
   create(data: { name: string; email: string; message: string }): Promise<void>
-}
-
-function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    console.error('Prisma known error:', { code: err.code, meta: err.meta })
-    throw new Error('Database error')
-  }
-  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-    console.error('Prisma unknown error:', err.message)
-    throw new Error('Database error')
-  }
-  throw err
 }
 
 export function makeContactRepository(prisma: PrismaClient): ContactRepository {
@@ -2399,6 +2342,7 @@ describe('POST /api/contact', () => {
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
+import { createRateLimiter } from '../../../shared/middleware/rateLimit'
 
 const contactBodySchema = z.object({
   name: z.string().min(1).max(100),
@@ -2406,45 +2350,14 @@ const contactBodySchema = z.object({
   message: z.string().min(1).max(5000),
 })
 
-const MAX_REQUESTS = 3
-const WINDOW_MS = 60_000
-const ipHits = new Map<string, { count: number; resetAt: number }>()
-
-function extractClientIp(header: string | undefined): string {
-  if (!header) return 'unknown'
-  const parts = header.split(',').map((s) => s.trim()).filter(Boolean)
-  return parts[0] ?? 'unknown'
-}
-
-function cleanupExpiredEntries() {
-  const now = Date.now()
-  for (const [key, entry] of ipHits) {
-    if (now >= entry.resetAt) ipHits.delete(key)
-  }
-}
-
-// Очистка устаревших записей каждые 5 минут
-setInterval(cleanupExpiredEntries, 5 * 60_000).unref()
+const contactLimiter = createRateLimiter({ max: 3, windowMs: 60_000 })
 
 type Submit = (data: { name: string; email: string; message: string }) => Promise<void>
 
 export function makeContactRouter(submit: Submit) {
   const router = new Hono()
 
-  router.post('/', zValidator('json', contactBodySchema), async (c) => {
-    const ip = extractClientIp(c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'))
-    const now = Date.now()
-    const entry = ipHits.get(ip)
-
-    if (entry && now < entry.resetAt) {
-      if (entry.count >= MAX_REQUESTS) {
-        return c.json({ error: 'Too many requests' }, 429)
-      }
-      entry.count++
-    } else {
-      ipHits.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    }
-
+  router.post('/', contactLimiter.middleware, zValidator('json', contactBodySchema), async (c) => {
     const data = c.req.valid('json')
     await submit(data)
     return c.json({ message: 'Message sent' }, 201)
@@ -2567,7 +2480,8 @@ describe('galleryRepository', () => {
 
 
 === apps/api/src/features/gallery/infrastructure/galleryRepository.ts ===
-import { Prisma, GallerySection, type PrismaClient } from '@prisma/client'
+import { GallerySection, type PrismaClient } from '@prisma/client'
+import { handlePrismaError } from '../../../shared/infrastructure'
 import type { GalleryItem } from '../types'
 
 const GALLERY_SELECT = {
@@ -2575,18 +2489,6 @@ const GALLERY_SELECT = {
   imageUrl: true,
   position: true,
 } as const
-
-function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    console.error('Prisma known error:', { code: err.code, meta: err.meta, message: err.message })
-    throw new Error('Database error', { cause: err })
-  }
-  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-    console.error('Prisma unknown error:', err.message)
-    throw new Error('Database error', { cause: err })
-  }
-  throw err
-}
 
 export function makeGalleryRepository(prisma: PrismaClient) {
   return {
@@ -2800,17 +2702,20 @@ export function makeNewsletterRepository(prisma: PrismaClient): NewsletterReposi
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
+import { createRateLimiter } from '../../../shared/middleware/rateLimit'
 
 const subscribeBodySchema = z.object({
   email: z.string().email(),
 })
+
+const subscribeLimiter = createRateLimiter({ max: 3, windowMs: 60 * 60_000 })
 
 type Subscribe = (email: string) => Promise<void>
 
 export function makeNewsletterRouter(subscribe: Subscribe) {
   const router = new Hono()
 
-  router.post('/subscribe', zValidator('json', subscribeBodySchema), async (c) => {
+  router.post('/subscribe', subscribeLimiter.middleware, zValidator('json', subscribeBodySchema), async (c) => {
     const { email } = c.req.valid('json')
     await subscribe(email)
     return c.json({ message: 'Subscribed' }, 201)
@@ -2925,9 +2830,27 @@ export async function cleanupExpiredAuthRecords(prisma: PrismaClient): Promise<v
 }
 
 
+=== apps/api/src/shared/infrastructure/handlePrismaError.ts ===
+import { Prisma } from '@prisma/client'
+import { AppError } from '../errors'
+
+export function handlePrismaError(err: unknown): never {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error('Prisma known error:', { code: err.code, meta: err.meta })
+    throw new AppError(500, 'Database error')
+  }
+  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
+    console.error('Prisma unknown error:', err.message)
+    throw new AppError(500, 'Database error')
+  }
+  throw err
+}
+
+
 === apps/api/src/shared/infrastructure/index.ts ===
 export { prisma } from './prisma.client'
 export { cleanupExpiredAuthRecords } from './cleanup'
+export { handlePrismaError } from './handlePrismaError'
 
 
 === apps/api/src/shared/infrastructure/prisma.client.ts ===
@@ -2943,8 +2866,9 @@ export const prisma = new PrismaClient({
 === apps/api/src/shared/lib/config.ts ===
 export const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173'
 
-if (process.env.NODE_ENV === 'production' && !FRONTEND_URL.startsWith('https://')) {
-  throw new Error('FRONTEND_URL must use HTTPS in production')
+// TODO: restore HTTPS check when SSL is configured
+if (process.env.NODE_ENV === 'production' && !FRONTEND_URL.startsWith('http')) {
+  throw new Error('FRONTEND_URL is required in production')
 }
 
 
@@ -3035,8 +2959,6 @@ export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
   cleanupTimer.unref()
 
   const middleware: MiddlewareHandler = async (c, next) => {
-    if (process.env.NODE_ENV === 'test') return next()
-
     const ip = extractClientIp(c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'))
     const now = Date.now()
     const entry = hits.get(ip)
@@ -3084,8 +3006,8 @@ export const requireAuth: MiddlewareHandler = async (c, next) => {
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
-    "module": "ES2022",
-    "moduleResolution": "bundler",
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -3321,12 +3243,17 @@ onMounted(() => { authStore.initAuth() })
 </script>
 
 
-=== apps/web/src/assets/styles/_breakpoints.scss ===
+=== apps/web/src/assets/styles/breakpoints.module.scss ===
 $tablet: 768px;
 $desktop: 1200px;
 
 @mixin tablet { @media (min-width: $tablet) { @content; } }
 @mixin desktop { @media (min-width: $desktop) { @content; } }
+
+:export {
+  tablet: 768;
+  desktop: 1200;
+}
 
 
 === apps/web/src/assets/styles/global.scss ===
@@ -3499,14 +3426,23 @@ export const useAuthStore = defineStore('auth', () => {
     return 'pending'
   }
 
+  function clearState(): void {
+    accessToken.value = null
+    user.value = null
+    initPromise = null
+  }
+
   async function logout(): Promise<void> {
     try {
       await apiFetch('/auth/logout', { method: 'POST', accessToken: accessToken.value ?? undefined })
     } finally {
-      accessToken.value = null
-      user.value = null
-      initPromise = null
+      clearState()
     }
+  }
+
+  async function loginFromCookie(): Promise<void> {
+    initPromise = _doInitAuth()
+    return initPromise
   }
 
   async function initAuth(): Promise<void> {
@@ -3530,6 +3466,7 @@ export const useAuthStore = defineStore('auth', () => {
       // тихий фейл — пользователь просто остаётся неавторизованным
     } finally {
       authReady.value = true
+      initPromise = null
     }
   }
 
@@ -3563,8 +3500,10 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     logout,
+    clearState,
     initAuth,
     loginWithToken,
+    loginFromCookie,
     setAccessToken,
   }
 })
@@ -4692,7 +4631,7 @@ const { email, state, errorMessage, handleSubmit } = useNewsletterSubscribe()
 
 <style scoped lang="scss">
 @use '@/shared/lib/animated-border' as *;
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .newsletter-subscribe {
   &__title {
@@ -4974,7 +4913,7 @@ const authStore = useAuthStore()
 setupAuthInterceptor({
   getAccessToken: () => authStore.accessToken,
   setAccessToken: (token) => authStore.setAccessToken(token),
-  clearAuth: () => authStore.logout(),
+  clearAuth: () => authStore.clearState(),
 })
 
 app.mount('#app')
@@ -5013,6 +4952,7 @@ const done = ref(false)
 
 onMounted(async () => {
   const searchParams = new URLSearchParams(window.location.search)
+
   if (searchParams.get('error')) {
     history.replaceState(null, '', window.location.pathname)
     sessionStorage.removeItem('auth_redirect')
@@ -5020,17 +4960,10 @@ onMounted(async () => {
     return
   }
 
-  const hash = window.location.hash
-  const match = hash.match(/[#&]token=([^&]+)/)
-  const token = match ? match[1] : null
-
   history.replaceState(null, '', window.location.pathname)
 
-  if (!token) {
-    failed.value = true
-    return
-  }
-  await authStore.loginWithToken(token)
+  await authStore.loginFromCookie()
+
   if (authStore.isLoggedIn) {
     const stored = sessionStorage.getItem('auth_redirect')
     sessionStorage.removeItem('auth_redirect')
@@ -5278,6 +5211,7 @@ export { useSlider } from './lib/useSlider'
 export { apiFetch, apiErrorMessage, authFetch, setupAuthInterceptor } from './lib/apiClient'
 export { lockScroll, unlockScroll } from './lib/useBodyScrollLock'
 export { useClickOutside } from './lib/useClickOutside'
+export { MEDIA } from './lib/breakpoints'
 
 
 === apps/web/src/shared/lib/_animated-border.scss ===
@@ -5369,7 +5303,7 @@ export async function authFetch(path: string, init: ApiRequestInit = {}): Promis
   if (res.status !== 401 || !token) return res
 
   if (!refreshPromise) {
-    refreshPromise = doRefresh().finally(() => { refreshPromise = null })
+    refreshPromise = doRefresh().catch(() => null).finally(() => { refreshPromise = null })
   }
   const newToken = await refreshPromise
 
@@ -5381,6 +5315,15 @@ export async function authFetch(path: string, init: ApiRequestInit = {}): Promis
   authCallbacks.setAccessToken(newToken)
   return apiFetch(path, { ...init, accessToken: newToken })
 }
+
+
+=== apps/web/src/shared/lib/breakpoints.ts ===
+import bp from '@/assets/styles/breakpoints.module.scss'
+
+export const MEDIA = {
+  tablet: `(min-width: ${bp.tablet}px)`,
+  desktop: `(min-width: ${bp.desktop}px)`,
+} as const
 
 
 === apps/web/src/shared/lib/useBodyScrollLock.ts ===
@@ -5696,11 +5639,11 @@ defineProps<{
   display: inline-block;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-base);
   color: var(--color-text);
   padding: 0.6rem 2rem;
   text-decoration: none;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   background: none;
   transition: background-color 0.3s ease;
@@ -5914,7 +5857,7 @@ const socialLinks = [
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .app-footer {
   width: 100%;
@@ -6199,7 +6142,7 @@ useClickOutside(headerRef, isOpen, closeMenu)
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .app-header {
   display: flex;
@@ -7467,7 +7410,7 @@ const { open: openContactModal } = useContactModal()
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .artist-section {
   width: 100%;
@@ -7850,7 +7793,7 @@ const columns = [FAQ_ITEMS.slice(0, half), FAQ_ITEMS.slice(half)]
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .faq-section {
   width: 100%;
@@ -8313,6 +8256,8 @@ import { GALLERY_GRID_SIZE } from './galleryApi'
 
 <style scoped lang="scss">
 .gallery-skeleton {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(15, 1fr);
@@ -8650,7 +8595,7 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .hero-slider {
   position: relative;
@@ -10832,20 +10777,18 @@ describe('ReviewsSlider', () => {
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { useSlider } from '@/shared'
+import { useSlider, MEDIA } from '@/shared'
 import { ReviewCard } from './components'
 import { REVIEWS } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD_PX = 40
-const TABLET_QUERY = '(min-width: 768px)'
-const DESKTOP_QUERY = '(min-width: 1200px)'
 
 const visibleCount = ref(1)
 
 function updateVisibleCount() {
-  visibleCount.value = window.matchMedia(DESKTOP_QUERY).matches ? 3
-    : window.matchMedia(TABLET_QUERY).matches ? 2
+  visibleCount.value = window.matchMedia(MEDIA.desktop).matches ? 3
+    : window.matchMedia(MEDIA.tablet).matches ? 2
     : 1
 }
 
@@ -10888,7 +10831,7 @@ function onTouchEnd(e: TouchEvent) {
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .reviews-slider {
   width: 100%;
@@ -11198,6 +11141,10 @@ shared/
 
 При исправлениях или новых предпочтениях — сохранять в memory автоматически.
 
+## Скриншоты
+
+Скриншоты пользователя хранятся в: `D:\Наташа\screenshot\`
+
 ## CRITICAL RULES — ОБЯЗАТЕЛЬНО
 
 - NEVER удалять или переписывать рабочие тесты без явного запроса
@@ -11260,6 +11207,7 @@ services:
       YANDEX_S3_ENDPOINT: ${YANDEX_S3_ENDPOINT}
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -11274,7 +11222,7 @@ services:
       args:
         VITE_API_URL: /api
     ports:
-      - "80:80"
+      - "8081:8080"
     depends_on:
       - api
     restart: unless-stopped
@@ -11304,7 +11252,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: natsdoll
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -11388,13 +11336,15 @@ RUN apk add --no-cache tini \
   && addgroup -S appgroup \
   && adduser -S appuser -G appgroup
 
-# Copy pre-built node_modules from builder to avoid re-running npm ci
-# and to preserve Prisma-generated client (native binaries + JS wrapper)
-COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --chown=appuser:appgroup package*.json ./
+COPY --chown=appuser:appgroup apps/api/package.json ./apps/api/
+RUN npm ci --omit=dev
+
+# Copy Prisma-generated client (native binaries compiled in builder stage)
+COPY --from=builder --chown=appuser:appgroup /app/node_modules/.prisma ./node_modules/.prisma
+
 COPY --from=builder --chown=appuser:appgroup /app/apps/api/dist ./apps/api/dist
 COPY --chown=appuser:appgroup apps/api/prisma ./apps/api/prisma
-COPY --chown=appuser:appgroup package.json ./
-COPY --chown=appuser:appgroup apps/api/package.json ./apps/api/
 
 USER appuser
 
@@ -11448,7 +11398,7 @@ RUN npm run build -w apps/web
 
 # ─── runner ───────────────────────────────────────────
 # nginx-unprivileged runs as non-root user on port 8080
-FROM nginx:1.27.4-alpine-unprivileged AS runner
+FROM nginx:1.27-alpine AS runner
 
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf

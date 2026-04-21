@@ -20,6 +20,7 @@ const done = ref(false)
 
 onMounted(async () => {
   const searchParams = new URLSearchParams(window.location.search)
+
   if (searchParams.get('error')) {
     history.replaceState(null, '', window.location.pathname)
     sessionStorage.removeItem('auth_redirect')
@@ -27,17 +28,10 @@ onMounted(async () => {
     return
   }
 
-  const hash = window.location.hash
-  const match = hash.match(/[#&]token=([^&]+)/)
-  const token = match ? match[1] : null
-
   history.replaceState(null, '', window.location.pathname)
 
-  if (!token) {
-    failed.value = true
-    return
-  }
-  await authStore.loginWithToken(token)
+  await authStore.loginFromCookie()
+
   if (authStore.isLoggedIn) {
     const stored = sessionStorage.getItem('auth_redirect')
     sessionStorage.removeItem('auth_redirect')

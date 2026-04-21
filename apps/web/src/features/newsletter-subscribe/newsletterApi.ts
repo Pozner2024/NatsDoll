@@ -1,3 +1,7 @@
+//  Сервис для взаимодействия с API новостной рассылки.
+//  Содержит метод для отправки POST-запроса на подписку.
+//  Использует общую утилиту apiFetch для работы с сетью.
+
 import { apiFetch, apiErrorMessage } from '@/shared'
 
 export async function subscribeToNewsletter(email: string): Promise<void> {

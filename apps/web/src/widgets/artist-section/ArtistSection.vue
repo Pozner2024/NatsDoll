@@ -42,7 +42,7 @@ const { open: openContactModal } = useContactModal()
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/breakpoints' as *;
+@use '@/assets/styles/breakpoints.module' as *;
 
 .artist-section {
   width: 100%;

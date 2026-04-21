@@ -25,8 +25,6 @@ export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
   cleanupTimer.unref()
 
   const middleware: MiddlewareHandler = async (c, next) => {
-    if (process.env.NODE_ENV === 'test') return next()
-
     const ip = extractClientIp(c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'))
     const now = Date.now()
     const entry = hits.get(ip)

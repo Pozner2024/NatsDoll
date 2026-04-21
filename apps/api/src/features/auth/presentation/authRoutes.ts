@@ -2,7 +2,6 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
-import { timingSafeEqual } from 'node:crypto'
 import { requireAuth } from '../../../shared/middleware/requireAuth'
 import { createRateLimiter } from '../../../shared/middleware/rateLimit'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
@@ -12,7 +11,7 @@ import { FRONTEND_URL } from '../../../shared/lib/config'
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(1).max(128),
+  password: z.string().min(8).max(128),
 })
 
 const loginSchema = z.object({
@@ -24,7 +23,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  path: '/api/auth',
+  path: '/',
   sameSite: 'Strict',
   maxAge: REFRESH_TOKEN_TTL_SECONDS,
   secure: isProduction,
@@ -37,13 +36,6 @@ const loginLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const registerLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
 const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
-
-function safeStringEqual(a: string, b: string): boolean {
-  const aBuf = Buffer.from(a)
-  const bBuf = Buffer.from(b)
-  if (aBuf.length !== bBuf.length) return false
-  return timingSafeEqual(aBuf, bBuf)
-}
 
 type AuthUser = { id: string; name: string; email: string; role: string }
 type AuthTokens = { accessToken: string; refreshToken: string; user: AuthUser }
@@ -91,7 +83,7 @@ export function makeAuthRouter(
   router.post('/logout', async (c) => {
     const rawToken = getCookie(c, COOKIE_NAME) ?? ''
     await logout(rawToken)
-    deleteCookie(c, COOKIE_NAME, { path: '/api/auth' })
+    deleteCookie(c, COOKIE_NAME, { path: '/' })
     return c.body(null, 204)
   })
 
@@ -130,14 +122,14 @@ export function makeAuthRouter(
     deleteCookie(c, 'oauth_state', { path: '/' })
 
     if (!code) return c.redirect(`${FRONTEND_URL}/auth/callback?error=auth_failed`)
-    if (!state || !storedState || !safeStringEqual(state, storedState)) {
+    if (!state || !storedState || state !== storedState) {
       return c.redirect(`${FRONTEND_URL}/auth/callback?error=invalid_state`)
     }
 
     try {
       const result = await googleAuth(code)
       setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
-      return c.redirect(`${FRONTEND_URL}/auth/callback#token=${result.accessToken}`)
+      return c.redirect(`${FRONTEND_URL}/auth/callback`)
     } catch (err) {
       console.error('Google OAuth callback failed:', err)
       return c.redirect(`${FRONTEND_URL}/auth/callback?error=auth_failed`)

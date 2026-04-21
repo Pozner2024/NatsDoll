@@ -60,7 +60,7 @@ describe('GET /api/auth/google', () => {
 describe('GET /api/auth/google/callback', () => {
   const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
 
-  it('редиректит с токеном в hash при успехе', async () => {
+  it('редиректит на /auth/callback и устанавливает refresh cookie при успехе', async () => {
     const { app } = makeApp()
     const res = await app.request(
       'http://localhost/api/auth/google/callback?code=valid_code&state=mock_state',
@@ -68,9 +68,9 @@ describe('GET /api/auth/google/callback', () => {
     )
 
     expect(res.status).toBe(302)
-    const location = res.headers.get('location') ?? ''
-    expect(location).toContain('/auth/callback#token=')
-    expect(location).toContain('access_tok')
+    expect(res.headers.get('location')).toBe(`${frontendUrl}/auth/callback`)
+    const setCookieHeader = res.headers.get('set-cookie') ?? ''
+    expect(setCookieHeader).toContain('refresh_token=refresh_tok')
   })
 
   it('редиректит с ?error=invalid_state при несовпадении state', async () => {

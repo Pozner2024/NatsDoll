@@ -1,4 +1,5 @@
-import { Prisma, GallerySection, type PrismaClient } from '@prisma/client'
+import { GallerySection, type PrismaClient } from '@prisma/client'
+import { handlePrismaError } from '../../../shared/infrastructure'
 import type { GalleryItem } from '../types'
 
 const GALLERY_SELECT = {
@@ -6,18 +7,6 @@ const GALLERY_SELECT = {
   imageUrl: true,
   position: true,
 } as const
-
-function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    console.error('Prisma known error:', { code: err.code, meta: err.meta, message: err.message })
-    throw new Error('Database error', { cause: err })
-  }
-  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-    console.error('Prisma unknown error:', err.message)
-    throw new Error('Database error', { cause: err })
-  }
-  throw err
-}
 
 export function makeGalleryRepository(prisma: PrismaClient) {
   return {

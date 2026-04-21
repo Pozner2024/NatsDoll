@@ -1,4 +1,5 @@
-import { Prisma, type PrismaClient, type User, type RefreshToken, type EmailVerification } from '@prisma/client'
+import { type PrismaClient, type User, type RefreshToken, type EmailVerification } from '@prisma/client'
+import { handlePrismaError } from '../../../shared/infrastructure'
 
 export type AuthRepository = {
   findByEmail(email: string): Promise<User | null>
@@ -19,18 +20,6 @@ export type AuthRepository = {
   deleteEmailVerification(id: string): Promise<void>
   /** Атомарно помечает email верифицированным и удаляет verification-запись. */
   finalizeEmailVerification(userId: string, verificationId: string): Promise<void>
-}
-
-function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    console.error('Prisma known error:', { code: err.code, meta: err.meta })
-    throw new Error('Database error', { cause: err })
-  }
-  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-    console.error('Prisma unknown error:', err.message)
-    throw new Error('Database error', { cause: err })
-  }
-  throw err
 }
 
 export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
