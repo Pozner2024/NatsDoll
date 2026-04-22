@@ -52,9 +52,9 @@
 <script setup lang="ts">
 import { useSlider, AppButton } from '@/shared'
 import slide1 from '@/assets/slides/slide1.jpg'
-import slide2 from '@/assets/slides/slide2.jpg'
+import slide2 from '@/assets/slides/slide2.webp'
 import slide3 from '@/assets/slides/slide3.jpg'
-import slide4 from '@/assets/slides/slide4.jpg'
+import slide4 from '@/assets/slides/slide4.webp'
 
 const AUTOPLAY_INTERVAL_MS = 4000
 
