@@ -114,7 +114,14 @@
       "Bash(git diff *)",
       "Read(//tmp/**)",
       "Bash(tr '\\\\\\\\' '\\\\n')",
-      "Bash(notebooklm list *)"
+      "Bash(notebooklm list *)",
+      "Bash(xargs wc *)",
+      "Bash(grep -E \"\\\\.env$\")",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npx tsc --noEmit)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npx vue-tsc --noEmit)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(ls apps/web/src/shared/lib/*.test.ts apps/web/src/shared/ui/*.test.ts)",
+      "Bash(ls apps/api/src/shared/middleware/)"
     ]
   }
 }

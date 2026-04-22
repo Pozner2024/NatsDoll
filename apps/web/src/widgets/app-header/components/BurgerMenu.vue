@@ -80,51 +80,51 @@
         Contact
       </button>
 
-      <template v-if="authStore.isLoggedIn">
-        <template v-if="authStore.user?.role === 'ADMIN'">
-          <RouterLink
-            to="/account"
-            class="burger-menu__item"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            My account
-          </RouterLink>
-        </template>
-        <template v-else>
-          <RouterLink
-            to="/account"
-            class="burger-menu__item burger-menu__item--profile"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            <span class="burger-menu__item-name">{{ authStore.user?.name }}</span>
-            <span class="burger-menu__item-hint">View my account</span>
-          </RouterLink>
-          <RouterLink
-            to="/account/purchases"
-            class="burger-menu__item"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            Purchases & reviews
-          </RouterLink>
-          <RouterLink
-            to="/account/messages"
-            class="burger-menu__item"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            Messages
-          </RouterLink>
-        </template>
-        <button
-          class="burger-menu__item burger-menu__item--btn"
-          @click="handleLogout"
+      <RouterLink
+        v-if="isAdmin"
+        to="/account"
+        class="burger-menu__item"
+        exact-active-class="burger-menu__item--active"
+        @click="closeMenu"
+      >
+        My account
+      </RouterLink>
+
+      <template v-else-if="authStore.isLoggedIn">
+        <RouterLink
+          to="/account"
+          class="burger-menu__item burger-menu__item--profile"
+          exact-active-class="burger-menu__item--active"
+          @click="closeMenu"
         >
-          Sign out
-        </button>
+          <span class="burger-menu__item-name">{{ authStore.user?.name }}</span>
+          <span class="burger-menu__item-hint">View my account</span>
+        </RouterLink>
+        <RouterLink
+          to="/account/purchases"
+          class="burger-menu__item"
+          exact-active-class="burger-menu__item--active"
+          @click="closeMenu"
+        >
+          Purchases & reviews
+        </RouterLink>
+        <RouterLink
+          to="/account/messages"
+          class="burger-menu__item"
+          exact-active-class="burger-menu__item--active"
+          @click="closeMenu"
+        >
+          Messages
+        </RouterLink>
       </template>
+
+      <button
+        v-if="authStore.isLoggedIn"
+        class="burger-menu__item burger-menu__item--btn"
+        @click="handleLogout"
+      >
+        Sign out
+      </button>
       <button
         v-else
         class="burger-menu__item burger-menu__item--btn"
@@ -169,6 +169,7 @@ const shopOpen = ref(false);
 const navRef = ref<HTMLElement | null>(null);
 
 const isShopActive = computed(() => route.path.startsWith("/shop"));
+const isAdmin = computed(() => authStore.isLoggedIn && authStore.user?.role === 'ADMIN');
 
 watch(
   () => props.isOpen,

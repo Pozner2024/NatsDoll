@@ -1,10 +1,6 @@
-//Файл **`apps/api/src/app.ts`** является центральным узлом («точкой сборки» или 
-// *composition root*) бэкенд-приложения на базе фреймворка **Hono** [1, 2]. Его главная 
-// задача — инициализировать сервер, настроить общие правила (CORS, обработка ошибок) и 
-// соединить слои инфраструктуры с бизнес-логикой
-
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { secureHeaders } from 'hono/secure-headers'
 import { prisma } from './shared/infrastructure'
 import { AppError } from './shared/errors'
 import { makeGalleryRepository, makeGetHomeGallery, makeGalleryRouter } from './features/gallery'
@@ -34,6 +30,8 @@ export function createApp() {
   const frontendOrigin = process.env.FRONTEND_URL
     ? new URL(process.env.FRONTEND_URL).origin
     : 'http://localhost:5173'
+
+  app.use('*', secureHeaders())
 
   app.use('*', cors({
     origin: frontendOrigin,

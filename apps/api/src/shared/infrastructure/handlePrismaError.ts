@@ -1,8 +1,15 @@
 import { Prisma } from '@prisma/client'
-import { AppError } from '../errors'
+import { AppError, NotFoundError } from '../errors'
 
-export function handlePrismaError(err: unknown): never {
+type HandlerOptions = {
+  notFoundMessage?: string
+}
+
+export function handlePrismaError(err: unknown, options: HandlerOptions = {}): never {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2025' && options.notFoundMessage) {
+      throw new NotFoundError(options.notFoundMessage)
+    }
     console.error('Prisma known error:', { code: err.code, meta: err.meta })
     throw new AppError(500, 'Database error')
   }

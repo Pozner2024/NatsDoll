@@ -1,17 +1,10 @@
-// Стор Pinia для управления состоянием модального окна Контакт.
-// Ответственность:
-// - Управление видимостью окна (open/close) и блокировкой прокрутки body.
-// - Обработка состояний отправки формы: ожидание, загрузка, успех или ошибка.
-// - Взаимодействие с API-сервисом (sendContactMessage).
-// - Автоматическое закрытие окна через 2 секунды после успешной отправки сообщения.
-// Используется в компоненте ContactModal.vue для реактивного обновления интерфейса.
-
 import { defineStore } from 'pinia'
-import { ref, watch, readonly } from 'vue'
-import { lockScroll, unlockScroll } from '@/shared'
+import { ref, readonly } from 'vue'
 import { sendContactMessage } from './contactApi'
 
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
+
+const SUCCESS_CLOSE_DELAY_MS = 2000
 
 export const useContactModal = defineStore('contact-modal', () => {
   const isOpen = ref(false)
@@ -36,6 +29,8 @@ export const useContactModal = defineStore('contact-modal', () => {
   function close() {
     clearCloseTimer()
     isOpen.value = false
+    submitStatus.value = 'idle'
+    errorMessage.value = ''
   }
 
   async function submit(data: { name: string; email: string; message: string }) {
@@ -44,16 +39,12 @@ export const useContactModal = defineStore('contact-modal', () => {
     try {
       await sendContactMessage(data)
       submitStatus.value = 'success'
-      closeTimerId = setTimeout(close, 2000)
+      closeTimerId = setTimeout(close, SUCCESS_CLOSE_DELAY_MS)
     } catch (err) {
       errorMessage.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       submitStatus.value = 'error'
     }
   }
-
-  watch(isOpen, (v) => {
-    v ? lockScroll() : unlockScroll()
-  })
 
   return {
     isOpen: readonly(isOpen),

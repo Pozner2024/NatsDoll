@@ -1,6 +1,6 @@
 <template>
   <div class="auth-callback">
-    <p v-if="!failed && !done">Completing sign in...</p>
+    <p v-if="!failed">Completing sign in...</p>
     <p v-if="failed">
       Authentication failed.
       <RouterLink to="/">Go home</RouterLink>
@@ -12,11 +12,11 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
+import { resolveSafeRedirect } from '@/shared'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const failed = ref(false)
-const done = ref(false)
 
 onMounted(async () => {
   const searchParams = new URLSearchParams(window.location.search)
@@ -32,14 +32,13 @@ onMounted(async () => {
 
   await authStore.loginFromCookie()
 
-  if (authStore.isLoggedIn) {
-    const stored = sessionStorage.getItem('auth_redirect')
-    sessionStorage.removeItem('auth_redirect')
-    const isSafe = !!stored && stored.startsWith('/') && !stored.startsWith('//')
-    router.replace(isSafe ? stored : '/')
-  } else {
+  if (!authStore.isLoggedIn) {
     failed.value = true
+    return
   }
-  done.value = true
+
+  const stored = sessionStorage.getItem('auth_redirect')
+  sessionStorage.removeItem('auth_redirect')
+  router.replace(resolveSafeRedirect(stored))
 })
 </script>

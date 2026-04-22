@@ -35,7 +35,7 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     try {
       await emailService.sendVerificationEmail(user.email, verificationUrl)
     } catch (err) {
-      console.error('Failed to send verification email to', user.email, err)
+      console.error('Failed to send verification email', { userId: user.id, err })
       throw new AppError(500, 'Failed to send verification email. Please try again later.')
     }
 

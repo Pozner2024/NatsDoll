@@ -1,6 +1,6 @@
 <template>
   <div class="verify-email">
-    <p v-if="!failed && !done">Verifying your email...</p>
+    <p v-if="!failed">Verifying your email...</p>
     <p v-if="failed">
       The link is invalid or has expired.
       <RouterLink to="/">Go home</RouterLink>
@@ -18,7 +18,6 @@ import { z } from 'zod'
 const router = useRouter()
 const authStore = useAuthStore()
 const failed = ref(false)
-const done = ref(false)
 
 const verifyResponseSchema = z.object({
   accessToken: z.string(),
@@ -47,7 +46,6 @@ onMounted(async () => {
     const body = verifyResponseSchema.parse(await res.json())
     await authStore.loginWithToken(body.accessToken)
     router.replace('/')
-    done.value = true
   } catch {
     failed.value = true
   }

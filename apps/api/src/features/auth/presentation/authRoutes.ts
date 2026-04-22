@@ -7,6 +7,7 @@ import { createRateLimiter } from '../../../shared/middleware/rateLimit'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
 import { getGoogleAuthUrl } from '../infrastructure/googleClient'
 import { FRONTEND_URL } from '../../../shared/lib/config'
+import type { AuthTokensResult } from '../application/issueTokens'
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
@@ -21,6 +22,10 @@ const loginSchema = z.object({
 
 const isProduction = process.env.NODE_ENV === 'production'
 
+const FIFTEEN_MIN_MS = 15 * 60_000
+const ONE_HOUR_MS = 60 * 60_000
+const OAUTH_STATE_TTL_SECONDS = 300
+
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   path: '/',
@@ -29,24 +34,29 @@ const REFRESH_COOKIE_OPTIONS = {
   secure: isProduction,
 } as const
 
-const FIFTEEN_MIN_MS = 15 * 60_000
-const ONE_HOUR_MS = 60 * 60_000
+const OAUTH_STATE_COOKIE_OPTIONS = {
+  httpOnly: true,
+  path: '/',
+  sameSite: 'Strict',
+  maxAge: OAUTH_STATE_TTL_SECONDS,
+  secure: isProduction,
+} as const
 
 const loginLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const registerLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
 const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
+const refreshLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 
-type AuthUser = { id: string; name: string; email: string; role: string }
-type AuthTokens = { accessToken: string; refreshToken: string; user: AuthUser }
+type AuthUser = AuthTokensResult['user']
 
 type RegisterFn = (data: { name: string; email: string; password: string }) => Promise<{ message: string }>
-type VerifyEmailFn = (rawToken: string) => Promise<AuthTokens>
-type LoginFn = (data: { email: string; password: string }) => Promise<AuthTokens>
+type VerifyEmailFn = (rawToken: string) => Promise<AuthTokensResult>
+type LoginFn = (data: { email: string; password: string }) => Promise<AuthTokensResult>
 type RefreshTokenFn = (rawToken: string) => Promise<{ accessToken: string; refreshToken: string }>
 type LogoutFn = (rawToken: string) => Promise<void>
 type GetMeFn = (userId: string) => Promise<AuthUser | null>
-type GoogleAuthFn = (code: string) => Promise<AuthTokens>
+type GoogleAuthFn = (code: string) => Promise<AuthTokensResult>
 
 export function makeAuthRouter(
   register: RegisterFn,
@@ -72,7 +82,7 @@ export function makeAuthRouter(
     return c.json({ accessToken: result.accessToken, user: result.user })
   })
 
-  router.post('/refresh', async (c) => {
+  router.post('/refresh', refreshLimiter.middleware, async (c) => {
     const rawToken = getCookie(c, COOKIE_NAME)
     if (!rawToken) return c.json({ error: 'Missing refresh token' }, 401)
     const result = await refreshToken(rawToken)
@@ -104,13 +114,7 @@ export function makeAuthRouter(
 
   router.get('/google', (c) => {
     const { url, state } = getGoogleAuthUrl()
-    setCookie(c, 'oauth_state', state, {
-      httpOnly: true,
-      path: '/',
-      sameSite: 'Lax',
-      maxAge: 300,
-      secure: isProduction,
-    })
+    setCookie(c, 'oauth_state', state, OAUTH_STATE_COOKIE_OPTIONS)
     return c.redirect(url)
   })
 

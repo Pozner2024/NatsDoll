@@ -55,6 +55,18 @@ describe('login', () => {
       .rejects.toMatchObject({ statusCode: 401 })
   })
 
+  it('вызывает verify даже если пользователя нет (защита от timing attack)', async () => {
+    const { verify } = await import('@node-rs/argon2')
+    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
+    vi.mocked(verify).mockResolvedValue(false)
+    const login = makeLogin(mockRepo)
+    await expect(login({ email: 'nobody@test.com', password: 'pass' }))
+      .rejects.toMatchObject({ statusCode: 401 })
+    expect(verify).toHaveBeenCalledTimes(1)
+    const [hash] = vi.mocked(verify).mock.calls[0]!
+    expect(hash).toMatch(/^\$argon2id\$/)
+  })
+
   it('выбрасывает 401 если пароль неверный', async () => {
     const { verify } = await import('@node-rs/argon2')
     vi.mocked(mockRepo.findByEmail).mockResolvedValue(mockUser)
@@ -68,7 +80,18 @@ describe('login', () => {
     vi.mocked(mockRepo.findByEmail).mockResolvedValue({ ...mockUser, passwordHash: null })
     const login = makeLogin(mockRepo)
     await expect(login({ email: 'nat@test.com', password: 'pass' }))
-      .rejects.toMatchObject({ statusCode: 401, message: 'Use Google login' })
+      .rejects.toMatchObject({ statusCode: 401, message: 'Invalid credentials' })
+  })
+
+  it('вызывает verify с dummy hash для Google-only аккаунта (защита от timing attack)', async () => {
+    const { verify } = await import('@node-rs/argon2')
+    vi.mocked(mockRepo.findByEmail).mockResolvedValue({ ...mockUser, passwordHash: null })
+    vi.mocked(verify).mockResolvedValue(false)
+    const login = makeLogin(mockRepo)
+    await expect(login({ email: 'nat@test.com', password: 'pass' })).rejects.toBeDefined()
+    expect(verify).toHaveBeenCalledTimes(1)
+    const [hash] = vi.mocked(verify).mock.calls[0]!
+    expect(hash).toMatch(/^\$argon2id\$/)
   })
 
   it('выбрасывает 403 если email не подтверждён', async () => {

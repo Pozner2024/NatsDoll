@@ -1,5 +1,5 @@
-import { Prisma, type PrismaClient } from '@prisma/client'
-import { NotFoundError } from '../../../shared/errors'
+import type { PrismaClient } from '@prisma/client'
+import { handlePrismaError } from '../../../shared/infrastructure'
 
 export type NewsletterSubscriber = {
   id: string
@@ -13,18 +13,7 @@ export type NewsletterRepository = {
   deleteById(id: string): Promise<void>
 }
 
-function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === 'P2025') throw new NotFoundError('Subscriber not found')
-    console.error('Prisma known error:', { code: err.code, meta: err.meta, message: err.message })
-    throw new Error('Database error', { cause: err })
-  }
-  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-    console.error('Prisma unknown error:', err.message)
-    throw new Error('Database error', { cause: err })
-  }
-  throw err
-}
+const NOT_FOUND_MESSAGE = 'Subscriber not found'
 
 export function makeNewsletterRepository(prisma: PrismaClient): NewsletterRepository {
   return {
@@ -54,7 +43,7 @@ export function makeNewsletterRepository(prisma: PrismaClient): NewsletterReposi
       try {
         await prisma.newsletterSubscriber.delete({ where: { id } })
       } catch (err) {
-        handlePrismaError(err)
+        handlePrismaError(err, { notFoundMessage: NOT_FOUND_MESSAGE })
       }
     },
   }

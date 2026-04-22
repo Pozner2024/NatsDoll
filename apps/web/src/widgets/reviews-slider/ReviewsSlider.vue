@@ -40,6 +40,7 @@ import { REVIEWS } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD_PX = 40
+const RESIZE_DEBOUNCE_MS = 150
 
 const visibleCount = ref(1)
 
@@ -53,7 +54,7 @@ let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
 function onResize() {
   if (resizeTimer) clearTimeout(resizeTimer)
-  resizeTimer = setTimeout(updateVisibleCount, 150)
+  resizeTimer = setTimeout(updateVisibleCount, RESIZE_DEBOUNCE_MS)
 }
 
 onMounted(() => {
