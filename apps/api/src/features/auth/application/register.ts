@@ -1,3 +1,6 @@
+// register.ts`**: Проверяет, не занят ли email. Если всё в порядке, хеширует пароль через Argon2, создает        
+// пользователя и инициирует отправку письма через `emailService`.
+
 import { hash } from '@node-rs/argon2'
 import { Prisma } from '@prisma/client'
 import type { AuthRepository } from '../infrastructure/authRepository'

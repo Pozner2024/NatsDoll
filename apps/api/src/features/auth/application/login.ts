@@ -1,4 +1,9 @@
+// login.ts реализует защиту от **Timing Attacks** (атак по времени).
+// Если пользователь не найден, система всё равно запускает проверку пароля с использованием `DUMMY_HASH`, чтобы
+// злоумышленник по скорости ответа сервера не мог понять, существует такой email в базе или нет.
+
 import { verify } from '@node-rs/argon2'
+
 import type { AuthRepository } from '../infrastructure/authRepository'
 import { AppError } from '../../../shared/errors'
 import { issueTokensForUser, type AuthTokensResult } from './issueTokens'

@@ -215,7 +215,11 @@ function validateLogin(): boolean {
 function validateRegister(): boolean {
   registerErrors.name = registerForm.name.trim() ? '' : 'Name is required'
   registerErrors.email = validateEmail(registerForm.email)
-  registerErrors.password = registerForm.password ? '' : 'Password is required'
+  registerErrors.password = !registerForm.password
+    ? 'Password is required'
+    : registerForm.password.length < 6
+      ? 'Password must be at least 6 characters'
+      : ''
   return !registerErrors.name && !registerErrors.email && !registerErrors.password
 }
 

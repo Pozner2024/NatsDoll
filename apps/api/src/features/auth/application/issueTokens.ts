@@ -1,3 +1,6 @@
+// issueTokens.ts - финальный этап авторизации - генерация короткоживущего Access Token и
+// долгоживущего Refresh Token - который сразу хешируется перед сохранением в базу для безопасности
+
 import type { User } from '@prisma/client'
 import { signAccessToken, generateRefreshToken, hashToken, REFRESH_TOKEN_TTL_MS } from '../../../shared/lib/tokens'
 import type { AuthRepository } from '../infrastructure/authRepository'

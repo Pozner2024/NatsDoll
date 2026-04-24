@@ -1,3 +1,8 @@
+// HTTP-интерфейс модуля аутентификации. Этот файл переводит внешние HTTP-запросы в действия бизнес-логики. Он      
+// отвечает за строгую валидацию входящих данных (Zod), защиту от перебора паролей (Rate Limiting) и безопасное
+// управление сессиями через HttpOnly куки. Здесь реализованы все способы входа: классическая регистрация с
+// подтверждением почты и быстрый вход через Google OAuth
+
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
@@ -12,7 +17,7 @@ import type { AuthTokensResult } from '../application/issueTokens'
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(8).max(128),
+  password: z.string().min(6).max(128),
 })
 
 const loginSchema = z.object({

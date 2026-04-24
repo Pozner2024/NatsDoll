@@ -814,6 +814,7 @@ export default defineConfig({
 === apps/api/src/app.ts ===
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { secureHeaders } from 'hono/secure-headers'
 import { prisma } from './shared/infrastructure'
 import { AppError } from './shared/errors'
 import { makeGalleryRepository, makeGetHomeGallery, makeGalleryRouter } from './features/gallery'
@@ -843,6 +844,8 @@ export function createApp() {
   const frontendOrigin = process.env.FRONTEND_URL
     ? new URL(process.env.FRONTEND_URL).origin
     : 'http://localhost:5173'
+
+  app.use('*', secureHeaders())
 
   app.use('*', cors({
     origin: frontendOrigin,
@@ -1169,6 +1172,18 @@ describe('login', () => {
       .rejects.toMatchObject({ statusCode: 401 })
   })
 
+  it('вызывает verify даже если пользователя нет (защита от timing attack)', async () => {
+    const { verify } = await import('@node-rs/argon2')
+    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
+    vi.mocked(verify).mockResolvedValue(false)
+    const login = makeLogin(mockRepo)
+    await expect(login({ email: 'nobody@test.com', password: 'pass' }))
+      .rejects.toMatchObject({ statusCode: 401 })
+    expect(verify).toHaveBeenCalledTimes(1)
+    const [hash] = vi.mocked(verify).mock.calls[0]!
+    expect(hash).toMatch(/^\$argon2id\$/)
+  })
+
   it('выбрасывает 401 если пароль неверный', async () => {
     const { verify } = await import('@node-rs/argon2')
     vi.mocked(mockRepo.findByEmail).mockResolvedValue(mockUser)
@@ -1182,7 +1197,18 @@ describe('login', () => {
     vi.mocked(mockRepo.findByEmail).mockResolvedValue({ ...mockUser, passwordHash: null })
     const login = makeLogin(mockRepo)
     await expect(login({ email: 'nat@test.com', password: 'pass' }))
-      .rejects.toMatchObject({ statusCode: 401, message: 'Use Google login' })
+      .rejects.toMatchObject({ statusCode: 401, message: 'Invalid credentials' })
+  })
+
+  it('вызывает verify с dummy hash для Google-only аккаунта (защита от timing attack)', async () => {
+    const { verify } = await import('@node-rs/argon2')
+    vi.mocked(mockRepo.findByEmail).mockResolvedValue({ ...mockUser, passwordHash: null })
+    vi.mocked(verify).mockResolvedValue(false)
+    const login = makeLogin(mockRepo)
+    await expect(login({ email: 'nat@test.com', password: 'pass' })).rejects.toBeDefined()
+    expect(verify).toHaveBeenCalledTimes(1)
+    const [hash] = vi.mocked(verify).mock.calls[0]!
+    expect(hash).toMatch(/^\$argon2id\$/)
   })
 
   it('выбрасывает 403 если email не подтверждён', async () => {
@@ -1218,14 +1244,20 @@ import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 
 type LoginData = { email: string; password: string }
 
+// Фиктивный argon2id-хеш для constant-time verify, когда пользователь не найден
+// или зарегистрирован только через Google. Предотвращает user enumeration по таймингу.
+const DUMMY_HASH =
+  '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHR2YWx1ZQ$K0mGBc4bA4+zBYK6Jn2LQI2B8wD0tRpV4GQ5yqB3E8A'
+
 export function makeLogin(repo: AuthRepository) {
   return async function login(data: LoginData): Promise<AuthTokensResult> {
     const user = await repo.findByEmail(data.email)
-    if (!user) throw new AppError(401, 'Invalid credentials')
-    if (!user.passwordHash) throw new AppError(401, 'Use Google login')
+    const hashToVerify = user?.passwordHash ?? DUMMY_HASH
+    const isValid = await verify(hashToVerify, data.password)
 
-    const isValid = await verify(user.passwordHash, data.password)
-    if (!isValid) throw new AppError(401, 'Invalid credentials')
+    if (!user || !user.passwordHash || !isValid) {
+      throw new AppError(401, 'Invalid credentials')
+    }
 
     if (!user.emailVerified) throw new AppError(403, 'Please verify your email before signing in')
 
@@ -1630,7 +1662,7 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     try {
       await emailService.sendVerificationEmail(user.email, verificationUrl)
     } catch (err) {
-      console.error('Failed to send verification email to', user.email, err)
+      console.error('Failed to send verification email', { userId: user.id, err })
       throw new AppError(500, 'Failed to send verification email. Please try again later.')
     }
 
@@ -2078,6 +2110,7 @@ import { createRateLimiter } from '../../../shared/middleware/rateLimit'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
 import { getGoogleAuthUrl } from '../infrastructure/googleClient'
 import { FRONTEND_URL } from '../../../shared/lib/config'
+import type { AuthTokensResult } from '../application/issueTokens'
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
@@ -2092,6 +2125,10 @@ const loginSchema = z.object({
 
 const isProduction = process.env.NODE_ENV === 'production'
 
+const FIFTEEN_MIN_MS = 15 * 60_000
+const ONE_HOUR_MS = 60 * 60_000
+const OAUTH_STATE_TTL_SECONDS = 300
+
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   path: '/',
@@ -2100,24 +2137,29 @@ const REFRESH_COOKIE_OPTIONS = {
   secure: isProduction,
 } as const
 
-const FIFTEEN_MIN_MS = 15 * 60_000
-const ONE_HOUR_MS = 60 * 60_000
+const OAUTH_STATE_COOKIE_OPTIONS = {
+  httpOnly: true,
+  path: '/',
+  sameSite: 'Strict',
+  maxAge: OAUTH_STATE_TTL_SECONDS,
+  secure: isProduction,
+} as const
 
 const loginLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const registerLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
 const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
+const refreshLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 
-type AuthUser = { id: string; name: string; email: string; role: string }
-type AuthTokens = { accessToken: string; refreshToken: string; user: AuthUser }
+type AuthUser = AuthTokensResult['user']
 
 type RegisterFn = (data: { name: string; email: string; password: string }) => Promise<{ message: string }>
-type VerifyEmailFn = (rawToken: string) => Promise<AuthTokens>
-type LoginFn = (data: { email: string; password: string }) => Promise<AuthTokens>
+type VerifyEmailFn = (rawToken: string) => Promise<AuthTokensResult>
+type LoginFn = (data: { email: string; password: string }) => Promise<AuthTokensResult>
 type RefreshTokenFn = (rawToken: string) => Promise<{ accessToken: string; refreshToken: string }>
 type LogoutFn = (rawToken: string) => Promise<void>
 type GetMeFn = (userId: string) => Promise<AuthUser | null>
-type GoogleAuthFn = (code: string) => Promise<AuthTokens>
+type GoogleAuthFn = (code: string) => Promise<AuthTokensResult>
 
 export function makeAuthRouter(
   register: RegisterFn,
@@ -2143,7 +2185,7 @@ export function makeAuthRouter(
     return c.json({ accessToken: result.accessToken, user: result.user })
   })
 
-  router.post('/refresh', async (c) => {
+  router.post('/refresh', refreshLimiter.middleware, async (c) => {
     const rawToken = getCookie(c, COOKIE_NAME)
     if (!rawToken) return c.json({ error: 'Missing refresh token' }, 401)
     const result = await refreshToken(rawToken)
@@ -2175,13 +2217,7 @@ export function makeAuthRouter(
 
   router.get('/google', (c) => {
     const { url, state } = getGoogleAuthUrl()
-    setCookie(c, 'oauth_state', state, {
-      httpOnly: true,
-      path: '/',
-      sameSite: 'Lax',
-      maxAge: 300,
-      secure: isProduction,
-    })
+    setCookie(c, 'oauth_state', state, OAUTH_STATE_COOKIE_OPTIONS)
     return c.redirect(url)
   })
 
@@ -2635,8 +2671,8 @@ export { makeNewsletterRouter } from './presentation/newsletterRouter'
 
 
 === apps/api/src/features/newsletter/infrastructure/newsletterRepository.ts ===
-import { Prisma, type PrismaClient } from '@prisma/client'
-import { NotFoundError } from '../../../shared/errors'
+import type { PrismaClient } from '@prisma/client'
+import { handlePrismaError } from '../../../shared/infrastructure'
 
 export type NewsletterSubscriber = {
   id: string
@@ -2650,18 +2686,7 @@ export type NewsletterRepository = {
   deleteById(id: string): Promise<void>
 }
 
-function handlePrismaError(err: unknown): never {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === 'P2025') throw new NotFoundError('Subscriber not found')
-    console.error('Prisma known error:', { code: err.code, meta: err.meta, message: err.message })
-    throw new Error('Database error', { cause: err })
-  }
-  if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-    console.error('Prisma unknown error:', err.message)
-    throw new Error('Database error', { cause: err })
-  }
-  throw err
-}
+const NOT_FOUND_MESSAGE = 'Subscriber not found'
 
 export function makeNewsletterRepository(prisma: PrismaClient): NewsletterRepository {
   return {
@@ -2691,7 +2716,7 @@ export function makeNewsletterRepository(prisma: PrismaClient): NewsletterReposi
       try {
         await prisma.newsletterSubscriber.delete({ where: { id } })
       } catch (err) {
-        handlePrismaError(err)
+        handlePrismaError(err, { notFoundMessage: NOT_FOUND_MESSAGE })
       }
     },
   }
@@ -2832,10 +2857,17 @@ export async function cleanupExpiredAuthRecords(prisma: PrismaClient): Promise<v
 
 === apps/api/src/shared/infrastructure/handlePrismaError.ts ===
 import { Prisma } from '@prisma/client'
-import { AppError } from '../errors'
+import { AppError, NotFoundError } from '../errors'
 
-export function handlePrismaError(err: unknown): never {
+type HandlerOptions = {
+  notFoundMessage?: string
+}
+
+export function handlePrismaError(err: unknown, options: HandlerOptions = {}): never {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2025' && options.notFoundMessage) {
+      throw new NotFoundError(options.notFoundMessage)
+    }
     console.error('Prisma known error:', { code: err.code, meta: err.meta })
     throw new AppError(500, 'Database error')
   }
@@ -2929,6 +2961,83 @@ export function generateRefreshToken(): string {
 export function hashToken(token: string): string {
   return createHmac('sha256', getHmacSecret()).update(token).digest('hex')
 }
+
+
+=== apps/api/src/shared/middleware/rateLimit.test.ts ===
+import { describe, it, expect } from 'vitest'
+import { Hono } from 'hono'
+import { createRateLimiter } from './rateLimit'
+
+function buildApp(max: number, windowMs: number) {
+  const limiter = createRateLimiter({ max, windowMs })
+  const app = new Hono()
+  app.get('/', limiter.middleware, (c) => c.json({ ok: true }))
+  return { app, limiter }
+}
+
+function request(app: Hono, ip = '1.1.1.1') {
+  return app.request('/', { headers: { 'x-forwarded-for': ip } })
+}
+
+describe('createRateLimiter', () => {
+  it('пропускает первый запрос', async () => {
+    const { app } = buildApp(2, 60_000)
+    const res = await request(app)
+    expect(res.status).toBe(200)
+  })
+
+  it('пропускает запросы до лимита', async () => {
+    const { app } = buildApp(3, 60_000)
+    expect((await request(app)).status).toBe(200)
+    expect((await request(app)).status).toBe(200)
+    expect((await request(app)).status).toBe(200)
+  })
+
+  it('возвращает 429 при превышении лимита', async () => {
+    const { app } = buildApp(2, 60_000)
+    await request(app)
+    await request(app)
+    const res = await request(app)
+    expect(res.status).toBe(429)
+    expect(await res.json()).toEqual({ error: 'Too many requests' })
+  })
+
+  it('считает лимиты независимо для разных IP', async () => {
+    const { app } = buildApp(1, 60_000)
+    expect((await request(app, '1.1.1.1')).status).toBe(200)
+    expect((await request(app, '1.1.1.1')).status).toBe(429)
+    expect((await request(app, '2.2.2.2')).status).toBe(200)
+  })
+
+  it('берёт первый IP из x-forwarded-for со списком', async () => {
+    const { app } = buildApp(1, 60_000)
+    expect((await app.request('/', { headers: { 'x-forwarded-for': '5.5.5.5, 10.0.0.1' } })).status).toBe(200)
+    expect((await app.request('/', { headers: { 'x-forwarded-for': '5.5.5.5, 99.99.99.99' } })).status).toBe(429)
+  })
+
+  it('сбрасывается через reset()', async () => {
+    const { app, limiter } = buildApp(1, 60_000)
+    await request(app)
+    expect((await request(app)).status).toBe(429)
+    limiter.reset()
+    expect((await request(app)).status).toBe(200)
+  })
+
+  it('падает на unknown IP когда заголовков нет', async () => {
+    const { app } = buildApp(1, 60_000)
+    expect((await app.request('/')).status).toBe(200)
+    expect((await app.request('/')).status).toBe(429)
+  })
+
+  it('использует x-real-ip как fallback', async () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 60_000 })
+    const app = new Hono()
+    app.get('/', limiter.middleware, (c) => c.json({ ok: true }))
+    expect((await app.request('/', { headers: { 'x-real-ip': '7.7.7.7' } })).status).toBe(200)
+    expect((await app.request('/', { headers: { 'x-real-ip': '7.7.7.7' } })).status).toBe(429)
+    expect((await app.request('/', { headers: { 'x-real-ip': '8.8.8.8' } })).status).toBe(200)
+  })
+})
 
 
 === apps/api/src/shared/middleware/rateLimit.ts ===
@@ -3374,6 +3483,15 @@ describe('useAuthStore', () => {
 
 
 === apps/web/src/features/auth/store.ts ===
+// Централизованное хранилище Pinia для управления состоянием аутентификации пользователя.
+//  Основные функции:
+//  - Управление сессией: хранение данных профиля (User) и Access Token в памяти приложения.
+//  - Инкапсуляция Auth API: реализация методов входа (login), регистрации (register) и выхода (logout).
+//  - Механизм Silent Refresh: автоматическое восстановление сессии через Refresh Token в httpOnly cookies.
+//  - Валидация данных: использование Zod-схем для строгой проверки ответов от бэкенда.
+//  Безопасность:
+//  - Состояние экспортируется как readonly, изменения возможны только через экшены стора.
+//  - Access Token не сохраняется в LocalStorage для предотвращения XSS-атак.
 import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { z } from 'zod'
@@ -3507,7 +3625,33 @@ export const useAuthStore = defineStore('auth', () => {
     setAccessToken,
   }
 })
-
+// Этот стор (хранилище **Pinia**) можно представить как **«главного администратора»** на входе в здание. Он отвечает за то, 
+// чтобы узнавать пользователей, выдавать им пропуска и следить, чтобы они не заходили туда, куда им нельзя.
+// Вот как он работает «на пальцах» и где он подключается в коде:
+// ### 1. Как работает стор (ELI5 — просто о сложном)
+// *   **У него есть «память» (State):** Он помнит, кто сейчас залогинен (`user`) и есть ли у него специальный «ключ» для 
+// запросов к серверу (`accessToken`). 
+// *   **Он умеет «проверять документы» (Actions):** 
+//     *   Когда ты вводишь логин и пароль, метод **`login`** отправляет их на сервер. Если всё верно, сервер дает «ключ», 
+// который стор кладет себе в карман.
+//     *   Если ты закрыл и снова открыл сайт, стор вызывает **`initAuth`**. Он тихо спрашивает сервер: «У меня тут в печеньках
+// (cookies) осталась старая метка, дашь мне новый ключ?». Если сервер кивает, ты входишь автоматически.
+// *   **Безопасность:** Стор хранит «ключ» (`accessToken`) только в своей оперативной памяти. Если ты обновишь страницу, ключ 
+// исчезнет, и стор тут же побежит за новым, используя защищенную метку из куки.
+// ### 2. Где он подключается?
+// Стор не просто лежит в папке, он интегрирован в «кровеносную» и «нервную» системы приложения:
+// *   **В главной точке входа (`main.ts`):** Как только приложение запускается, стор подключается к **сетевому перехватчику   
+// (Interceptor)**.
+//     *   Это значит, что при каждом запросе к серверу (например, «дай список товаров»), система автоматически лезет в стор,  
+// берет оттуда `accessToken` и прикрепляет его к письму для сервера.
+//     *   Если сервер ответит «Ключ не подходит!», стор тут же попробует его обновить или выкинет пользователя из системы.
+// *   **В навигаторе (`router/index.ts`):** Стор работает «охранником» на дверях страниц.
+//     *   Перед тем как пустить тебя на страницу «Личный кабинет», роутер спрашивает у стора: **`isLoggedIn?`**.
+//     *   Если стор говорит «Нет», роутер не дает тебе пройти и вместо этого открывает окно входа (`AuthModal`).
+// *   **В компонентах интерфейса:** Например, в шапке сайта (`AppHeader`). Если стор говорит, что пользователь вошел, шапка   
+// показывает кнопку «Выход» и имя пользователя. Если нет — кнопку «Войти».
+// **Итог:** Стор — это единственный источник правды об авторизации, к которому обращаются и сетевые запросы, и страницы сайта,
+// и кнопки в меню.
 
 === apps/web/src/features/auth/types.ts ===
 export type User = {
@@ -3520,193 +3664,172 @@ export type User = {
 
 === apps/web/src/features/auth-modal/AuthModal.vue ===
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="isOpen"
-        ref="overlayRef"
-        class="auth-modal__overlay"
-        tabindex="-1"
-        @click.self="close"
-        @keydown.escape="close"
+  <BaseModal
+    :is-open="isOpen"
+    :labelled-by="labelledBy"
+    @close="close"
+    @open="resetForms"
+  >
+    <div class="auth-modal">
+      <button
+        v-if="mode !== 'verify-pending'"
+        class="auth-modal__google"
+        type="button"
+        @click="handleGoogle"
       >
-        <div
-          class="auth-modal"
-          role="dialog"
-          aria-modal="true"
-          :aria-labelledby="mode === 'login' ? 'auth-modal-login-title' : mode === 'register' ? 'auth-modal-register-title' : 'auth-modal-verify-title'"
-        >
-          <button
-            class="auth-modal__close"
-            aria-label="Close"
-            @click="close"
-          >
-            ×
-          </button>
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continue with Google
+      </button>
 
-          <!-- Google OAuth -->
-          <button
-            v-if="mode !== 'verify-pending'"
-            class="auth-modal__google"
-            type="button"
-            @click="handleGoogle"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continue with Google
-          </button>
-
-          <div v-if="mode !== 'verify-pending'" class="auth-modal__divider">
-            <span>or</span>
-          </div>
-
-          <div
-            v-if="mode === 'verify-pending'"
-            class="auth-modal__verify"
-          >
-            <h2 id="auth-modal-verify-title" class="auth-modal__title">Check your email</h2>
-            <p class="auth-modal__verify-text">
-              We've sent a confirmation link to your email address. Please check your inbox and click the link to activate your account.
-            </p>
-            <button type="button" class="auth-modal__switch-btn" @click="open('login')">
-              Back to sign in
-            </button>
-          </div>
-
-          <form
-            v-if="mode === 'login'"
-            class="auth-modal__form"
-            novalidate
-            @submit.prevent="handleLogin"
-          >
-            <h2 id="auth-modal-login-title" class="auth-modal__title">Sign in</h2>
-
-            <div class="auth-modal__field">
-              <label class="auth-modal__label" for="auth-email">Email</label>
-              <input
-                id="auth-email"
-                v-model="loginForm.email"
-                class="auth-modal__input"
-                :class="{ 'auth-modal__input--error': loginErrors.email }"
-                type="email"
-                autocomplete="email"
-              >
-              <span v-if="loginErrors.email" class="auth-modal__error">{{ loginErrors.email }}</span>
-            </div>
-
-            <div class="auth-modal__field">
-              <label class="auth-modal__label" for="auth-password">Password</label>
-              <input
-                id="auth-password"
-                v-model="loginForm.password"
-                class="auth-modal__input"
-                :class="{ 'auth-modal__input--error': loginErrors.password }"
-                type="password"
-                autocomplete="current-password"
-              >
-              <span v-if="loginErrors.password" class="auth-modal__error">{{ loginErrors.password }}</span>
-            </div>
-
-            <p v-if="submitError" class="auth-modal__error auth-modal__error--global">{{ submitError }}</p>
-
-            <button
-              class="auth-modal__submit"
-              type="submit"
-              :disabled="isLoading"
-            >
-              {{ isLoading ? 'Signing in…' : 'Sign in' }}
-            </button>
-
-            <p class="auth-modal__switch">
-              No account?
-              <button type="button" class="auth-modal__switch-btn" @click="open('register')">
-                Create one
-              </button>
-            </p>
-          </form>
-
-          <form
-            v-if="mode === 'register'"
-            class="auth-modal__form"
-            novalidate
-            @submit.prevent="handleRegister"
-          >
-            <h2 id="auth-modal-register-title" class="auth-modal__title">Create account</h2>
-
-            <div class="auth-modal__field">
-              <label class="auth-modal__label" for="auth-name">Name</label>
-              <input
-                id="auth-name"
-                v-model="registerForm.name"
-                class="auth-modal__input"
-                :class="{ 'auth-modal__input--error': registerErrors.name }"
-                type="text"
-                autocomplete="name"
-              >
-              <span v-if="registerErrors.name" class="auth-modal__error">{{ registerErrors.name }}</span>
-            </div>
-
-            <div class="auth-modal__field">
-              <label class="auth-modal__label" for="auth-reg-email">Email</label>
-              <input
-                id="auth-reg-email"
-                v-model="registerForm.email"
-                class="auth-modal__input"
-                :class="{ 'auth-modal__input--error': registerErrors.email }"
-                type="email"
-                autocomplete="email"
-              >
-              <span v-if="registerErrors.email" class="auth-modal__error">{{ registerErrors.email }}</span>
-            </div>
-
-            <div class="auth-modal__field">
-              <label class="auth-modal__label" for="auth-reg-password">Password</label>
-              <input
-                id="auth-reg-password"
-                v-model="registerForm.password"
-                class="auth-modal__input"
-                :class="{ 'auth-modal__input--error': registerErrors.password }"
-                type="password"
-                autocomplete="new-password"
-              >
-              <span v-if="registerErrors.password" class="auth-modal__error">{{ registerErrors.password }}</span>
-            </div>
-
-            <p v-if="submitError" class="auth-modal__error auth-modal__error--global">{{ submitError }}</p>
-
-            <button
-              class="auth-modal__submit"
-              type="submit"
-              :disabled="isLoading"
-            >
-              {{ isLoading ? 'Creating…' : 'Create account' }}
-            </button>
-
-            <p class="auth-modal__switch">
-              Already have an account?
-              <button type="button" class="auth-modal__switch-btn" @click="open('login')">
-                Sign in
-              </button>
-            </p>
-          </form>
-        </div>
+      <div v-if="mode !== 'verify-pending'" class="auth-modal__divider">
+        <span>or</span>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div
+        v-if="mode === 'verify-pending'"
+        class="auth-modal__verify"
+      >
+        <h2 id="auth-modal-verify-title" class="auth-modal__title">Check your email</h2>
+        <p class="auth-modal__verify-text">
+          We've sent a confirmation link to your email address. Please check your inbox and click the link to activate your account.
+        </p>
+        <button type="button" class="auth-modal__switch-btn" @click="open('login')">
+          Back to sign in
+        </button>
+      </div>
+
+      <form
+        v-if="mode === 'login'"
+        class="auth-modal__form"
+        novalidate
+        @submit.prevent="handleLogin"
+      >
+        <h2 id="auth-modal-login-title" class="auth-modal__title">Sign in</h2>
+
+        <div class="auth-modal__field">
+          <label class="auth-modal__label" for="auth-email">Email</label>
+          <input
+            id="auth-email"
+            v-model="loginForm.email"
+            class="auth-modal__input"
+            :class="{ 'auth-modal__input--error': loginErrors.email }"
+            type="email"
+            autocomplete="email"
+          >
+          <span v-if="loginErrors.email" class="auth-modal__error">{{ loginErrors.email }}</span>
+        </div>
+
+        <div class="auth-modal__field">
+          <label class="auth-modal__label" for="auth-password">Password</label>
+          <input
+            id="auth-password"
+            v-model="loginForm.password"
+            class="auth-modal__input"
+            :class="{ 'auth-modal__input--error': loginErrors.password }"
+            type="password"
+            autocomplete="current-password"
+          >
+          <span v-if="loginErrors.password" class="auth-modal__error">{{ loginErrors.password }}</span>
+        </div>
+
+        <p v-if="submitError" class="auth-modal__error auth-modal__error--global">{{ submitError }}</p>
+
+        <button
+          class="auth-modal__submit"
+          type="submit"
+          :disabled="isLoading"
+        >
+          {{ isLoading ? 'Signing in…' : 'Sign in' }}
+        </button>
+
+        <p class="auth-modal__switch">
+          No account?
+          <button type="button" class="auth-modal__switch-btn" @click="open('register')">
+            Create one
+          </button>
+        </p>
+      </form>
+
+      <form
+        v-if="mode === 'register'"
+        class="auth-modal__form"
+        novalidate
+        @submit.prevent="handleRegister"
+      >
+        <h2 id="auth-modal-register-title" class="auth-modal__title">Create account</h2>
+
+        <div class="auth-modal__field">
+          <label class="auth-modal__label" for="auth-name">Name</label>
+          <input
+            id="auth-name"
+            v-model="registerForm.name"
+            class="auth-modal__input"
+            :class="{ 'auth-modal__input--error': registerErrors.name }"
+            type="text"
+            autocomplete="name"
+          >
+          <span v-if="registerErrors.name" class="auth-modal__error">{{ registerErrors.name }}</span>
+        </div>
+
+        <div class="auth-modal__field">
+          <label class="auth-modal__label" for="auth-reg-email">Email</label>
+          <input
+            id="auth-reg-email"
+            v-model="registerForm.email"
+            class="auth-modal__input"
+            :class="{ 'auth-modal__input--error': registerErrors.email }"
+            type="email"
+            autocomplete="email"
+          >
+          <span v-if="registerErrors.email" class="auth-modal__error">{{ registerErrors.email }}</span>
+        </div>
+
+        <div class="auth-modal__field">
+          <label class="auth-modal__label" for="auth-reg-password">Password</label>
+          <input
+            id="auth-reg-password"
+            v-model="registerForm.password"
+            class="auth-modal__input"
+            :class="{ 'auth-modal__input--error': registerErrors.password }"
+            type="password"
+            autocomplete="new-password"
+          >
+          <span v-if="registerErrors.password" class="auth-modal__error">{{ registerErrors.password }}</span>
+        </div>
+
+        <p v-if="submitError" class="auth-modal__error auth-modal__error--global">{{ submitError }}</p>
+
+        <button
+          class="auth-modal__submit"
+          type="submit"
+          :disabled="isLoading"
+        >
+          {{ isLoading ? 'Creating…' : 'Create account' }}
+        </button>
+
+        <p class="auth-modal__switch">
+          Already have an account?
+          <button type="button" class="auth-modal__switch-btn" @click="open('login')">
+            Sign in
+          </button>
+        </p>
+      </form>
+    </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch, nextTick } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthModal } from './useAuthModal'
 import { useAuthStore } from '@/features/auth'
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+import { BaseModal, validateEmail } from '@/shared'
 
 const authModal = useAuthModal()
 const { isOpen, mode } = storeToRefs(authModal)
@@ -3714,7 +3837,6 @@ const { open, close, showVerifyPending } = authModal
 const authStore = useAuthStore()
 const router = useRouter()
 
-const overlayRef = ref<HTMLElement | null>(null)
 const isLoading = ref(false)
 const submitError = ref('')
 
@@ -3724,10 +3846,10 @@ const loginErrors = reactive({ email: '', password: '' })
 const registerForm = reactive({ name: '', email: '', password: '' })
 const registerErrors = reactive({ name: '', email: '', password: '' })
 
-watch(isOpen, (open) => {
-  if (!open) return
-  nextTick(() => overlayRef.value?.focus())
-  resetForms()
+const labelledBy = computed(() => {
+  if (mode.value === 'login') return 'auth-modal-login-title'
+  if (mode.value === 'register') return 'auth-modal-register-title'
+  return 'auth-modal-verify-title'
 })
 
 watch(mode, () => {
@@ -3750,23 +3872,15 @@ function resetForms() {
 }
 
 function validateLogin(): boolean {
-  loginErrors.email = !loginForm.email.trim()
-    ? 'Email is required'
-    : !EMAIL_RE.test(loginForm.email) ? 'Invalid email' : ''
-  loginErrors.password = !loginForm.password
-    ? 'Password is required'
-    : ''
+  loginErrors.email = validateEmail(loginForm.email)
+  loginErrors.password = loginForm.password ? '' : 'Password is required'
   return !loginErrors.email && !loginErrors.password
 }
 
 function validateRegister(): boolean {
   registerErrors.name = registerForm.name.trim() ? '' : 'Name is required'
-  registerErrors.email = !registerForm.email.trim()
-    ? 'Email is required'
-    : !EMAIL_RE.test(registerForm.email) ? 'Invalid email' : ''
-  registerErrors.password = !registerForm.password
-    ? 'Password is required'
-    : ''
+  registerErrors.email = validateEmail(registerForm.email)
+  registerErrors.password = registerForm.password ? '' : 'Password is required'
   return !registerErrors.name && !registerErrors.email && !registerErrors.password
 }
 
@@ -3808,50 +3922,12 @@ function handleGoogle() {
 <style scoped lang="scss">
 @use '@/shared/lib/animated-border' as *;
 
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
 .auth-modal {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
   padding: 3rem 1.5rem 2rem;
   width: min(90vw, 420px);
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-
-  &__overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: var(--z-modal, 1000);
-  }
-
-  &__close {
-    position: absolute;
-    top: 0.75rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    line-height: 1;
-    color: var(--color-text-muted);
-
-    &:hover {
-      color: var(--color-text);
-    }
-  }
 
   &__google {
     display: flex;
@@ -4062,8 +4138,7 @@ describe('useAuthModal', () => {
 
 === apps/web/src/features/auth-modal/useAuthModal.ts ===
 import { defineStore } from 'pinia'
-import { ref, watch, readonly } from 'vue'
-import { lockScroll, unlockScroll } from '@/shared'
+import { ref, readonly } from 'vue'
 
 type AuthMode = 'login' | 'register' | 'verify-pending'
 
@@ -4085,186 +4160,151 @@ export const useAuthModal = defineStore('auth-modal', () => {
     mode.value = 'verify-pending'
   }
 
-  watch(isOpen, (v) => {
-    v ? lockScroll() : unlockScroll()
-  })
-
   return { isOpen: readonly(isOpen), mode: readonly(mode), open, close, showVerifyPending }
 })
 
 
 === apps/web/src/features/contact-modal/contactApi.ts ===
-import { apiFetch, apiErrorMessage } from '@/shared'
+import { apiPost } from '@/shared'
 
-export async function sendContactMessage(data: {
+export function sendContactMessage(data: {
   name: string
   email: string
   message: string
 }): Promise<void> {
-  const res = await apiFetch('/contact', {
-    method: 'POST',
-    json: data,
-  })
-  if (!res.ok) throw new Error(await apiErrorMessage(res, 'Failed to send message'))
+  return apiPost('/contact', data, 'Failed to send message')
 }
 
 
 === apps/web/src/features/contact-modal/ContactModal.vue ===
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="isOpen"
-        ref="overlayRef"
-        class="contact-modal__overlay"
-        tabindex="-1"
-        @click.self="close"
-        @keydown.escape="close"
+  <BaseModal
+    :is-open="isOpen"
+    labelled-by="contact-modal-title"
+    @close="close"
+    @open="resetForm"
+  >
+    <div class="contact-modal">
+      <h2
+        id="contact-modal-title"
+        class="contact-modal__title"
       >
-        <div
-          class="contact-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="contact-modal-title"
-        >
-          <button
-            class="contact-modal__close"
-            aria-label="Close"
-            @click="close"
-          >
-            ×
-          </button>
+        Get in touch
+      </h2>
 
-          <h2
-            id="contact-modal-title"
-            class="contact-modal__title"
-          >
-            Get in touch
-          </h2>
-
-          <div
-            v-if="submitStatus === 'success'"
-            class="contact-modal__success"
-          >
-            Message sent! I'll get back to you soon.
-          </div>
-
-          <form
-            v-else
-            class="contact-modal__form"
-            novalidate
-            @submit.prevent="handleSubmit"
-          >
-            <div class="contact-modal__field">
-              <label
-                class="contact-modal__label"
-                for="contact-name"
-              >Name</label>
-              <input
-                id="contact-name"
-                v-model="form.name"
-                class="contact-modal__input"
-                :class="{ 'contact-modal__input--error': errors.name }"
-                type="text"
-                autocomplete="name"
-              >
-              <span
-                v-if="errors.name"
-                class="contact-modal__error"
-              >{{ errors.name }}</span>
-            </div>
-
-            <div class="contact-modal__field">
-              <label
-                class="contact-modal__label"
-                for="contact-email"
-              >Email</label>
-              <input
-                id="contact-email"
-                v-model="form.email"
-                class="contact-modal__input"
-                :class="{ 'contact-modal__input--error': errors.email }"
-                type="email"
-                autocomplete="email"
-              >
-              <span
-                v-if="errors.email"
-                class="contact-modal__error"
-              >{{ errors.email }}</span>
-            </div>
-
-            <div class="contact-modal__field">
-              <label
-                class="contact-modal__label"
-                for="contact-message"
-              >Message</label>
-              <textarea
-                id="contact-message"
-                v-model="form.message"
-                class="contact-modal__textarea"
-                :class="{ 'contact-modal__input--error': errors.message }"
-                rows="4"
-              />
-              <span
-                v-if="errors.message"
-                class="contact-modal__error"
-              >{{ errors.message }}</span>
-            </div>
-
-            <p
-              v-if="submitStatus === 'error'"
-              class="contact-modal__error contact-modal__error--global"
-            >
-              {{ errorMessage || 'Something went wrong. Please try again.' }}
-            </p>
-
-            <button
-              class="contact-modal__submit"
-              type="submit"
-              :disabled="submitStatus === 'loading'"
-            >
-              {{ submitStatus === 'loading' ? 'Sending…' : 'Send message' }}
-            </button>
-          </form>
-        </div>
+      <div
+        v-if="submitStatus === 'success'"
+        class="contact-modal__success"
+      >
+        Message sent! I'll get back to you soon.
       </div>
-    </Transition>
-  </Teleport>
+
+      <form
+        v-else
+        class="contact-modal__form"
+        novalidate
+        @submit.prevent="handleSubmit"
+      >
+        <div class="contact-modal__field">
+          <label
+            class="contact-modal__label"
+            for="contact-name"
+          >Name</label>
+          <input
+            id="contact-name"
+            v-model="form.name"
+            class="contact-modal__input"
+            :class="{ 'contact-modal__input--error': errors.name }"
+            type="text"
+            autocomplete="name"
+          >
+          <span
+            v-if="errors.name"
+            class="contact-modal__error"
+          >{{ errors.name }}</span>
+        </div>
+
+        <div class="contact-modal__field">
+          <label
+            class="contact-modal__label"
+            for="contact-email"
+          >Email</label>
+          <input
+            id="contact-email"
+            v-model="form.email"
+            class="contact-modal__input"
+            :class="{ 'contact-modal__input--error': errors.email }"
+            type="email"
+            autocomplete="email"
+          >
+          <span
+            v-if="errors.email"
+            class="contact-modal__error"
+          >{{ errors.email }}</span>
+        </div>
+
+        <div class="contact-modal__field">
+          <label
+            class="contact-modal__label"
+            for="contact-message"
+          >Message</label>
+          <textarea
+            id="contact-message"
+            v-model="form.message"
+            class="contact-modal__textarea"
+            :class="{ 'contact-modal__input--error': errors.message }"
+            rows="4"
+          />
+          <span
+            v-if="errors.message"
+            class="contact-modal__error"
+          >{{ errors.message }}</span>
+        </div>
+
+        <p
+          v-if="submitStatus === 'error'"
+          class="contact-modal__error contact-modal__error--global"
+        >
+          {{ errorMessage || 'Something went wrong. Please try again.' }}
+        </p>
+
+        <button
+          class="contact-modal__submit"
+          type="submit"
+          :disabled="submitStatus === 'loading'"
+        >
+          {{ submitStatus === 'loading' ? 'Sending…' : 'Send message' }}
+        </button>
+      </form>
+    </div>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch, nextTick } from 'vue'
+import { reactive } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useContactModal } from './useContactModal'
+import { BaseModal, validateEmail } from '@/shared'
 
 const contactModal = useContactModal()
 const { isOpen, submitStatus, errorMessage } = storeToRefs(contactModal)
 const { close, submit } = contactModal
-const overlayRef = ref<HTMLElement | null>(null)
 
 const form = reactive({ name: '', email: '', message: '' })
 const errors = reactive({ name: '', email: '', message: '' })
 
-watch(isOpen, (open) => {
-  if (!open) return
-  nextTick(() => overlayRef.value?.focus())
+function resetForm() {
   form.name = ''
   form.email = ''
   form.message = ''
   errors.name = ''
   errors.email = ''
   errors.message = ''
-})
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+}
 
 function validate(): boolean {
   errors.name = form.name.trim() ? '' : 'Name is required'
-  errors.email = !form.email.trim()
-    ? 'Email is required'
-    : !EMAIL_RE.test(form.email)
-      ? 'Invalid email'
-      : ''
+  errors.email = validateEmail(form.email)
   errors.message = form.message.trim() ? '' : 'Message is required'
   return !errors.name && !errors.email && !errors.message
 }
@@ -4277,50 +4317,13 @@ async function handleSubmit() {
 
 <style scoped lang="scss">
 @use '@/shared/lib/animated-border' as *;
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
 
 .contact-modal {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
   padding: 2rem 1.5rem;
   width: min(90vw, 480px);
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-
-  &__overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: var(--z-modal, 1000);
-  }
-
-  &__close {
-    position: absolute;
-    top: 0.75rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    line-height: 1;
-    color: var(--color-text-muted);
-
-    &:hover {
-      color: var(--color-text);
-    }
-  }
 
   &__title {
     font-family: var(--font-brand);
@@ -4423,11 +4426,12 @@ export { useContactModal } from './useContactModal'
 
 === apps/web/src/features/contact-modal/useContactModal.ts ===
 import { defineStore } from 'pinia'
-import { ref, watch, readonly } from 'vue'
-import { lockScroll, unlockScroll } from '@/shared'
+import { ref, readonly } from 'vue'
 import { sendContactMessage } from './contactApi'
 
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
+
+const SUCCESS_CLOSE_DELAY_MS = 2000
 
 export const useContactModal = defineStore('contact-modal', () => {
   const isOpen = ref(false)
@@ -4452,6 +4456,8 @@ export const useContactModal = defineStore('contact-modal', () => {
   function close() {
     clearCloseTimer()
     isOpen.value = false
+    submitStatus.value = 'idle'
+    errorMessage.value = ''
   }
 
   async function submit(data: { name: string; email: string; message: string }) {
@@ -4460,16 +4466,12 @@ export const useContactModal = defineStore('contact-modal', () => {
     try {
       await sendContactMessage(data)
       submitStatus.value = 'success'
-      closeTimerId = setTimeout(close, 2000)
+      closeTimerId = setTimeout(close, SUCCESS_CLOSE_DELAY_MS)
     } catch (err) {
       errorMessage.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       submitStatus.value = 'error'
     }
   }
-
-  watch(isOpen, (v) => {
-    v ? lockScroll() : unlockScroll()
-  })
 
   return {
     isOpen: readonly(isOpen),
@@ -4559,16 +4561,10 @@ describe('subscribeToNewsletter — ошибочный ответ без тел�
 
 
 === apps/web/src/features/newsletter-subscribe/newsletterApi.ts ===
-import { apiFetch, apiErrorMessage } from '@/shared'
+import { apiPost } from '@/shared'
 
-export async function subscribeToNewsletter(email: string): Promise<void> {
-  const res = await apiFetch('/newsletter/subscribe', {
-    method: 'POST',
-    json: { email },
-  })
-  if (!res.ok) {
-    throw new Error(await apiErrorMessage(res, 'Subscription failed'))
-  }
+export function subscribeToNewsletter(email: string): Promise<void> {
+  return apiPost('/newsletter/subscribe', { email }, 'Subscription failed')
 }
 
 
@@ -4854,16 +4850,10 @@ describe('useNewsletterSubscribe — клиентская валидация', (
 
 === apps/web/src/features/newsletter-subscribe/useNewsletterSubscribe.ts ===
 import { ref } from 'vue'
-import { z } from 'zod'
+import { emailSchema } from '@/shared'
 import { subscribeToNewsletter } from './newsletterApi'
 
 type State = 'idle' | 'loading' | 'success' | 'error'
-
-const emailSchema = z
-  .string()
-  .trim()
-  .min(1, { message: 'Please enter your email' })
-  .email({ message: 'Invalid email format' })
 
 export function useNewsletterSubscribe() {
   const email = ref('')
@@ -4873,7 +4863,7 @@ export function useNewsletterSubscribe() {
   async function handleSubmit() {
     const parsed = emailSchema.safeParse(email.value)
     if (!parsed.success) {
-      errorMessage.value = parsed.error.issues[0]?.message ?? 'Invalid email format'
+      errorMessage.value = parsed.error.issues[0]?.message ?? 'Invalid email'
       state.value = 'error'
       return
     }
@@ -4932,7 +4922,7 @@ import { PlaceholderPage } from '@/shared'
 === apps/web/src/pages/AuthCallbackPage.vue ===
 <template>
   <div class="auth-callback">
-    <p v-if="!failed && !done">Completing sign in...</p>
+    <p v-if="!failed">Completing sign in...</p>
     <p v-if="failed">
       Authentication failed.
       <RouterLink to="/">Go home</RouterLink>
@@ -4944,11 +4934,11 @@ import { PlaceholderPage } from '@/shared'
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
+import { resolveSafeRedirect } from '@/shared'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const failed = ref(false)
-const done = ref(false)
 
 onMounted(async () => {
   const searchParams = new URLSearchParams(window.location.search)
@@ -4964,15 +4954,14 @@ onMounted(async () => {
 
   await authStore.loginFromCookie()
 
-  if (authStore.isLoggedIn) {
-    const stored = sessionStorage.getItem('auth_redirect')
-    sessionStorage.removeItem('auth_redirect')
-    const isSafe = !!stored && stored.startsWith('/') && !stored.startsWith('//')
-    router.replace(isSafe ? stored : '/')
-  } else {
+  if (!authStore.isLoggedIn) {
     failed.value = true
+    return
   }
-  done.value = true
+
+  const stored = sessionStorage.getItem('auth_redirect')
+  sessionStorage.removeItem('auth_redirect')
+  router.replace(resolveSafeRedirect(stored))
 })
 </script>
 
@@ -5047,7 +5036,7 @@ import { PlaceholderPage } from '@/shared'
 === apps/web/src/pages/VerifyEmailPage.vue ===
 <template>
   <div class="verify-email">
-    <p v-if="!failed && !done">Verifying your email...</p>
+    <p v-if="!failed">Verifying your email...</p>
     <p v-if="failed">
       The link is invalid or has expired.
       <RouterLink to="/">Go home</RouterLink>
@@ -5065,7 +5054,6 @@ import { z } from 'zod'
 const router = useRouter()
 const authStore = useAuthStore()
 const failed = ref(false)
-const done = ref(false)
 
 const verifyResponseSchema = z.object({
   accessToken: z.string(),
@@ -5094,7 +5082,6 @@ onMounted(async () => {
     const body = verifyResponseSchema.parse(await res.json())
     await authStore.loginWithToken(body.accessToken)
     router.replace('/')
-    done.value = true
   } catch {
     failed.value = true
   }
@@ -5206,12 +5193,15 @@ describe('router', () => {
 === apps/web/src/shared/index.ts ===
 export { default as AppButton } from './ui/AppButton.vue'
 export { default as AppLogo } from './ui/AppLogo.vue'
+export { default as BaseModal } from './ui/BaseModal.vue'
 export { default as PlaceholderPage } from './ui/PlaceholderPage.vue'
 export { useSlider } from './lib/useSlider'
-export { apiFetch, apiErrorMessage, authFetch, setupAuthInterceptor } from './lib/apiClient'
+export { apiFetch, apiErrorMessage, apiPost, authFetch, setupAuthInterceptor } from './lib/apiClient'
 export { lockScroll, unlockScroll } from './lib/useBodyScrollLock'
 export { useClickOutside } from './lib/useClickOutside'
 export { MEDIA } from './lib/breakpoints'
+export { emailSchema, validateEmail } from './lib/validation'
+export { resolveSafeRedirect } from './lib/safeRedirect'
 
 
 === apps/web/src/shared/lib/_animated-border.scss ===
@@ -5275,6 +5265,11 @@ export async function apiErrorMessage(res: Response, fallback: string): Promise<
   return (data as { error?: string }).error ?? fallback
 }
 
+export async function apiPost(path: string, body?: unknown, fallback = 'Request failed'): Promise<void> {
+  const res = await apiFetch(path, { method: 'POST', json: body })
+  if (!res.ok) throw new Error(await apiErrorMessage(res, fallback))
+}
+
 let authCallbacks: {
   getAccessToken: () => string | null
   setAccessToken: (token: string) => void
@@ -5316,7 +5311,6 @@ export async function authFetch(path: string, init: ApiRequestInit = {}): Promis
   return apiFetch(path, { ...init, accessToken: newToken })
 }
 
-
 === apps/web/src/shared/lib/breakpoints.ts ===
 import bp from '@/assets/styles/breakpoints.module.scss'
 
@@ -5324,6 +5318,64 @@ export const MEDIA = {
   tablet: `(min-width: ${bp.tablet}px)`,
   desktop: `(min-width: ${bp.desktop}px)`,
 } as const
+
+
+=== apps/web/src/shared/lib/safeRedirect.test.ts ===
+import { describe, it, expect } from 'vitest'
+import { resolveSafeRedirect } from './safeRedirect'
+
+const ORIGIN = 'https://natsdoll.com'
+
+describe('resolveSafeRedirect', () => {
+  it('возвращает "/" для null', () => {
+    expect(resolveSafeRedirect(null, ORIGIN)).toBe('/')
+  })
+
+  it('возвращает "/" для пустой строки', () => {
+    expect(resolveSafeRedirect('', ORIGIN)).toBe('/')
+  })
+
+  it('возвращает относительный путь как есть', () => {
+    expect(resolveSafeRedirect('/cart', ORIGIN)).toBe('/cart')
+  })
+
+  it('сохраняет search и hash', () => {
+    expect(resolveSafeRedirect('/shop?id=1#top', ORIGIN)).toBe('/shop?id=1#top')
+  })
+
+  it('возвращает "/" для absolute URL на другой origin', () => {
+    expect(resolveSafeRedirect('https://evil.com/path', ORIGIN)).toBe('/')
+  })
+
+  it('возвращает "/" для protocol-relative URL', () => {
+    expect(resolveSafeRedirect('//evil.com/path', ORIGIN)).toBe('/')
+  })
+
+  it('возвращает путь для absolute URL на тот же origin', () => {
+    expect(resolveSafeRedirect(`${ORIGIN}/account`, ORIGIN)).toBe('/account')
+  })
+
+  it('возвращает "/" для javascript: схемы (другой origin)', () => {
+    expect(resolveSafeRedirect('javascript:alert(1)', ORIGIN)).toBe('/')
+  })
+
+  it('возвращает "/" для data: схемы', () => {
+    expect(resolveSafeRedirect('data:text/html,<script>alert(1)</script>', ORIGIN)).toBe('/')
+  })
+})
+
+
+=== apps/web/src/shared/lib/safeRedirect.ts ===
+export function resolveSafeRedirect(stored: string | null, origin: string = window.location.origin): string {
+  if (!stored) return '/'
+  try {
+    const url = new URL(stored, origin)
+    if (url.origin !== origin) return '/'
+    return url.pathname + url.search + url.hash
+  } catch {
+    return '/'
+  }
+}
 
 
 === apps/web/src/shared/lib/useBodyScrollLock.ts ===
@@ -5453,6 +5505,13 @@ describe('useSlider', () => {
 
 
 === apps/web/src/shared/lib/useSlider.ts ===
+// Универсальная логика для управления слайдером.
+//  Предоставляет:
+//  - Циклическое переключение (вперед/назад/переход к индексу).
+//  - Автоматическую смену слайдов через заданный интервал.
+//  - Интеллектуальный сброс таймера при ручном взаимодействии.
+//  - Автоматическую очистку ресурсов при уничтожени
+
 import { ref, computed, watch, onMounted, onUnmounted, isRef } from 'vue'
 import type { Ref } from 'vue'
 
@@ -5520,6 +5579,76 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
   })
 
   return { currentIndex, next, prev, goTo, pause, resume }
+}
+
+
+=== apps/web/src/shared/lib/validation.test.ts ===
+import { describe, it, expect } from 'vitest'
+import { emailSchema, validateEmail } from './validation'
+
+describe('emailSchema', () => {
+  it('принимает корректный email', () => {
+    expect(emailSchema.safeParse('nat@test.com').success).toBe(true)
+  })
+
+  it('обрезает пробелы по краям', () => {
+    const result = emailSchema.safeParse('  nat@test.com  ')
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data).toBe('nat@test.com')
+  })
+
+  it('отклоняет пустую строку с сообщением "Please enter your email"', () => {
+    const result = emailSchema.safeParse('')
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.issues[0]?.message).toBe('Please enter your email')
+  })
+
+  it('отклоняет строку из пробелов с сообщением "Please enter your email"', () => {
+    const result = emailSchema.safeParse('   ')
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.issues[0]?.message).toBe('Please enter your email')
+  })
+
+  it('отклоняет невалидный формат с сообщением "Invalid email format"', () => {
+    const result = emailSchema.safeParse('not-an-email')
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.issues[0]?.message).toBe('Invalid email format')
+  })
+
+  it('отклоняет email без домена', () => {
+    const result = emailSchema.safeParse('nat@')
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.issues[0]?.message).toBe('Invalid email format')
+  })
+})
+
+describe('validateEmail', () => {
+  it('возвращает пустую строку для валидного email', () => {
+    expect(validateEmail('nat@test.com')).toBe('')
+  })
+
+  it('возвращает "Please enter your email" для пустой строки', () => {
+    expect(validateEmail('')).toBe('Please enter your email')
+  })
+
+  it('возвращает "Invalid email format" для невалидного email', () => {
+    expect(validateEmail('abc')).toBe('Invalid email format')
+  })
+})
+
+
+=== apps/web/src/shared/lib/validation.ts ===
+import { z } from 'zod'
+
+export const emailSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Please enter your email' })
+  .email({ message: 'Invalid email format' })
+
+export function validateEmail(value: string): string {
+  const parsed = emailSchema.safeParse(value)
+  return parsed.success ? '' : parsed.error.issues[0]?.message ?? 'Invalid email format'
 }
 
 
@@ -5601,6 +5730,9 @@ describe('AppButton — с пропом to', () => {
 
 
 === apps/web/src/shared/ui/AppButton.vue ===
+<!-- "$attrs" позволяет «пробрасывать» любые стандартные атрибуты (например,   
+`type="submit"`, `disabled`, `title`) и обработчики событий (например, `@click`) напрямую на итоговый HTML-элемент, не   
+описывая их как отдельные пропы. -->
 <template>
   <RouterLink
     v-if="to"
@@ -5683,6 +5815,358 @@ import { RouterLink } from 'vue-router'
 </style>
 
 
+=== apps/web/src/shared/ui/BaseModal.test.ts ===
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
+import BaseModal from './BaseModal.vue'
+
+function mountModal(props: { isOpen: boolean; labelledBy?: string } = { isOpen: false }) {
+  return mount(BaseModal, {
+    props,
+    slots: { default: '<input data-test="first" /><button data-test="last">ok</button>' },
+    attachTo: document.body,
+    global: { stubs: { Teleport: false, Transition: false } },
+  })
+}
+
+describe('BaseModal', () => {
+  beforeEach(() => {
+    document.body.replaceChildren()
+    document.body.style.overflow = ''
+  })
+
+  afterEach(() => {
+    document.body.style.overflow = ''
+  })
+
+  it('не рендерит контент когда isOpen=false', () => {
+    const wrapper = mountModal({ isOpen: false })
+    expect(document.querySelector('.base-modal')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('рендерит контент когда isOpen=true', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+    expect(document.querySelector('.base-modal')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  it('эмитит close при клике на кнопку ×', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+    const closeBtn = document.querySelector<HTMLButtonElement>('.base-modal__close')
+    closeBtn?.click()
+    expect(wrapper.emitted('close')).toBeTruthy()
+    wrapper.unmount()
+  })
+
+  it('эмитит close при клике на overlay (вне контента)', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+    const overlay = document.querySelector<HTMLElement>('.base-modal__overlay')
+    overlay?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(wrapper.emitted('close')).toBeTruthy()
+    wrapper.unmount()
+  })
+
+  it('НЕ эмитит close при клике внутри .base-modal', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+    const modal = document.querySelector<HTMLElement>('.base-modal')
+    modal?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(wrapper.emitted('close')).toBeFalsy()
+    wrapper.unmount()
+  })
+
+  it('эмитит close при нажатии Escape', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(wrapper.emitted('close')).toBeTruthy()
+    wrapper.unmount()
+  })
+
+  it('эмитит open при переходе isOpen false → true', async () => {
+    const wrapper = mountModal({ isOpen: false })
+    await wrapper.setProps({ isOpen: true })
+    expect(wrapper.emitted('open')).toBeTruthy()
+    wrapper.unmount()
+  })
+
+  it('блокирует body scroll при открытии и снимает при закрытии', async () => {
+    const wrapper = mountModal({ isOpen: false })
+    expect(document.body.style.overflow).toBe('')
+    await wrapper.setProps({ isOpen: true })
+    expect(document.body.style.overflow).toBe('hidden')
+    await wrapper.setProps({ isOpen: false })
+    expect(document.body.style.overflow).toBe('')
+    wrapper.unmount()
+  })
+
+  it('снимает scroll lock при unmount если модалка была открыта', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+    expect(document.body.style.overflow).toBe('hidden')
+    wrapper.unmount()
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('возвращает фокус на предыдущий элемент при закрытии', async () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    expect(document.activeElement).toBe(trigger)
+
+    const wrapper = mountModal({ isOpen: false })
+    await wrapper.setProps({ isOpen: true })
+    await nextTick()
+    await wrapper.setProps({ isOpen: false })
+
+    expect(document.activeElement).toBe(trigger)
+    wrapper.unmount()
+  })
+
+  it('переводит фокус на первый focusable элемент при открытии (кнопка ×)', async () => {
+    const wrapper = mountModal({ isOpen: false })
+    await wrapper.setProps({ isOpen: true })
+    await nextTick()
+    const closeBtn = document.querySelector<HTMLElement>('.base-modal__close')
+    expect(document.activeElement).toBe(closeBtn)
+    wrapper.unmount()
+  })
+
+  it('прокидывает labelledBy в aria-labelledby', async () => {
+    const wrapper = mountModal({ isOpen: true, labelledBy: 'modal-title' })
+    await nextTick()
+    const modal = document.querySelector('.base-modal')
+    expect(modal?.getAttribute('aria-labelledby')).toBe('modal-title')
+    wrapper.unmount()
+  })
+
+  it('устанавливает aria-modal=true и role=dialog', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+    const modal = document.querySelector('.base-modal')
+    expect(modal?.getAttribute('role')).toBe('dialog')
+    expect(modal?.getAttribute('aria-modal')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('focus trap: Tab с последнего элемента возвращает на первый (×)', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+
+    const last = document.querySelector<HTMLElement>('[data-test="last"]')!
+    const closeBtn = document.querySelector<HTMLElement>('.base-modal__close')!
+    last.focus()
+
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    const preventSpy = vi.spyOn(event, 'preventDefault')
+    last.dispatchEvent(event)
+
+    expect(preventSpy).toHaveBeenCalled()
+    expect(document.activeElement).toBe(closeBtn)
+    wrapper.unmount()
+  })
+
+  it('focus trap: Shift+Tab с первого элемента (×) переводит на последний', async () => {
+    const wrapper = mountModal({ isOpen: true })
+    await nextTick()
+
+    const closeBtn = document.querySelector<HTMLElement>('.base-modal__close')!
+    const last = document.querySelector<HTMLElement>('[data-test="last"]')!
+    closeBtn.focus()
+
+    const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })
+    const preventSpy = vi.spyOn(event, 'preventDefault')
+    closeBtn.dispatchEvent(event)
+
+    expect(preventSpy).toHaveBeenCalled()
+    expect(document.activeElement).toBe(last)
+    wrapper.unmount()
+  })
+})
+
+
+=== apps/web/src/shared/ui/BaseModal.vue ===
+<template>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div
+        v-if="isOpen"
+        ref="overlayRef"
+        class="base-modal__overlay"
+        @click.self="handleClose"
+      >
+        <div
+          ref="modalRef"
+          class="base-modal"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="labelledBy"
+          tabindex="-1"
+          @keydown.tab="onTab"
+        >
+          <button
+            class="base-modal__close"
+            aria-label="Close"
+            @click="handleClose"
+          >
+            ×
+          </button>
+          <slot />
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
+import { lockScroll, unlockScroll } from '../lib/useBodyScrollLock'
+
+const props = defineProps<{
+  isOpen: boolean
+  labelledBy?: string
+}>()
+
+const emit = defineEmits<{
+  close: []
+  open: []
+}>()
+
+const overlayRef = ref<HTMLElement | null>(null)
+const modalRef = ref<HTMLElement | null>(null)
+let previousFocus: HTMLElement | null = null
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
+function getFocusable(): HTMLElement[] {
+  if (!modalRef.value) return []
+  return Array.from(modalRef.value.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    e.stopPropagation()
+    handleClose()
+  }
+}
+
+function onTab(e: KeyboardEvent) {
+  if (e.key !== 'Tab') return
+  const items = getFocusable()
+  if (items.length === 0) {
+    e.preventDefault()
+    modalRef.value?.focus()
+    return
+  }
+  const first = items[0]
+  const last = items[items.length - 1]
+  const active = document.activeElement as HTMLElement | null
+  if (e.shiftKey && active === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
+watch(
+  () => props.isOpen,
+  (open, prev) => {
+    if (open) {
+      previousFocus = document.activeElement as HTMLElement | null
+      lockScroll()
+      window.addEventListener('keydown', onKeydown)
+      nextTick(() => {
+        const items = getFocusable()
+        ;(items[0] ?? modalRef.value)?.focus()
+      })
+      emit('open')
+    } else if (prev) {
+      unlockScroll()
+      window.removeEventListener('keydown', onKeydown)
+      previousFocus?.focus?.()
+      previousFocus = null
+    }
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  if (props.isOpen) {
+    unlockScroll()
+    window.removeEventListener('keydown', onKeydown)
+  }
+})
+
+function handleClose() {
+  emit('close')
+}
+</script>
+
+<style scoped lang="scss">
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.base-modal {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &:focus {
+    outline: none;
+  }
+
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal, 1000);
+  }
+
+  &__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+
+    &:hover {
+      color: var(--color-text);
+    }
+  }
+}
+</style>
+
+
 === apps/web/src/shared/ui/PlaceholderPage.vue ===
 <template>
   <div class="placeholder-page">
@@ -5723,7 +6207,13 @@ defineProps<{ title: string }>()
 
 
 === apps/web/src/vite-env.d.ts ===
-/// <reference types="vite/client" />
+//Файл **`vite-env.d.ts`** — это файл глобальных деклараций типов TypeScript, 
+// специфичный для среды сборки Vite [1]. Он необходим для того, чтобы TypeScript «понимал» типы файлов и объектов, 
+// которые не входят в стандарт языка, но активно используются в проекте
+// Этот файл является «инструкцией» для TypeScript, которая позволяет ему бесшовно работать с современными  
+// инструментами сборки и специфическими форматами файлов
+
+ <reference types="vite/client"/>
 
 declare module "*.vue" {
   import type { DefineComponent } from "vue";
@@ -6424,51 +6914,51 @@ describe("BurgerMenu — управление фокусом", () => {
         Contact
       </button>
 
-      <template v-if="authStore.isLoggedIn">
-        <template v-if="authStore.user?.role === 'ADMIN'">
-          <RouterLink
-            to="/account"
-            class="burger-menu__item"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            My account
-          </RouterLink>
-        </template>
-        <template v-else>
-          <RouterLink
-            to="/account"
-            class="burger-menu__item burger-menu__item--profile"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            <span class="burger-menu__item-name">{{ authStore.user?.name }}</span>
-            <span class="burger-menu__item-hint">View my account</span>
-          </RouterLink>
-          <RouterLink
-            to="/account/purchases"
-            class="burger-menu__item"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            Purchases & reviews
-          </RouterLink>
-          <RouterLink
-            to="/account/messages"
-            class="burger-menu__item"
-            exact-active-class="burger-menu__item--active"
-            @click="closeMenu"
-          >
-            Messages
-          </RouterLink>
-        </template>
-        <button
-          class="burger-menu__item burger-menu__item--btn"
-          @click="handleLogout"
+      <RouterLink
+        v-if="isAdmin"
+        to="/account"
+        class="burger-menu__item"
+        exact-active-class="burger-menu__item--active"
+        @click="closeMenu"
+      >
+        My account
+      </RouterLink>
+
+      <template v-else-if="authStore.isLoggedIn">
+        <RouterLink
+          to="/account"
+          class="burger-menu__item burger-menu__item--profile"
+          exact-active-class="burger-menu__item--active"
+          @click="closeMenu"
         >
-          Sign out
-        </button>
+          <span class="burger-menu__item-name">{{ authStore.user?.name }}</span>
+          <span class="burger-menu__item-hint">View my account</span>
+        </RouterLink>
+        <RouterLink
+          to="/account/purchases"
+          class="burger-menu__item"
+          exact-active-class="burger-menu__item--active"
+          @click="closeMenu"
+        >
+          Purchases & reviews
+        </RouterLink>
+        <RouterLink
+          to="/account/messages"
+          class="burger-menu__item"
+          exact-active-class="burger-menu__item--active"
+          @click="closeMenu"
+        >
+          Messages
+        </RouterLink>
       </template>
+
+      <button
+        v-if="authStore.isLoggedIn"
+        class="burger-menu__item burger-menu__item--btn"
+        @click="handleLogout"
+      >
+        Sign out
+      </button>
       <button
         v-else
         class="burger-menu__item burger-menu__item--btn"
@@ -6513,6 +7003,7 @@ const shopOpen = ref(false);
 const navRef = ref<HTMLElement | null>(null);
 
 const isShopActive = computed(() => route.path.startsWith("/shop"));
+const isAdmin = computed(() => authStore.isLoggedIn && authStore.user?.role === 'ADMIN');
 
 watch(
   () => props.isOpen,
@@ -8040,6 +8531,10 @@ describe('fetchHomeGallery', () => {
 
 
 === apps/web/src/widgets/gallery-grid/galleryApi.ts ===
+// Репозиторий галереи: читает активные фото из БД, отсортированные по полю position. 
+// HOME_PREVIEW — фиксированный набор фото для превью на главной.                                   
+// HOME_POOL — пул фото (случайная выборка — на уровне use-case)
+
 import { z } from 'zod'
 import { apiFetch } from '@/shared'
 
@@ -8578,9 +9073,9 @@ describe('HeroSlider', () => {
 <script setup lang="ts">
 import { useSlider, AppButton } from '@/shared'
 import slide1 from '@/assets/slides/slide1.jpg'
-import slide2 from '@/assets/slides/slide2.jpg'
+import slide2 from '@/assets/slides/slide2.webp'
 import slide3 from '@/assets/slides/slide3.jpg'
-import slide4 from '@/assets/slides/slide4.jpg'
+import slide4 from '@/assets/slides/slide4.webp'
 
 const AUTOPLAY_INTERVAL_MS = 4000
 
@@ -10783,6 +11278,7 @@ import { REVIEWS } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD_PX = 40
+const RESIZE_DEBOUNCE_MS = 150
 
 const visibleCount = ref(1)
 
@@ -10796,7 +11292,7 @@ let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
 function onResize() {
   if (resizeTimer) clearTimeout(resizeTimer)
-  resizeTimer = setTimeout(updateVisibleCount, 150)
+  resizeTimer = setTimeout(updateVisibleCount, RESIZE_DEBOUNCE_MS)
 }
 
 onMounted(() => {

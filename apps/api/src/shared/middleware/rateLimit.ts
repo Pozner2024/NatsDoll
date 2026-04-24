@@ -1,4 +1,7 @@
+// Мидлвар ограничивает количество запросов с одного IP.
+// Хранит счётчики в памяти (Map). При превышении лимита возвращает 429.
 import type { MiddlewareHandler } from 'hono'
+
 
 type RateLimitOptions = {
   max: number
@@ -16,6 +19,8 @@ function extractClientIp(header: string | undefined): string {
 export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
   const hits = new Map<string, Entry>()
 
+  // Чистим устаревшие записи, чтобы Map не рос бесконечно.
+  // unref() — таймер не мешает Node.js завершиться при остановке сервера
   const cleanupTimer = setInterval(() => {
     const now = Date.now()
     for (const [key, entry] of hits) {
@@ -30,14 +35,14 @@ export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
     const entry = hits.get(ip)
 
     if (entry && now < entry.resetAt) {
-      if (entry.count >= max) {
+            if (entry.count >= max) {
         return c.json({ error: 'Too many requests' }, 429)
       }
       entry.count++
     } else {
+      
       hits.set(ip, { count: 1, resetAt: now + windowMs })
     }
-
     return next()
   }
 

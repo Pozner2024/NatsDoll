@@ -91,6 +91,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints.module' as *;
+
 .gallery-grid {
   position: relative;
   display: grid;
@@ -100,21 +102,21 @@ onUnmounted(() => {
   height: calc(100dvh - var(--header-height));
   gap: 2px;
   grid-template-areas:
-    "p1 p1 p1 p2 p2 p2 p3 p3 p3"
-    "p1 p1 p1 p2 p2 p2 p3 p3 p3"
-    "p1 p1 p1 p2 p2 p2 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p6 p6 p5 p5 p5 p5 p3 p3 p3"
-    "p6 p6 p5 p5 p5 p5 p3 p3 p3"
-    "p6 p6 p5 p5 p5 p5 p7 p7 p7"
-    "p6 p6 p5 p5 p5 p5 p7 p7 p7"
-    "p6 p6 p5 p5 p5 p5 p7 p7 p7"
-    "p6 p6 p8 p8 p9 p9 p9 p9 p9"
-    "p6 p6 p8 p8 p9 p9 p9 p9 p9"
-    "p6 p6 p8 p8 p9 p9 p9 p9 p9";
+    "p1 p1 p1 p1 p2 p2 p3 p3 p3"
+    "p1 p1 p1 p1 p2 p2 p3 p3 p3"
+    "p1 p1 p1 p1 p2 p2 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p6 p6 p6 p5 p5 p5 p3 p3 p3"
+    "p6 p6 p6 p5 p5 p5 p3 p3 p3"
+    "p6 p6 p6 p5 p5 p5 p7 p7 p7"
+    "p6 p6 p6 p5 p5 p5 p7 p7 p7"
+    "p6 p6 p6 p5 p5 p5 p7 p7 p7"
+    "p6 p6 p6 p8 p8 p9 p9 p9 p9"
+    "p6 p6 p6 p8 p8 p9 p9 p9 p9"
+    "p6 p6 p6 p8 p8 p9 p9 p9 p9";
 
   &__state {
     grid-column: 1 / -1;
@@ -155,6 +157,29 @@ onUnmounted(() => {
     left: 50%;
     transform: translateX(-50%);
     z-index: var(--z-gallery-grid-button);
+
+    @include tablet {
+      top: calc(100% / 11 * 3 + 1rem);
+      left: calc(100% / 8 * 2 + 1rem);
+      transform: none;
+      --color-text: var(--color-white);
+    }
+  }
+  @include tablet {
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(11, 1fr);
+    grid-template-areas:
+      "p2 p2 p4 p4 p1 p1 p3 p3"
+      "p2 p2 p4 p4 p1 p1 p3 p3"
+      "p2 p2 p4 p4 p1 p1 p3 p3"
+      "p2 p2 p9 p9 p9 p9 p3 p3"
+      "p2 p2 p9 p9 p9 p9 p3 p3"
+      "p5 p5 p9 p9 p9 p9 p7 p7"
+      "p5 p5 p9 p9 p9 p9 p7 p7"
+      "p5 p5 p9 p9 p9 p9 p7 p7"
+      "p5 p5 p6 p6 p8 p8 p7 p7"
+      "p5 p5 p6 p6 p8 p8 p7 p7"
+      "p5 p5 p6 p6 p8 p8 p7 p7";
   }
 
   @for $i from 1 through 9 {

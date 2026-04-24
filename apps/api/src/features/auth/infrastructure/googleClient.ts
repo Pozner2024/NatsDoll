@@ -1,3 +1,6 @@
+// Интерфейс к Google OAuth2. Не знает о Prisma или email-ах. Возвращает только чистый
+// профиль. Обертка над @googleapis/client-auth2.
+
 import { randomBytes } from 'node:crypto'
 import { google } from 'googleapis'
 import { AppError } from '../../../shared/errors'

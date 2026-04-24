@@ -1,4 +1,11 @@
-import { PrismaClient, GallerySection } from '@prisma/client'
+/**
+ * Скрипт первичного наполнения базы данных (Database Seeding).** Позволяет за одну команду развернуть готовую к    
+ * работе структуру магазина: создает базовое дерево категорий (Art Dolls, Gifts и др.) и инициализирует сетку главной   
+ * галереи изображениями из облачного хранилища. Использование метода **upsert** гарантирует безопасность данных при     
+ * повторных запусках, предотвращая появление дубликатов»
+ */
+
+import { PrismaClient, GallerySection } from '@prisma/client' 
 
 const prisma = new PrismaClient()
 

@@ -1,3 +1,8 @@
+// **Access Token**: Короткоживущий JWT (15 минут), хранится в памяти фронтенда.
+// **Refresh Token**: Хранится в **httpOnly Cookie**, живет 30 дней и используется для получения нового Access Token 
+// без участия пользователя.
+// **Безопасность**: Используется библиотека `jose` для подписи JWT и `node:crypto` для создания HMAC-хешей
+
 import { SignJWT, jwtVerify } from 'jose'
 import { createHmac, randomUUID } from 'node:crypto'
 import { AppError } from '../errors'

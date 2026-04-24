@@ -1,3 +1,7 @@
+// **Единственное место в модуле Auth, работающее с БД.** Инкапсулирует сложные запросы к Prisma (создание
+// пользователей, ротация токенов) и защищает от них бизнес-логику. Гарантирует атомарность важных операций для       
+// безопасности сессий
+
 import { type PrismaClient, type User, type RefreshToken, type EmailVerification } from '@prisma/client'
 import { handlePrismaError } from '../../../shared/infrastructure'
 

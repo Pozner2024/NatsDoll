@@ -1,3 +1,5 @@
+// `googleAuth.ts` - обрабатывает вход через Google. Он умеет либо создавать нового пользователя, либо
+// «привязывать» Google ID к уже существующему аккаунту с таким же email
 import type { AuthRepository } from '../infrastructure/authRepository'
 import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 

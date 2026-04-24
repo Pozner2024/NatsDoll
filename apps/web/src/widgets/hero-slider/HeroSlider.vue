@@ -123,6 +123,7 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
 
   &__cta {
     margin-top: calc($overlay-vertical-nudge / -2);
+    --color-text: var(--color-white);
   }
 
   &__text {

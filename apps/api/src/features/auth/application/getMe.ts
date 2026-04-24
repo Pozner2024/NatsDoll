@@ -1,3 +1,4 @@
+// `getMe.ts` - получение данных текущего пользователя по его ID
 import type { AuthRepository } from '../infrastructure/authRepository'
 
 type MeResult = { id: string; name: string; email: string; role: string }

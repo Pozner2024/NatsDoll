@@ -1,3 +1,5 @@
+// verifyEmail.ts`**: Завершает процесс регистрации, помечая email пользователя как подтвержденный
+// и выдавая первую пару токенов для входа 
 import type { AuthRepository } from '../infrastructure/authRepository'
 import { hashToken } from '../../../shared/lib/tokens'
 import { AppError } from '../../../shared/errors'

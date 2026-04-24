@@ -1,3 +1,5 @@
+// **Сохранение**: Данные записываются в таблицу `ContactMessage`, где ID создается автоматически.
+
 import { type PrismaClient } from '@prisma/client'
 import { handlePrismaError } from '../../../shared/infrastructure'
 

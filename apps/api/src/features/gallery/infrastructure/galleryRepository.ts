@@ -8,6 +8,8 @@ const GALLERY_SELECT = {
   position: true,
 } as const
 
+// Репозиторий галереи: читает активные элементы из БД и отдаёт фронту
+// в виде { id, imageUrl, position } — отсортированных по полю position
 export function makeGalleryRepository(prisma: PrismaClient) {
   return {
     async getHomePreview(): Promise<GalleryItem[]> {

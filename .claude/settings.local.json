@@ -121,7 +121,11 @@
       "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npx vue-tsc --noEmit)",
       "Bash(echo \"exit=$?\")",
       "Bash(ls apps/web/src/shared/lib/*.test.ts apps/web/src/shared/ui/*.test.ts)",
-      "Bash(ls apps/api/src/shared/middleware/)"
+      "Bash(ls apps/api/src/shared/middleware/)",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "Bash(claude doctor *)",
+      "Read(//c/Users/user/**)",
+      "Read(//d/Наташа/**)"
     ]
   }
 }
