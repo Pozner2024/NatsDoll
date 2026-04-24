@@ -15,7 +15,7 @@ export function makeEmailService(): EmailService {
   return {
     async sendVerificationEmail(to, verificationUrl) {
       await resend.emails.send({
-        from: 'onboarding@resend.dev',
+        from: 'noreply@natsdoll.com',
         to,
         subject: 'Confirm your email — NatsDoll',
         html: `
