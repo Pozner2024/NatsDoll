@@ -225,7 +225,7 @@ async function handleLogout() {
 
   &__link {
     font-family: var(--font-display);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-base);
     color: var(--color-text);
     text-decoration: none;
     letter-spacing: 0.05em;
@@ -251,7 +251,7 @@ async function handleLogout() {
 
     &--btn {
       font-family: var(--font-display);
-      font-size: var(--fs-sm);
+      font-size: var(--fs-base);
       color: var(--color-text);
       letter-spacing: 0.05em;
 

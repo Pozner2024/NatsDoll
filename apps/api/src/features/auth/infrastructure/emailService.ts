@@ -8,16 +8,23 @@ export type EmailService = {
 }
 
 export function makeEmailService(): EmailService {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) throw new Error('RESEND_API_KEY is not set')
-  const resend = new Resend(apiKey)
+  let resend: Resend | null = null
+
+  function getResend(): Resend {
+    if (!resend) {
+      const apiKey = process.env.RESEND_API_KEY
+      if (!apiKey) throw new Error('RESEND_API_KEY is not set')
+      resend = new Resend(apiKey)
+    }
+    return resend
+  }
 
   return {
     async sendVerificationEmail(to, verificationUrl) {
       // SECURITY: все ${} в html ниже должны быть только server-controlled значениями
       // (env-переменные, токены из crypto). При добавлении user-input полей —
       // обязательно прогонять через HTML-escape, иначе XSS в почтовом клиенте.
-      await resend.emails.send({
+      await getResend().emails.send({
         from: 'noreply@natsdoll.com',
         to,
         subject: 'Confirm your email — NatsDoll',
