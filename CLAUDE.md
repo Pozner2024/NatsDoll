@@ -92,6 +92,32 @@ shared/
 - **TypeScript** — запрет `any`; на системных границах (HTTP, внешние API) использовать `unknown` с последующей валидацией через Zod
 - **Комментарии** — не добавлять и не предлагать; пользователь сам решает когда и что комментировать; существующие не удалять
 
+## Локальные проверки
+
+Кириллица в пути (`D:\Наташа\NatsDoll`) ломает Glob-инструмент и заставляет `tsc` падать с OOM при дефолтных параметрах. Запускать через root-tsc/vitest с увеличенным heap:
+
+```bash
+# typecheck api (большая кодовая база — 8GB)
+node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit
+# typecheck web
+node --max-old-space-size=4096 ./node_modules/vue-tsc/bin/vue-tsc.js --noEmit
+# tests
+node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic
+```
+
+Для поиска файлов в пути с кириллицей использовать `find` через Bash, не Glob.
+
+## Security invariants
+
+Не менять без понимания последствий — это не стиль, а защита от конкретных атак:
+
+- **`refresh_token` cookie — `sameSite='Strict'`** (CSRF). **`oauth_state` cookie — `sameSite='Lax'`** (Strict ломает Google-callback redirect).
+- **Verify-email — POST с JSON-body**, не GET с query-string (токен иначе попадает в `access.log` nginx и History браузера).
+- **Refresh-rotation strict без grace-period**: два параллельных refresh с одного cookie → reuse-detection → удаление всех сессий пользователя. By design.
+- **Password — `min(8)` + блок-лист топ-100** (`apps/api/src/shared/lib/passwordBlocklist.ts`). Сообщение об отказе: `This password is too common, please choose a stronger one`.
+- **Rate limiter — in-memory `Map`**. Production-compose ограничен одной репликой `api`. **Не запускать `--scale api>1`** — лимиты обойдут.
+- **`HMAC_SECRET` отдельно от `JWT_SECRET`** (см. `.env.example`). Fallback на JWT_SECRET сохранён, но в продакшене — два разных секрета.
+
 ## Git
 
 **Никогда не делать `git commit` и `git push` без явной просьбы пользователя.**

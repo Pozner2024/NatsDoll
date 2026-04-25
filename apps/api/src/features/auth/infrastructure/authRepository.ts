@@ -9,14 +9,25 @@ export type AuthRepository = {
   findByEmail(email: string): Promise<User | null>
   findById(id: string): Promise<User | null>
   createUser(data: { name: string; email: string; passwordHash: string }): Promise<User>
+  /** Атомарно создаёт user и emailVerification. */
+  createUserWithVerification(data: {
+    name: string
+    email: string
+    passwordHash: string
+    verification: { tokenHash: string; expiresAt: Date }
+  }): Promise<User>
+  deleteUser(id: string): Promise<void>
   findByGoogleId(googleId: string): Promise<User | null>
   linkGoogleId(userId: string, googleId: string): Promise<User>
   createGoogleUser(data: { name: string; email: string; googleId: string }): Promise<User>
   saveRefreshToken(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
+  /** Чистит revoked-токены и оставляет только `maxActive` самых свежих активных. */
+  pruneUserSessions(userId: string, maxActive: number): Promise<void>
   findTokenByHash(tokenHash: string): Promise<RefreshToken | null>
   deleteToken(id: string): Promise<void>
   revokeToken(id: string): Promise<void>
-  revokeAllUserTokens(userId: string): Promise<void>
+  /** Полностью удаляет все refresh-токены пользователя — используется при reuse-detection и глобальном logout. */
+  deleteAllUserTokens(userId: string): Promise<void>
   /** Атомарно отзывает старый токен и создаёт новый. Возвращает false при повторном использовании. */
   rotateToken(oldId: string, newData: { userId: string; tokenHash: string; expiresAt: Date }): Promise<boolean>
   createEmailVerification(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
@@ -47,6 +58,32 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
     async createUser(data) {
       try {
         return await prisma.user.create({ data })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async createUserWithVerification({ name, email, passwordHash, verification }) {
+      try {
+        return await prisma.$transaction(async (tx) => {
+          const user = await tx.user.create({ data: { name, email, passwordHash } })
+          await tx.emailVerification.create({
+            data: {
+              userId: user.id,
+              tokenHash: verification.tokenHash,
+              expiresAt: verification.expiresAt,
+            },
+          })
+          return user
+        })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async deleteUser(id) {
+      try {
+        await prisma.user.delete({ where: { id } })
       } catch (err) {
         return handlePrismaError(err)
       }
@@ -84,6 +121,27 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
       }
     },
 
+    async pruneUserSessions(userId, maxActive) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.refreshToken.deleteMany({
+            where: { userId, revokedAt: { not: null } },
+          })
+          const active = await tx.refreshToken.findMany({
+            where: { userId, revokedAt: null },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+          })
+          const toDelete = active.slice(maxActive).map((t) => t.id)
+          if (toDelete.length > 0) {
+            await tx.refreshToken.deleteMany({ where: { id: { in: toDelete } } })
+          }
+        })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
     async findTokenByHash(tokenHash) {
       try {
         return await prisma.refreshToken.findUnique({ where: { tokenHash } })
@@ -111,7 +169,7 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
       }
     },
 
-    async revokeAllUserTokens(userId) {
+    async deleteAllUserTokens(userId) {
       try {
         await prisma.refreshToken.deleteMany({ where: { userId } })
       } catch (err) {

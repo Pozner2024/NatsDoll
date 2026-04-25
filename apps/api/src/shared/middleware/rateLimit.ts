@@ -10,10 +10,18 @@ type RateLimitOptions = {
 
 type Entry = { count: number; resetAt: number }
 
-function extractClientIp(header: string | undefined): string {
-  if (!header) return 'unknown'
-  const first = header.split(',')[0]?.trim()
-  return first || 'unknown'
+// X-Real-IP — приоритет, его выставляет nginx из $remote_addr (клиент подделать не может).
+// X-Forwarded-For — клиент может прислать произвольный заголовок, nginx добавляет к нему свой IP справа,
+// поэтому доверяем только последнему элементу списка.
+function extractClientIp(realIp: string | undefined, forwardedFor: string | undefined): string {
+  const real = realIp?.trim()
+  if (real) return real
+
+  if (forwardedFor) {
+    const ips = forwardedFor.split(',').map((s) => s.trim()).filter(Boolean)
+    if (ips.length > 0) return ips[ips.length - 1]
+  }
+  return 'unknown'
 }
 
 export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
@@ -30,17 +38,16 @@ export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
   cleanupTimer.unref()
 
   const middleware: MiddlewareHandler = async (c, next) => {
-    const ip = extractClientIp(c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'))
+    const ip = extractClientIp(c.req.header('x-real-ip'), c.req.header('x-forwarded-for'))
     const now = Date.now()
     const entry = hits.get(ip)
 
     if (entry && now < entry.resetAt) {
-            if (entry.count >= max) {
+      if (entry.count >= max) {
         return c.json({ error: 'Too many requests' }, 429)
       }
       entry.count++
     } else {
-      
       hits.set(ip, { count: 1, resetAt: now + windowMs })
     }
     return next()

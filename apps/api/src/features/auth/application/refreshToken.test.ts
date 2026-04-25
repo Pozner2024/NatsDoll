@@ -8,6 +8,7 @@ vi.mock('../../../shared/lib/tokens', () => ({
   generateRefreshToken: vi.fn().mockReturnValue('new_raw_refresh'),
   hashToken: vi.fn((token: string) => `hash_of_${token}`),
   REFRESH_TOKEN_TTL_MS: 2592000000,
+  MAX_ACTIVE_SESSIONS_PER_USER: 5,
 }))
 
 const now = new Date()
@@ -39,11 +40,14 @@ const mockRepo: AuthRepository = {
   findByEmail: vi.fn(),
   findById: vi.fn(),
   createUser: vi.fn(),
+  createUserWithVerification: vi.fn(),
+  deleteUser: vi.fn(),
   saveRefreshToken: vi.fn(),
+  pruneUserSessions: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
   revokeToken: vi.fn(),
-  revokeAllUserTokens: vi.fn(),
+  deleteAllUserTokens: vi.fn(),
   rotateToken: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),
   linkGoogleId: vi.fn().mockResolvedValue(null),
@@ -64,13 +68,13 @@ describe('refreshToken', () => {
       .rejects.toMatchObject({ statusCode: 401, message: 'Invalid refresh token' })
   })
 
-  it('выбрасывает 401 и отзывает все токены при повторном использовании', async () => {
+  it('выбрасывает 401 и удаляет все токены пользователя при повторном использовании', async () => {
     vi.mocked(mockRepo.findTokenByHash).mockResolvedValue({ ...validToken, revokedAt: new Date() })
-    vi.mocked(mockRepo.revokeAllUserTokens).mockResolvedValue(undefined)
+    vi.mocked(mockRepo.deleteAllUserTokens).mockResolvedValue(undefined)
     const refresh = makeRefreshToken(mockRepo)
     await expect(refresh('raw_token'))
       .rejects.toMatchObject({ statusCode: 401, message: 'Token reuse detected' })
-    expect(mockRepo.revokeAllUserTokens).toHaveBeenCalledWith('user1')
+    expect(mockRepo.deleteAllUserTokens).toHaveBeenCalledWith('user1')
   })
 
   it('выбрасывает 401 если токен истёк', async () => {
@@ -97,15 +101,15 @@ describe('refreshToken', () => {
     expect(result.refreshToken).toBe('new_raw_refresh')
   })
 
-  it('выбрасывает 401 и отзывает все токены если rotateToken вернул false (race condition)', async () => {
+  it('выбрасывает 401 и удаляет все токены пользователя если rotateToken вернул false (race condition)', async () => {
     vi.mocked(mockRepo.findTokenByHash).mockResolvedValue(validToken)
     vi.mocked(mockRepo.findById).mockResolvedValue(mockUser)
     vi.mocked(mockRepo.rotateToken).mockResolvedValue(false)
-    vi.mocked(mockRepo.revokeAllUserTokens).mockResolvedValue(undefined)
+    vi.mocked(mockRepo.deleteAllUserTokens).mockResolvedValue(undefined)
 
     const refresh = makeRefreshToken(mockRepo)
     await expect(refresh('raw_token'))
       .rejects.toMatchObject({ statusCode: 401, message: 'Token reuse detected' })
-    expect(mockRepo.revokeAllUserTokens).toHaveBeenCalledWith('user1')
+    expect(mockRepo.deleteAllUserTokens).toHaveBeenCalledWith('user1')
   })
 })

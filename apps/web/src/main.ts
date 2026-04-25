@@ -4,7 +4,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { setupAuthInterceptor } from '@/shared'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 
 const app = createApp(App)
 const pinia = createPinia()

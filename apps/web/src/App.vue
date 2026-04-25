@@ -17,7 +17,7 @@ import { AppHeader } from '@/widgets/app-header'
 import { AppFooter } from '@/widgets/app-footer'
 import { ContactModal } from '@/features/contact-modal'
 import { AuthModal } from '@/features/auth-modal'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 
 const authStore = useAuthStore()
 onMounted(() => { authStore.initAuth() })

@@ -1,5 +1,8 @@
 <template>
-  <section class="hero-slider" aria-label="Hero banner">
+  <section
+    class="hero-slider"
+    aria-label="Hero banner"
+  >
     <div class="hero-slider__track">
       <div
         v-for="(slide, i) in slides"
@@ -14,9 +17,12 @@
       <p class="hero-slider__text">
         Find a unique gift here
       </p>
+      <p class="hero-slider__text hero-slider__text--sub">
+        THE SHOP
+      </p>
       <div class="hero-slider__cta">
         <AppButton to="/shop">
-          The shop
+          Explore
         </AppButton>
       </div>
     </div>
@@ -51,9 +57,9 @@
 
 <script setup lang="ts">
 import { useSlider, AppButton } from '@/shared'
-import slide1 from '@/assets/slides/slide1.jpg'
+import slide1 from '@/assets/slides/slide1.webp'
 import slide2 from '@/assets/slides/slide2.webp'
-import slide3 from '@/assets/slides/slide3.jpg'
+import slide3 from '@/assets/slides/slide3.webp'
 import slide4 from '@/assets/slides/slide4.webp'
 
 const AUTOPLAY_INTERVAL_MS = 4000
@@ -123,7 +129,11 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
 
   &__cta {
     margin-top: calc($overlay-vertical-nudge / -2);
-    --color-text: var(--color-white);
+    --color-text: var(--color-text);
+
+    @include tablet {
+      --color-text: var(--color-white);
+    }
   }
 
   &__text {
@@ -135,7 +145,11 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
     color: var(--color-white);
     text-align: right;
     line-height: 1.1;
-   
+
+    &--sub {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      margin-top: -0.5rem;
+    }
   }
 
   &__arrow {

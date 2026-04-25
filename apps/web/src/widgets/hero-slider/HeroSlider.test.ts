@@ -34,7 +34,7 @@ describe('HeroSlider', () => {
   it('показывает текст и кнопку', () => {
     const wrapper = mountSlider()
     expect(wrapper.find('.hero-slider__text').text()).toBe('Find a unique gift here')
-    expect(wrapper.find('.app-button').text()).toBe('The shop')
+    expect(wrapper.find('.app-button').text()).toBe('Explore')
   })
 
   it('активный слайд по умолчанию — первый', () => {

@@ -1,9 +1,13 @@
 <template>
   <div class="verify-email">
-    <p v-if="!failed">Verifying your email...</p>
+    <p v-if="!failed">
+      Verifying your email...
+    </p>
     <p v-if="failed">
       The link is invalid or has expired.
-      <RouterLink to="/">Go home</RouterLink>
+      <RouterLink to="/">
+        Go home
+      </RouterLink>
     </p>
   </div>
 </template>
@@ -11,7 +15,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { apiFetch, apiErrorMessage } from '@/shared'
 import { z } from 'zod'
 
@@ -37,7 +41,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`)
+    const res = await apiFetch('/auth/verify-email', { method: 'POST', json: { token } })
     if (!res.ok) {
       console.error(await apiErrorMessage(res, 'Verification failed'))
       failed.value = true

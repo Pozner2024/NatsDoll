@@ -6,7 +6,7 @@ declare module 'vue-router' {
     requiresAuth?: boolean
   }
 }
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { useAuthModal } from '@/features/auth-modal'
 
 const routes: RouteRecordRaw[] = [

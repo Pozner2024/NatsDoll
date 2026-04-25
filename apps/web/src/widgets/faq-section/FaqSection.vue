@@ -1,5 +1,8 @@
 <template>
-  <section id="faq" class="faq-section">
+  <section
+    id="faq"
+    class="faq-section"
+  >
     <div class="faq-section__header">
       <span class="faq-section__tag">FAQ</span>
       <h2 class="faq-section__title">

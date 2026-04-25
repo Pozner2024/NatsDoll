@@ -4,7 +4,7 @@
 // Этот файл является «инструкцией» для TypeScript, которая позволяет ему бесшовно работать с современными  
 // инструментами сборки и специфическими форматами файлов
 
- <reference types="vite/client"/>
+/// <reference types="vite/client" />
 
 declare module "*.vue" {
   import type { DefineComponent } from "vue";

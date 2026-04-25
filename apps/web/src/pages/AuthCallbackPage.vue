@@ -1,9 +1,13 @@
 <template>
   <div class="auth-callback">
-    <p v-if="!failed">Completing sign in...</p>
+    <p v-if="!failed">
+      Completing sign in...
+    </p>
     <p v-if="failed">
       Authentication failed.
-      <RouterLink to="/">Go home</RouterLink>
+      <RouterLink to="/">
+        Go home
+      </RouterLink>
     </p>
   </div>
 </template>
@@ -11,7 +15,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { resolveSafeRedirect } from '@/shared'
 
 const router = useRouter()
@@ -30,7 +34,7 @@ onMounted(async () => {
 
   history.replaceState(null, '', window.location.pathname)
 
-  await authStore.loginFromCookie()
+  await authStore.initAuth()
 
   if (!authStore.isLoggedIn) {
     failed.value = true

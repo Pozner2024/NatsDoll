@@ -4,7 +4,14 @@ export async function cleanupExpiredAuthRecords(prisma: PrismaClient): Promise<v
   const now = new Date()
   try {
     const [tokens, verifications] = await Promise.all([
-      prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: now } } }),
+      prisma.refreshToken.deleteMany({
+        where: {
+          OR: [
+            { expiresAt: { lt: now } },
+            { revokedAt: { not: null } },
+          ],
+        },
+      }),
       prisma.emailVerification.deleteMany({ where: { expiresAt: { lt: now } } }),
     ])
     if (tokens.count || verifications.count) {

@@ -7,17 +7,25 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
-import { requireAuth } from '../../../shared/middleware/requireAuth'
-import { createRateLimiter } from '../../../shared/middleware/rateLimit'
-import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
+import { requireAuth, createRateLimiter } from '../../../shared/middleware'
+import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS, FRONTEND_URL, COMMON_PASSWORDS } from '../../../shared/lib'
 import { getGoogleAuthUrl } from '../infrastructure/googleClient'
-import { FRONTEND_URL } from '../../../shared/lib/config'
 import type { AuthTokensResult } from '../application/issueTokens'
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(6).max(128),
+  password: z.string()
+    .min(8)
+    .max(128)
+    .refine(
+      (p) => !COMMON_PASSWORDS.has(p.toLowerCase()),
+      { message: 'This password is too common, please choose a stronger one' },
+    ),
+})
+
+const verifyEmailSchema = z.object({
+  token: z.string().min(1),
 })
 
 const loginSchema = z.object({
@@ -39,10 +47,12 @@ const REFRESH_COOKIE_OPTIONS = {
   secure: isProduction,
 } as const
 
+// sameSite: 'Lax' обязателен — Google делает cross-site redirect на /google/callback,
+// при 'Strict' браузер не отправит cookie и OAuth-вход всегда падает с invalid_state.
 const OAUTH_STATE_COOKIE_OPTIONS = {
   httpOnly: true,
   path: '/',
-  sameSite: 'Strict',
+  sameSite: 'Lax',
   maxAge: OAUTH_STATE_TTL_SECONDS,
   secure: isProduction,
 } as const
@@ -50,6 +60,7 @@ const OAUTH_STATE_COOKIE_OPTIONS = {
 const loginLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const registerLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
 const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
+const googleStartLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const refreshLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 
@@ -109,15 +120,14 @@ export function makeAuthRouter(
     return c.json({ user })
   })
 
-  router.get('/verify-email', verifyEmailLimiter.middleware, async (c) => {
-    const token = c.req.query('token')
-    if (!token) return c.json({ error: 'Missing token' }, 400)
+  router.post('/verify-email', verifyEmailLimiter.middleware, zValidator('json', verifyEmailSchema), async (c) => {
+    const { token } = c.req.valid('json')
     const result = await verifyEmail(token)
     setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
     return c.json({ accessToken: result.accessToken, user: result.user })
   })
 
-  router.get('/google', (c) => {
+  router.get('/google', googleStartLimiter.middleware, (c) => {
     const { url, state } = getGoogleAuthUrl()
     setCookie(c, 'oauth_state', state, OAUTH_STATE_COOKIE_OPTIONS)
     return c.redirect(url)

@@ -69,23 +69,4 @@ describe('useSlider', () => {
     expect(currentIndex.value).toBe(1)
     app.unmount()
   })
-
-  it('pause останавливает автоплей', async () => {
-    const [{ currentIndex, pause }, app] = withSetup(() => useSlider(4, 3000))
-    pause()
-    vi.advanceTimersByTime(3000)
-    await nextTick()
-    expect(currentIndex.value).toBe(0)
-    app.unmount()
-  })
-
-  it('resume после pause возобновляет автоплей', async () => {
-    const [{ currentIndex, pause, resume }, app] = withSetup(() => useSlider(4, 3000))
-    pause()
-    resume()
-    vi.advanceTimersByTime(3000)
-    await nextTick()
-    expect(currentIndex.value).toBe(1)
-    app.unmount()
-  })
 })

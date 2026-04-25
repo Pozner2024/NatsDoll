@@ -7,6 +7,7 @@ vi.mock('../../../shared/lib/tokens', () => ({
   generateRefreshToken: vi.fn().mockReturnValue('mock_raw_refresh'),
   hashToken: vi.fn().mockReturnValue('mock_token_hash'),
   REFRESH_TOKEN_TTL_MS: 2592000000,
+  MAX_ACTIVE_SESSIONS_PER_USER: 5,
 }))
 
 const mockUser = { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'CUSTOMER', googleId: 'g1', passwordHash: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }
@@ -16,14 +17,17 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     findByEmail: vi.fn().mockResolvedValue(null),
     findById: vi.fn().mockResolvedValue(null),
     createUser: vi.fn(),
+    createUserWithVerification: vi.fn(),
+    deleteUser: vi.fn(),
     findByGoogleId: vi.fn().mockResolvedValue(null),
     linkGoogleId: vi.fn().mockResolvedValue(mockUser),
     createGoogleUser: vi.fn().mockResolvedValue(mockUser),
     saveRefreshToken: vi.fn().mockResolvedValue(undefined),
+    pruneUserSessions: vi.fn().mockResolvedValue(undefined),
     findTokenByHash: vi.fn(),
     deleteToken: vi.fn(),
     revokeToken: vi.fn(),
-    revokeAllUserTokens: vi.fn(),
+    deleteAllUserTokens: vi.fn(),
     rotateToken: vi.fn(),
     createEmailVerification: vi.fn(),
     findEmailVerification: vi.fn(),

@@ -7,7 +7,7 @@ import {
   generateRefreshToken,
   hashToken,
   REFRESH_TOKEN_TTL_MS,
-} from '../../../shared/lib/tokens'
+} from '../../../shared/lib'
 import { AppError } from '../../../shared/errors'
 
 type RefreshResult = {
@@ -23,7 +23,7 @@ export function makeRefreshToken(repo: AuthRepository) {
     if (!stored) throw new AppError(401, 'Invalid refresh token')
 
     if (stored.revokedAt !== null) {
-      await repo.revokeAllUserTokens(stored.userId)
+      await repo.deleteAllUserTokens(stored.userId)
       throw new AppError(401, 'Token reuse detected')
     }
 
@@ -32,6 +32,9 @@ export function makeRefreshToken(repo: AuthRepository) {
       throw new AppError(401, 'Refresh token expired')
     }
 
+    // findById делается намеренно вторым select'ом (не сохраняем role в RefreshToken):
+    // даёт актуальную role в новом access-токене, если её сменили после прошлого refresh
+    // (например, юзера повысили до ADMIN — обновится без перелогина).
     const user = await repo.findById(stored.userId)
     if (!user) throw new AppError(401, 'User not found')
 
@@ -41,7 +44,7 @@ export function makeRefreshToken(repo: AuthRepository) {
 
     const rotated = await repo.rotateToken(stored.id, { userId: user.id, tokenHash: newTokenHash, expiresAt })
     if (!rotated) {
-      await repo.revokeAllUserTokens(stored.userId)
+      await repo.deleteAllUserTokens(stored.userId)
       throw new AppError(401, 'Token reuse detected')
     }
 

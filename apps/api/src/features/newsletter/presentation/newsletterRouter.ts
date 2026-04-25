@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
-import { createRateLimiter } from '../../../shared/middleware/rateLimit'
+import { createRateLimiter } from '../../../shared/middleware'
 
 const subscribeBodySchema = z.object({
   email: z.string().email(),

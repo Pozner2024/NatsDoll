@@ -51,15 +51,6 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
     resetTimer()
   }
 
-  function pause() {
-    if (timer) clearInterval(timer)
-    timer = null
-  }
-
-  function resume() {
-    if (!timer) startTimer()
-  }
-
   watch(total, (newTotal) => {
     if (currentIndex.value >= newTotal) {
       currentIndex.value = Math.max(0, newTotal - 1)
@@ -71,5 +62,5 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
     if (timer) clearInterval(timer)
   })
 
-  return { currentIndex, next, prev, goTo, pause, resume }
+  return { currentIndex, next, prev, goTo }
 }

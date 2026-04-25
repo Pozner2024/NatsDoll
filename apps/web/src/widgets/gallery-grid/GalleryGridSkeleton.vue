@@ -1,5 +1,8 @@
 <template>
-  <div class="gallery-skeleton" aria-hidden="true">
+  <div
+    class="gallery-skeleton"
+    aria-hidden="true"
+  >
     <div
       v-for="i in GALLERY_GRID_SIZE"
       :key="i"

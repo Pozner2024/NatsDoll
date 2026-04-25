@@ -148,7 +148,7 @@ import { navItems, shopCategories, homeItem } from "../navigationConfig";
 import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 
 const { open: openContactModal } = useContactModal()
 const { open: openAuthModal } = useAuthModal()

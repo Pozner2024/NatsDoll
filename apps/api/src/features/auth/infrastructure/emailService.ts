@@ -14,6 +14,9 @@ export function makeEmailService(): EmailService {
 
   return {
     async sendVerificationEmail(to, verificationUrl) {
+      // SECURITY: все ${} в html ниже должны быть только server-controlled значениями
+      // (env-переменные, токены из crypto). При добавлении user-input полей —
+      // обязательно прогонять через HTML-escape, иначе XSS в почтовом клиенте.
       await resend.emails.send({
         from: 'noreply@natsdoll.com',
         to,

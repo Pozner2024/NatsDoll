@@ -12,6 +12,7 @@ vi.mock('../../../shared/lib/tokens', () => ({
   generateRefreshToken: vi.fn().mockReturnValue('mock_raw_refresh'),
   hashToken: vi.fn().mockReturnValue('mock_token_hash'),
   REFRESH_TOKEN_TTL_MS: 2592000000,
+  MAX_ACTIVE_SESSIONS_PER_USER: 5,
 }))
 
 const mockUser: User = {
@@ -30,10 +31,13 @@ const mockRepo: AuthRepository = {
   findByEmail: vi.fn(),
   findById: vi.fn(),
   createUser: vi.fn(),
+  createUserWithVerification: vi.fn(),
+  deleteUser: vi.fn(),
   saveRefreshToken: vi.fn(),
+  pruneUserSessions: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
-  revokeAllUserTokens: vi.fn(),
+  deleteAllUserTokens: vi.fn(),
   revokeToken: vi.fn(),
   rotateToken: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),

@@ -47,9 +47,6 @@ playwright-report/
 # Git worktrees
 .worktrees/
 
-# Docs
-docs/
-
 # Prisma seed build artifacts
 apps/api/prisma/seed.js
 apps/api/prisma/seed.d.ts

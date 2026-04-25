@@ -1,6 +1,6 @@
 <template>
   <footer class="app-footer">
-       <div class="app-footer__brand">
+    <div class="app-footer__brand">
       <span class="app-footer__logo">NatsDoll</span>
       <p class="app-footer__tagline">
         Handmade polymer clay art

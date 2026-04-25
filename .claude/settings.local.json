@@ -125,7 +125,20 @@
       "mcp__plugin_playwright_playwright__browser_evaluate",
       "Bash(claude doctor *)",
       "Read(//c/Users/user/**)",
-      "Read(//d/Наташа/**)"
+      "Read(//d/Наташа/**)",
+      "Bash(npx --no-install sharp-cli --help)",
+      "PowerShell(Get-Command *)",
+      "Bash(echo \"===EXIT:$?===\")",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npm run lint --workspaces --if-present)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest run --reporter=basic)",
+      "Bash(echo \"===API_TEST:$?===\")",
+      "Bash(echo \"===WEB_TEST:$?===\")",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx tsc --noEmit)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx vue-tsc --noEmit)",
+      "Bash(npm audit *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(echo \"API_EXIT=$?\")",
+      "Bash(echo \"WEB_EXIT=$?\")"
     ]
   }
 }

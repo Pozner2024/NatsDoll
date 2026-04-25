@@ -1,5 +1,8 @@
 <template>
-  <section class="gallery-grid" aria-label="Gallery">
+  <section
+    class="gallery-grid"
+    aria-label="Gallery"
+  >
     <GalleryGridSkeleton v-if="isLoading" />
     <div
       v-else-if="hasError"
@@ -15,7 +18,8 @@
         :class="`gallery-grid__cell gallery-grid__cell--${i + 1}`"
       >
         <img
-          :src="previewCells[i]?.imageUrl"
+          v-if="previewCells[i]"
+          :src="previewCells[i]!.imageUrl"
           :alt="`Gallery image ${i + 1}`"
           class="gallery-grid__img"
           :class="{ 'gallery-grid__img--hidden': flipped[i] }"
@@ -30,8 +34,11 @@
       </div>
 
       <div class="gallery-grid__overlay">
+        <p class="gallery-grid__title">
+          THE GALLERY
+        </p>
         <AppButton to="/gallery">
-          The Gallery
+          Explore
         </AppButton>
       </div>
     </template>
@@ -153,16 +160,38 @@ onUnmounted(() => {
 
   &__overlay {
     position: absolute;
-    top: calc(100% / 15 * 3 + 2rem);
+    top: calc(100% / 15 * 3 - 1rem);
     left: 50%;
     transform: translateX(-50%);
     z-index: var(--z-gallery-grid-button);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
 
     @include tablet {
       top: calc(100% / 11 * 3 + 1rem);
       left: calc(100% / 8 * 2 + 1rem);
       transform: none;
+      align-items: flex-start;
       --color-text: var(--color-white);
+    }
+  }
+
+  &__title {
+    font-family: var(--font-brand);
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    color: var(--color-text);
+    text-align: center;
+    margin-top: 1.5rem;
+    line-height: 0.9;
+
+    @include tablet {
+      margin-top: 0;
+      line-height: 1.1;
+      color: var(--color-white);
+      text-align: left;
     }
   }
   @include tablet {

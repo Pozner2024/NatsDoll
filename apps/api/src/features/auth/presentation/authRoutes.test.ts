@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
 import { makeAuthRouter } from './authRoutes'
 
-vi.mock('../../../shared/lib/tokens', () => ({
+vi.mock('../../../shared/lib', () => ({
   COOKIE_NAME: 'refresh_token',
   REFRESH_TOKEN_TTL_SECONDS: 2592000,
+  FRONTEND_URL: 'http://localhost:5173',
 }))
 
 vi.mock('../infrastructure/googleClient', () => ({

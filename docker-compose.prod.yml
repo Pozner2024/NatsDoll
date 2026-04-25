@@ -37,8 +37,10 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
-    deploy:
-      replicas: 1  # rate limiter in-memory — строго одна реплика
+    # ВНИМАНИЕ: rate limiter и счётчики хранятся в памяти процесса (см. shared/middleware/rateLimit.ts).
+    # Запускать строго в одной реплике. Поле `deploy.replicas` в Compose stand-alone игнорируется,
+    # поэтому НЕ ИСПОЛЬЗОВАТЬ `docker compose up --scale api=N` (N>1) — лимиты обойдут защиту.
+    # Для горизонтального масштабирования вынести rate limit в Redis.
 
   web:
     build:

@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useSlider, MEDIA } from '@/shared'
-import { ReviewCard } from './components'
+import ReviewCard from './ReviewCard.vue'
 import { REVIEWS } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000

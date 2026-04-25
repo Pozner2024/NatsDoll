@@ -2,7 +2,13 @@
 // долгоживущего Refresh Token - который сразу хешируется перед сохранением в базу для безопасности
 
 import type { User } from '@prisma/client'
-import { signAccessToken, generateRefreshToken, hashToken, REFRESH_TOKEN_TTL_MS } from '../../../shared/lib/tokens'
+import {
+  signAccessToken,
+  generateRefreshToken,
+  hashToken,
+  REFRESH_TOKEN_TTL_MS,
+  MAX_ACTIVE_SESSIONS_PER_USER,
+} from '../../../shared/lib'
 import type { AuthRepository } from '../infrastructure/authRepository'
 
 export type AuthTokensResult = {
@@ -16,6 +22,7 @@ export async function issueTokensForUser(repo: AuthRepository, user: User): Prom
   const tokenHash = hashToken(rawRefreshToken)
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
   await repo.saveRefreshToken({ userId: user.id, tokenHash, expiresAt })
+  await repo.pruneUserSessions(user.id, MAX_ACTIVE_SESSIONS_PER_USER)
 
   const accessToken = await signAccessToken({ sub: user.id, role: user.role })
 
