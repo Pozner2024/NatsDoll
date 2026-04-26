@@ -7,7 +7,7 @@ import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { prisma } from './shared/infrastructure'
 import { AppError } from './shared/errors'
-import { makeGalleryRepository, makeGetHomeGallery, makeGalleryRouter } from './features/gallery'
+import { makeGalleryRepository, makeGetHomeGallery, makeGetCollections, makeGalleryRouter } from './features/gallery'
 import {
   makeNewsletterRepository,
   makeSubscribe,
@@ -59,7 +59,8 @@ export function createApp() {
   // Gallery
   const galleryRepo = makeGalleryRepository(prisma)
   const getHomeGallery = makeGetHomeGallery(galleryRepo)
-  app.route('/gallery', makeGalleryRouter(getHomeGallery))
+  const getCollections = makeGetCollections(galleryRepo)
+  app.route('/gallery', makeGalleryRouter(getHomeGallery, getCollections))
 
   // Newsletter
   const newsletterRepo = makeNewsletterRepository(prisma)
