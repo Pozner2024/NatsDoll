@@ -35,6 +35,18 @@ export function makeGalleryRepository(prisma: PrismaClient) {
         return handlePrismaError(err)
       }
     },
+
+    async getCollectionItems(section: GallerySection): Promise<GalleryItem[]> {
+      try {
+        return await prisma.galleryItem.findMany({
+          where: { gallery: section, isActive: true },
+          orderBy: { position: 'asc' },
+          select: GALLERY_SELECT,
+        })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
   }
 }
 
