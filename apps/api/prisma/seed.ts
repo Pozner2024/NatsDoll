@@ -39,7 +39,7 @@ const galleryItems = [
   ...Array.from({ length: 14 }, (_, i) => ({
     gallery: GallerySection.COLLECTION_1,
     position: i + 1,
-    imageUrl: `${BASE_URL}/collection mermaids/m${i + 1}.webp`,
+    imageUrl: `${BASE_URL}/collection%20mermaids/m${i + 1}.webp`,
   })),
 ]
 
