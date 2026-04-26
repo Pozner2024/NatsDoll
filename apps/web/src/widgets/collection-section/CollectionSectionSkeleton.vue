@@ -62,7 +62,7 @@ $shimmer: linear-gradient(
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(10, 1fr);
-    gap: 2px;
+    gap: 4px;
     aspect-ratio: 3 / 10;
     grid-template-areas:
       "m1  m1  m2"

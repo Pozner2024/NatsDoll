@@ -50,7 +50,7 @@ const { collections, isLoading, hasError } = useCollectionSection()
 
   &__header {
     width: 100%;
-    padding: 28px 20px 8px;
+    padding: 28px 20px 0;
   }
 
   &__title {
@@ -59,6 +59,7 @@ const { collections, isLoading, hasError } = useCollectionSection()
     font-weight: 700;
     line-height: 0.9;
     color: var(--color-text);
+    text-align: right;
   }
 
   &__error {
