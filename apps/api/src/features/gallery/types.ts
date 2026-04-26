@@ -17,16 +17,10 @@ export interface GalleryRepository {
   getCollectionItems(section: GallerySection): Promise<GalleryItem[]>
 }
 
-export type CollectionItem = {
-  id: string
-  imageUrl: string
-  position: number
-}
-
 export type Collection = {
   id: string
   name: string
-  items: CollectionItem[]
+  items: GalleryItem[]
 }
 
 export const COLLECTIONS_CONFIG: { section: GallerySection; id: string; name: string }[] = [
