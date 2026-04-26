@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { apiFetch } from '@/shared'
 
-export const COLLECTION_SIZE = 15
+export const COLLECTION_SIZE = 7
 
 const CollectionItemSchema = z.object({
   id: z.string(),

@@ -11,7 +11,7 @@
       <div
         v-for="item in collection.items"
         :key="item.id"
-        class="collection-section__cell"
+        :class="`collection-section__cell collection-section__cell--${item.position}`"
       >
         <img
           :src="item.imageUrl"
@@ -62,13 +62,24 @@ defineProps<{
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(5, 1fr);
     gap: 2px;
+    aspect-ratio: 3 / 5;
+    grid-template-areas:
+      "p1 p1 p2"
+      "p1 p1 p3"
+      "p4 p5 p3"
+      "p4 p6 p6"
+      "p7 p6 p6";
   }
 
   &__cell {
-    aspect-ratio: 1;
     overflow: hidden;
     background: var(--color-border);
+
+    @for $i from 1 through 7 {
+      &--#{$i} { grid-area: p#{$i}; }
+    }
   }
 
   &__img {

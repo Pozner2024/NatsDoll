@@ -6,20 +6,28 @@
     <div class="collection-skeleton__label" />
     <div class="collection-skeleton__title" />
     <div class="collection-skeleton__grid">
-      <div
-        v-for="i in COLLECTION_SIZE"
-        :key="i"
-        class="collection-skeleton__cell"
-      />
+      <div class="collection-skeleton__cell collection-skeleton__cell--1" />
+      <div class="collection-skeleton__cell collection-skeleton__cell--2" />
+      <div class="collection-skeleton__cell collection-skeleton__cell--3" />
+      <div class="collection-skeleton__cell collection-skeleton__cell--4" />
+      <div class="collection-skeleton__cell collection-skeleton__cell--5" />
+      <div class="collection-skeleton__cell collection-skeleton__cell--6" />
+      <div class="collection-skeleton__cell collection-skeleton__cell--7" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { COLLECTION_SIZE } from './collectionsApi'
 </script>
 
 <style scoped lang="scss">
+$shimmer: linear-gradient(
+  90deg,
+  var(--color-border) 25%,
+  rgb(from var(--color-border) r g b / 0.5) 50%,
+  var(--color-border) 75%
+);
+
 .collection-skeleton {
   width: 100%;
 
@@ -28,12 +36,7 @@ import { COLLECTION_SIZE } from './collectionsApi'
     height: 12px;
     border-radius: 4px;
     margin: 24px 20px 8px;
-    background: linear-gradient(
-      90deg,
-      var(--color-border) 25%,
-      rgb(from var(--color-border) r g b / 0.5) 50%,
-      var(--color-border) 75%
-    );
+    background: $shimmer;
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
   }
@@ -43,12 +46,7 @@ import { COLLECTION_SIZE } from './collectionsApi'
     height: 28px;
     border-radius: 4px;
     margin: 0 20px 12px;
-    background: linear-gradient(
-      90deg,
-      var(--color-border) 25%,
-      rgb(from var(--color-border) r g b / 0.5) 50%,
-      var(--color-border) 75%
-    );
+    background: $shimmer;
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
   }
@@ -56,19 +54,25 @@ import { COLLECTION_SIZE } from './collectionsApi'
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(5, 1fr);
     gap: 2px;
+    aspect-ratio: 3 / 5;
+    grid-template-areas:
+      "p1 p1 p2"
+      "p1 p1 p3"
+      "p4 p5 p3"
+      "p4 p6 p6"
+      "p7 p6 p6";
   }
 
   &__cell {
-    aspect-ratio: 1;
-    background: linear-gradient(
-      90deg,
-      var(--color-border) 25%,
-      rgb(from var(--color-border) r g b / 0.5) 50%,
-      var(--color-border) 75%
-    );
+    background: $shimmer;
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
+
+    @for $i from 1 through 7 {
+      &--#{$i} { grid-area: p#{$i}; }
+    }
   }
 }
 
