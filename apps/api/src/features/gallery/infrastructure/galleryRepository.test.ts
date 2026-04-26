@@ -50,29 +50,23 @@ describe('galleryRepository', () => {
       expect(result).toEqual(items)
     })
   })
-})
+  describe('getCollectionItems', () => {
+    it('возвращает активные элементы коллекции, отсортированные по position', async () => {
+      const mockItems = [
+        { id: 'c1', imageUrl: 'https://s3.example.com/c1.jpg', position: 1 },
+        { id: 'c2', imageUrl: 'https://s3.example.com/c2.jpg', position: 2 },
+      ]
+      mockFindMany.mockResolvedValue(mockItems)
 
-describe('getCollectionItems', () => {
-  it('возвращает активные элементы коллекции, отсортированные по position', async () => {
-    const mockItems = [
-      { id: 'c1', imageUrl: 'https://s3.example.com/c1.jpg', position: 1 },
-      { id: 'c2', imageUrl: 'https://s3.example.com/c2.jpg', position: 2 },
-    ]
+      const repo = makeGalleryRepository(mockPrisma)
+      const result = await repo.getCollectionItems(GallerySection.COLLECTION_1)
 
-    const mockPrisma = {
-      galleryItem: {
-        findMany: vi.fn().mockResolvedValue(mockItems),
-      },
-    } as unknown as PrismaClient
-
-    const repo = makeGalleryRepository(mockPrisma)
-    const result = await repo.getCollectionItems(GallerySection.COLLECTION_1)
-
-    expect(mockPrisma.galleryItem.findMany).toHaveBeenCalledWith({
-      where: { gallery: GallerySection.COLLECTION_1, isActive: true },
-      orderBy: { position: 'asc' },
-      select: { id: true, imageUrl: true, position: true },
+      expect(mockFindMany).toHaveBeenCalledWith({
+        where: { gallery: GallerySection.COLLECTION_1, isActive: true },
+        orderBy: { position: 'asc' },
+        select: { id: true, imageUrl: true, position: true },
+      })
+      expect(result).toEqual(mockItems)
     })
-    expect(result).toEqual(mockItems)
   })
 })
