@@ -36,6 +36,11 @@ const galleryItems = [
     position: i + 1,
     imageUrl: `${BASE_URL}/gallery2/p${i + 1}.webp`,
   })),
+  ...Array.from({ length: 14 }, (_, i) => ({
+    gallery: GallerySection.COLLECTION_1,
+    position: i + 1,
+    imageUrl: `${BASE_URL}/collection mermaids/m${i + 1}.webp`,
+  })),
 ]
 
 async function main() {

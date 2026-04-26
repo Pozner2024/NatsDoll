@@ -72,9 +72,6 @@ playwright-report/
 # Git worktrees
 .worktrees/
 
-# Docs
-docs/
-
 # Prisma seed build artifacts
 apps/api/prisma/seed.js
 apps/api/prisma/seed.d.ts
@@ -506,6 +503,13 @@ provider = "postgresql"
 
 
 === apps/api/prisma/schema.prisma ===
+/*
+Архитектурный чертеж базы данных проекта.** Этот файл является единым источником истины для всей
+структуры данных **NatsDoll**. Он описывает не только таблицы в PostgreSQL (пользователи, товары, заказы), но и
+сложные связи между ними, правила безопасности (например, **Soft Delete** для сохранения истории заказов) и
+автоматическую генерацию типизированного клиента Prisma для безопасной разработки без ошибок в типах
+*/
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -734,7 +738,14 @@ export {};
 //# sourceMappingURL=seed.d.ts.map
 
 === apps/api/prisma/seed.ts ===
-import { PrismaClient, GallerySection } from '@prisma/client'
+/**
+ * Скрипт первичного наполнения базы данных (Database Seeding).** Позволяет за одну команду развернуть готовую к    
+ * работе структуру магазина: создает базовое дерево категорий (Art Dolls, Gifts и др.) и инициализирует сетку главной   
+ * галереи изображениями из облачного хранилища. Использование метода **upsert** гарантирует безопасность данных при     
+ * повторных запусках, предотвращая появление дубликатов»
+ */
+
+import { PrismaClient, GallerySection } from '@prisma/client' 
 
 const prisma = new PrismaClient()
 
@@ -812,6 +823,10 @@ export default defineConfig({
 
 
 === apps/api/src/app.ts ===
+// **Composition Root** (Корень композиции) — это центральный узел архитектуры приложения, где все независимые части 
+// (слои) соединяются в единое целое. Здесь настраиваются глобальные правила безопасности (CORS, Secure Headers), общая  
+// обработка ошибок и регистрируются все функциональные модули системы через эндпоинты API
+
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
@@ -920,10 +935,13 @@ const mockRepo: AuthRepository = {
   findByEmail: vi.fn(),
   findById: vi.fn(),
   createUser: vi.fn(),
+  createUserWithVerification: vi.fn(),
+  deleteUser: vi.fn(),
   saveRefreshToken: vi.fn(),
+  pruneUserSessions: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
-  revokeAllUserTokens: vi.fn(),
+  deleteAllUserTokens: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),
   linkGoogleId: vi.fn().mockResolvedValue(null),
   createGoogleUser: vi.fn().mockResolvedValue(null),
@@ -955,6 +973,7 @@ describe('getMe', () => {
 
 
 === apps/api/src/features/auth/application/getMe.ts ===
+// `getMe.ts` - получение данных текущего пользователя по его ID
 import type { AuthRepository } from '../infrastructure/authRepository'
 
 type MeResult = { id: string; name: string; email: string; role: string }
@@ -978,6 +997,7 @@ vi.mock('../../../shared/lib/tokens', () => ({
   generateRefreshToken: vi.fn().mockReturnValue('mock_raw_refresh'),
   hashToken: vi.fn().mockReturnValue('mock_token_hash'),
   REFRESH_TOKEN_TTL_MS: 2592000000,
+  MAX_ACTIVE_SESSIONS_PER_USER: 5,
 }))
 
 const mockUser = { id: 'u1', name: 'Test User', email: 'test@example.com', role: 'CUSTOMER', googleId: 'g1', passwordHash: null, emailVerified: true, createdAt: new Date(), updatedAt: new Date() }
@@ -987,14 +1007,17 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     findByEmail: vi.fn().mockResolvedValue(null),
     findById: vi.fn().mockResolvedValue(null),
     createUser: vi.fn(),
+    createUserWithVerification: vi.fn(),
+    deleteUser: vi.fn(),
     findByGoogleId: vi.fn().mockResolvedValue(null),
     linkGoogleId: vi.fn().mockResolvedValue(mockUser),
     createGoogleUser: vi.fn().mockResolvedValue(mockUser),
     saveRefreshToken: vi.fn().mockResolvedValue(undefined),
+    pruneUserSessions: vi.fn().mockResolvedValue(undefined),
     findTokenByHash: vi.fn(),
     deleteToken: vi.fn(),
     revokeToken: vi.fn(),
-    revokeAllUserTokens: vi.fn(),
+    deleteAllUserTokens: vi.fn(),
     rotateToken: vi.fn(),
     createEmailVerification: vi.fn(),
     findEmailVerification: vi.fn(),
@@ -1057,6 +1080,8 @@ describe('googleAuth', () => {
 
 
 === apps/api/src/features/auth/application/googleAuth.ts ===
+// `googleAuth.ts` - обрабатывает вход через Google. Он умеет либо создавать нового пользователя, либо
+// «привязывать» Google ID к уже существующему аккаунту с таким же email
 import type { AuthRepository } from '../infrastructure/authRepository'
 import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 
@@ -1088,8 +1113,17 @@ export function makeGoogleAuth(repo: AuthRepository, getGoogleProfile: GetGoogle
 
 
 === apps/api/src/features/auth/application/issueTokens.ts ===
+// issueTokens.ts - финальный этап авторизации - генерация короткоживущего Access Token и
+// долгоживущего Refresh Token - который сразу хешируется перед сохранением в базу для безопасности
+
 import type { User } from '@prisma/client'
-import { signAccessToken, generateRefreshToken, hashToken, REFRESH_TOKEN_TTL_MS } from '../../../shared/lib/tokens'
+import {
+  signAccessToken,
+  generateRefreshToken,
+  hashToken,
+  REFRESH_TOKEN_TTL_MS,
+  MAX_ACTIVE_SESSIONS_PER_USER,
+} from '../../../shared/lib'
 import type { AuthRepository } from '../infrastructure/authRepository'
 
 export type AuthTokensResult = {
@@ -1103,6 +1137,7 @@ export async function issueTokensForUser(repo: AuthRepository, user: User): Prom
   const tokenHash = hashToken(rawRefreshToken)
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
   await repo.saveRefreshToken({ userId: user.id, tokenHash, expiresAt })
+  await repo.pruneUserSessions(user.id, MAX_ACTIVE_SESSIONS_PER_USER)
 
   const accessToken = await signAccessToken({ sub: user.id, role: user.role })
 
@@ -1129,6 +1164,7 @@ vi.mock('../../../shared/lib/tokens', () => ({
   generateRefreshToken: vi.fn().mockReturnValue('mock_raw_refresh'),
   hashToken: vi.fn().mockReturnValue('mock_token_hash'),
   REFRESH_TOKEN_TTL_MS: 2592000000,
+  MAX_ACTIVE_SESSIONS_PER_USER: 5,
 }))
 
 const mockUser: User = {
@@ -1147,10 +1183,13 @@ const mockRepo: AuthRepository = {
   findByEmail: vi.fn(),
   findById: vi.fn(),
   createUser: vi.fn(),
+  createUserWithVerification: vi.fn(),
+  deleteUser: vi.fn(),
   saveRefreshToken: vi.fn(),
+  pruneUserSessions: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
-  revokeAllUserTokens: vi.fn(),
+  deleteAllUserTokens: vi.fn(),
   revokeToken: vi.fn(),
   rotateToken: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),
@@ -1237,7 +1276,12 @@ describe('login', () => {
 
 
 === apps/api/src/features/auth/application/login.ts ===
+// login.ts реализует защиту от **Timing Attacks** (атак по времени).
+// Если пользователь не найден, система всё равно запускает проверку пароля с использованием `DUMMY_HASH`, чтобы
+// злоумышленник по скорости ответа сервера не мог понять, существует такой email в базе или нет.
+
 import { verify } from '@node-rs/argon2'
+
 import type { AuthRepository } from '../infrastructure/authRepository'
 import { AppError } from '../../../shared/errors'
 import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
@@ -1289,10 +1333,13 @@ const mockRepo: AuthRepository = {
   findByEmail: vi.fn(),
   findById: vi.fn(),
   createUser: vi.fn(),
+  createUserWithVerification: vi.fn(),
+  deleteUser: vi.fn(),
   saveRefreshToken: vi.fn(),
+  pruneUserSessions: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
-  revokeAllUserTokens: vi.fn(),
+  deleteAllUserTokens: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),
   linkGoogleId: vi.fn().mockResolvedValue(null),
   createGoogleUser: vi.fn().mockResolvedValue(null),
@@ -1331,8 +1378,9 @@ describe('logout', () => {
 
 
 === apps/api/src/features/auth/application/logout.ts ===
+// `log out.ts`**: Просто и надежно находит токен в базе по его хешу и удаляет его, мгновенно завершая сессию
 import type { AuthRepository } from '../infrastructure/authRepository'
-import { hashToken } from '../../../shared/lib/tokens'
+import { hashToken } from '../../../shared/lib'
 
 export function makeLogout(repo: AuthRepository) {
   return async function logout(rawToken: string): Promise<void> {
@@ -1356,6 +1404,7 @@ vi.mock('../../../shared/lib/tokens', () => ({
   generateRefreshToken: vi.fn().mockReturnValue('new_raw_refresh'),
   hashToken: vi.fn((token: string) => `hash_of_${token}`),
   REFRESH_TOKEN_TTL_MS: 2592000000,
+  MAX_ACTIVE_SESSIONS_PER_USER: 5,
 }))
 
 const now = new Date()
@@ -1387,11 +1436,14 @@ const mockRepo: AuthRepository = {
   findByEmail: vi.fn(),
   findById: vi.fn(),
   createUser: vi.fn(),
+  createUserWithVerification: vi.fn(),
+  deleteUser: vi.fn(),
   saveRefreshToken: vi.fn(),
+  pruneUserSessions: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
   revokeToken: vi.fn(),
-  revokeAllUserTokens: vi.fn(),
+  deleteAllUserTokens: vi.fn(),
   rotateToken: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),
   linkGoogleId: vi.fn().mockResolvedValue(null),
@@ -1412,13 +1464,13 @@ describe('refreshToken', () => {
       .rejects.toMatchObject({ statusCode: 401, message: 'Invalid refresh token' })
   })
 
-  it('выбрасывает 401 и отзывает все токены при повторном использовании', async () => {
+  it('выбрасывает 401 и удаляет все токены пользователя при повторном использовании', async () => {
     vi.mocked(mockRepo.findTokenByHash).mockResolvedValue({ ...validToken, revokedAt: new Date() })
-    vi.mocked(mockRepo.revokeAllUserTokens).mockResolvedValue(undefined)
+    vi.mocked(mockRepo.deleteAllUserTokens).mockResolvedValue(undefined)
     const refresh = makeRefreshToken(mockRepo)
     await expect(refresh('raw_token'))
       .rejects.toMatchObject({ statusCode: 401, message: 'Token reuse detected' })
-    expect(mockRepo.revokeAllUserTokens).toHaveBeenCalledWith('user1')
+    expect(mockRepo.deleteAllUserTokens).toHaveBeenCalledWith('user1')
   })
 
   it('выбрасывает 401 если токен истёк', async () => {
@@ -1445,28 +1497,31 @@ describe('refreshToken', () => {
     expect(result.refreshToken).toBe('new_raw_refresh')
   })
 
-  it('выбрасывает 401 и отзывает все токены если rotateToken вернул false (race condition)', async () => {
+  it('выбрасывает 401 и удаляет все токены пользователя если rotateToken вернул false (race condition)', async () => {
     vi.mocked(mockRepo.findTokenByHash).mockResolvedValue(validToken)
     vi.mocked(mockRepo.findById).mockResolvedValue(mockUser)
     vi.mocked(mockRepo.rotateToken).mockResolvedValue(false)
-    vi.mocked(mockRepo.revokeAllUserTokens).mockResolvedValue(undefined)
+    vi.mocked(mockRepo.deleteAllUserTokens).mockResolvedValue(undefined)
 
     const refresh = makeRefreshToken(mockRepo)
     await expect(refresh('raw_token'))
       .rejects.toMatchObject({ statusCode: 401, message: 'Token reuse detected' })
-    expect(mockRepo.revokeAllUserTokens).toHaveBeenCalledWith('user1')
+    expect(mockRepo.deleteAllUserTokens).toHaveBeenCalledWith('user1')
   })
 })
 
 
 === apps/api/src/features/auth/application/refreshToken.ts ===
+// **`refreshToken.ts`**: Реализует механизм **ротации токенов**. При каждом обновлении сессии старый токен
+// отзывается, а выдается новый.
+// Если система обнаруживает попытку использования уже отозванного токена, это считается кражей
 import type { AuthRepository } from '../infrastructure/authRepository'
 import {
   signAccessToken,
   generateRefreshToken,
   hashToken,
   REFRESH_TOKEN_TTL_MS,
-} from '../../../shared/lib/tokens'
+} from '../../../shared/lib'
 import { AppError } from '../../../shared/errors'
 
 type RefreshResult = {
@@ -1482,7 +1537,7 @@ export function makeRefreshToken(repo: AuthRepository) {
     if (!stored) throw new AppError(401, 'Invalid refresh token')
 
     if (stored.revokedAt !== null) {
-      await repo.revokeAllUserTokens(stored.userId)
+      await repo.deleteAllUserTokens(stored.userId)
       throw new AppError(401, 'Token reuse detected')
     }
 
@@ -1491,6 +1546,9 @@ export function makeRefreshToken(repo: AuthRepository) {
       throw new AppError(401, 'Refresh token expired')
     }
 
+    // findById делается намеренно вторым select'ом (не сохраняем role в RefreshToken):
+    // даёт актуальную role в новом access-токене, если её сменили после прошлого refresh
+    // (например, юзера повысили до ADMIN — обновится без перелогина).
     const user = await repo.findById(stored.userId)
     if (!user) throw new AppError(401, 'User not found')
 
@@ -1500,7 +1558,7 @@ export function makeRefreshToken(repo: AuthRepository) {
 
     const rotated = await repo.rotateToken(stored.id, { userId: user.id, tokenHash: newTokenHash, expiresAt })
     if (!rotated) {
-      await repo.revokeAllUserTokens(stored.userId)
+      await repo.deleteAllUserTokens(stored.userId)
       throw new AppError(401, 'Token reuse detected')
     }
 
@@ -1544,10 +1602,13 @@ const mockRepo: AuthRepository = {
   findByEmail: vi.fn(),
   findById: vi.fn(),
   createUser: vi.fn(),
+  createUserWithVerification: vi.fn(),
+  deleteUser: vi.fn(),
   saveRefreshToken: vi.fn(),
+  pruneUserSessions: vi.fn(),
   findTokenByHash: vi.fn(),
   deleteToken: vi.fn(),
-  revokeAllUserTokens: vi.fn(),
+  deleteAllUserTokens: vi.fn(),
   revokeToken: vi.fn(),
   rotateToken: vi.fn(),
   findByGoogleId: vi.fn().mockResolvedValue(null),
@@ -1573,35 +1634,24 @@ describe('register', () => {
       .rejects.toMatchObject({ statusCode: 409, message: 'Email already in use' })
   })
 
-  it('хэширует пароль и создаёт пользователя', async () => {
+  it('атомарно создаёт пользователя с верификацией', async () => {
     vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUser).mockResolvedValue(mockUser)
+    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
 
     const register = makeRegister(mockRepo, mockEmailService)
     await register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' })
 
-    expect(mockRepo.createUser).toHaveBeenCalledWith({
+    expect(mockRepo.createUserWithVerification).toHaveBeenCalledWith({
       name: 'Natasha',
       email: 'nat@test.com',
       passwordHash: 'hashed_password',
+      verification: expect.objectContaining({ tokenHash: 'mock_token_hash' }),
     })
-  })
-
-  it('сохраняет токен верификации с хэшем', async () => {
-    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUser).mockResolvedValue(mockUser)
-
-    const register = makeRegister(mockRepo, mockEmailService)
-    await register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' })
-
-    expect(mockRepo.createEmailVerification).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user1', tokenHash: 'mock_token_hash' })
-    )
   })
 
   it('отправляет письмо с ссылкой верификации', async () => {
     vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUser).mockResolvedValue(mockUser)
+    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
 
     const register = makeRegister(mockRepo, mockEmailService)
     await register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' })
@@ -1614,24 +1664,38 @@ describe('register', () => {
 
   it('возвращает message без токенов', async () => {
     vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUser).mockResolvedValue(mockUser)
+    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
 
     const register = makeRegister(mockRepo, mockEmailService)
     const result = await register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' })
 
     expect(result).toEqual({ message: 'Check your email to verify your account' })
   })
+
+  it('откатывает создание пользователя при сбое отправки письма', async () => {
+    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
+    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
+    vi.mocked(mockEmailService.sendVerificationEmail).mockRejectedValueOnce(new Error('SMTP down'))
+
+    const register = makeRegister(mockRepo, mockEmailService)
+    await expect(register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' }))
+      .rejects.toMatchObject({ statusCode: 500 })
+
+    expect(mockRepo.deleteUser).toHaveBeenCalledWith('user1')
+  })
 })
 
 
 === apps/api/src/features/auth/application/register.ts ===
+// register.ts`**: Проверяет, не занят ли email. Если всё в порядке, хеширует пароль через Argon2, создает
+// пользователя и инициирует отправку письма через `emailService`.
+
 import { hash } from '@node-rs/argon2'
 import { Prisma } from '@prisma/client'
 import type { AuthRepository } from '../infrastructure/authRepository'
 import type { EmailService } from '../infrastructure/emailService'
-import { generateRefreshToken, hashToken, EMAIL_VERIFICATION_TTL_MS } from '../../../shared/lib/tokens'
+import { generateRefreshToken, hashToken, EMAIL_VERIFICATION_TTL_MS, FRONTEND_URL } from '../../../shared/lib'
 import { AppError } from '../../../shared/errors'
-import { FRONTEND_URL } from '../../../shared/lib/config'
 
 type RegisterData = { name: string; email: string; password: string }
 type RegisterResult = { message: string }
@@ -1642,10 +1706,18 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     if (existing) throw new AppError(409, 'Email already in use')
 
     const passwordHash = await hash(data.password)
+    const rawToken = generateRefreshToken()
+    const tokenHash = hashToken(rawToken)
+    const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS)
 
     let user: { id: string; email: string }
     try {
-      user = await repo.createUser({ name: data.name, email: data.email, passwordHash })
+      user = await repo.createUserWithVerification({
+        name: data.name,
+        email: data.email,
+        passwordHash,
+        verification: { tokenHash, expiresAt },
+      })
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new AppError(409, 'Email already in use')
@@ -1653,16 +1725,12 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
       throw err
     }
 
-    const rawToken = generateRefreshToken()
-    const tokenHash = hashToken(rawToken)
-    const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS)
-    await repo.createEmailVerification({ userId: user.id, tokenHash, expiresAt })
-
     const verificationUrl = `${FRONTEND_URL}/verify-email?token=${rawToken}`
     try {
       await emailService.sendVerificationEmail(user.email, verificationUrl)
     } catch (err) {
       console.error('Failed to send verification email', { userId: user.id, err })
+      await repo.deleteUser(user.id)
       throw new AppError(500, 'Failed to send verification email. Please try again later.')
     }
 
@@ -1672,8 +1740,10 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
 
 
 === apps/api/src/features/auth/application/verifyEmail.ts ===
+// verifyEmail.ts`**: Завершает процесс регистрации, помечая email пользователя как подтвержденный
+// и выдавая первую пару токенов для входа 
 import type { AuthRepository } from '../infrastructure/authRepository'
-import { hashToken } from '../../../shared/lib/tokens'
+import { hashToken } from '../../../shared/lib'
 import { AppError } from '../../../shared/errors'
 import { issueTokensForUser, type AuthTokensResult } from './issueTokens'
 
@@ -1715,6 +1785,10 @@ export { makeEmailService } from './infrastructure/emailService'
 
 
 === apps/api/src/features/auth/infrastructure/authRepository.ts ===
+// **Единственное место в модуле Auth, работающее с БД.** Инкапсулирует сложные запросы к Prisma (создание
+// пользователей, ротация токенов) и защищает от них бизнес-логику. Гарантирует атомарность важных операций для       
+// безопасности сессий
+
 import { type PrismaClient, type User, type RefreshToken, type EmailVerification } from '@prisma/client'
 import { handlePrismaError } from '../../../shared/infrastructure'
 
@@ -1722,14 +1796,25 @@ export type AuthRepository = {
   findByEmail(email: string): Promise<User | null>
   findById(id: string): Promise<User | null>
   createUser(data: { name: string; email: string; passwordHash: string }): Promise<User>
+  /** Атомарно создаёт user и emailVerification. */
+  createUserWithVerification(data: {
+    name: string
+    email: string
+    passwordHash: string
+    verification: { tokenHash: string; expiresAt: Date }
+  }): Promise<User>
+  deleteUser(id: string): Promise<void>
   findByGoogleId(googleId: string): Promise<User | null>
   linkGoogleId(userId: string, googleId: string): Promise<User>
   createGoogleUser(data: { name: string; email: string; googleId: string }): Promise<User>
   saveRefreshToken(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
+  /** Чистит revoked-токены и оставляет только `maxActive` самых свежих активных. */
+  pruneUserSessions(userId: string, maxActive: number): Promise<void>
   findTokenByHash(tokenHash: string): Promise<RefreshToken | null>
   deleteToken(id: string): Promise<void>
   revokeToken(id: string): Promise<void>
-  revokeAllUserTokens(userId: string): Promise<void>
+  /** Полностью удаляет все refresh-токены пользователя — используется при reuse-detection и глобальном logout. */
+  deleteAllUserTokens(userId: string): Promise<void>
   /** Атомарно отзывает старый токен и создаёт новый. Возвращает false при повторном использовании. */
   rotateToken(oldId: string, newData: { userId: string; tokenHash: string; expiresAt: Date }): Promise<boolean>
   createEmailVerification(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
@@ -1760,6 +1845,32 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
     async createUser(data) {
       try {
         return await prisma.user.create({ data })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async createUserWithVerification({ name, email, passwordHash, verification }) {
+      try {
+        return await prisma.$transaction(async (tx) => {
+          const user = await tx.user.create({ data: { name, email, passwordHash } })
+          await tx.emailVerification.create({
+            data: {
+              userId: user.id,
+              tokenHash: verification.tokenHash,
+              expiresAt: verification.expiresAt,
+            },
+          })
+          return user
+        })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
+    async deleteUser(id) {
+      try {
+        await prisma.user.delete({ where: { id } })
       } catch (err) {
         return handlePrismaError(err)
       }
@@ -1797,6 +1908,27 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
       }
     },
 
+    async pruneUserSessions(userId, maxActive) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.refreshToken.deleteMany({
+            where: { userId, revokedAt: { not: null } },
+          })
+          const active = await tx.refreshToken.findMany({
+            where: { userId, revokedAt: null },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+          })
+          const toDelete = active.slice(maxActive).map((t) => t.id)
+          if (toDelete.length > 0) {
+            await tx.refreshToken.deleteMany({ where: { id: { in: toDelete } } })
+          }
+        })
+      } catch (err) {
+        return handlePrismaError(err)
+      }
+    },
+
     async findTokenByHash(tokenHash) {
       try {
         return await prisma.refreshToken.findUnique({ where: { tokenHash } })
@@ -1824,7 +1956,7 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
       }
     },
 
-    async revokeAllUserTokens(userId) {
+    async deleteAllUserTokens(userId) {
       try {
         await prisma.refreshToken.deleteMany({ where: { userId } })
       } catch (err) {
@@ -1887,6 +2019,9 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
 
 
 === apps/api/src/features/auth/infrastructure/emailService.ts ===
+// Почтовый курьер приложения. Интегрируется с внешним API Resend для доставки писем верификации.
+// Отвечает за корректное формирование HTML-сообщений и безопасную передачу ссылок для активации аккаунтов.
+
 import { Resend } from 'resend'
 
 export type EmailService = {
@@ -1894,14 +2029,24 @@ export type EmailService = {
 }
 
 export function makeEmailService(): EmailService {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) throw new Error('RESEND_API_KEY is not set')
-  const resend = new Resend(apiKey)
+  let resend: Resend | null = null
+
+  function getResend(): Resend {
+    if (!resend) {
+      const apiKey = process.env.RESEND_API_KEY
+      if (!apiKey) throw new Error('RESEND_API_KEY is not set')
+      resend = new Resend(apiKey)
+    }
+    return resend
+  }
 
   return {
     async sendVerificationEmail(to, verificationUrl) {
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
+      // SECURITY: все ${} в html ниже должны быть только server-controlled значениями
+      // (env-переменные, токены из crypto). При добавлении user-input полей —
+      // обязательно прогонять через HTML-escape, иначе XSS в почтовом клиенте.
+      await getResend().emails.send({
+        from: 'noreply@natsdoll.com',
         to,
         subject: 'Confirm your email — NatsDoll',
         html: `
@@ -1917,6 +2062,9 @@ export function makeEmailService(): EmailService {
 
 
 === apps/api/src/features/auth/infrastructure/googleClient.ts ===
+// Интерфейс к Google OAuth2. Не знает о Prisma или email-ах. Возвращает только чистый
+// профиль. Обертка над @googleapis/client-auth2.
+
 import { randomBytes } from 'node:crypto'
 import { google } from 'googleapis'
 import { AppError } from '../../../shared/errors'
@@ -1966,13 +2114,14 @@ export function makeGetGoogleProfile(): (code: string) => Promise<GoogleProfile>
 
 
 === apps/api/src/features/auth/presentation/authRoutes.test.ts ===
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
 import { makeAuthRouter } from './authRoutes'
 
-vi.mock('../../../shared/lib/tokens', () => ({
+vi.mock('../../../shared/lib', () => ({
   COOKIE_NAME: 'refresh_token',
   REFRESH_TOKEN_TTL_SECONDS: 2592000,
+  FRONTEND_URL: 'http://localhost:5173',
 }))
 
 vi.mock('../infrastructure/googleClient', () => ({
@@ -2101,21 +2250,34 @@ describe('GET /api/auth/google/callback', () => {
 
 
 === apps/api/src/features/auth/presentation/authRoutes.ts ===
+// HTTP-интерфейс модуля аутентификации. Этот файл переводит внешние HTTP-запросы в действия бизнес-логики. Он      
+// отвечает за строгую валидацию входящих данных (Zod), защиту от перебора паролей (Rate Limiting) и безопасное
+// управление сессиями через HttpOnly куки. Здесь реализованы все способы входа: классическая регистрация с
+// подтверждением почты и быстрый вход через Google OAuth
+
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
-import { requireAuth } from '../../../shared/middleware/requireAuth'
-import { createRateLimiter } from '../../../shared/middleware/rateLimit'
-import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib/tokens'
+import { requireAuth, createRateLimiter } from '../../../shared/middleware'
+import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS, FRONTEND_URL, COMMON_PASSWORDS } from '../../../shared/lib'
 import { getGoogleAuthUrl } from '../infrastructure/googleClient'
-import { FRONTEND_URL } from '../../../shared/lib/config'
 import type { AuthTokensResult } from '../application/issueTokens'
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(8).max(128),
+  password: z.string()
+    .min(8)
+    .max(128)
+    .refine(
+      (p) => !COMMON_PASSWORDS.has(p.toLowerCase()),
+      { message: 'This password is too common, please choose a stronger one' },
+    ),
+})
+
+const verifyEmailSchema = z.object({
+  token: z.string().min(1),
 })
 
 const loginSchema = z.object({
@@ -2137,10 +2299,12 @@ const REFRESH_COOKIE_OPTIONS = {
   secure: isProduction,
 } as const
 
+// sameSite: 'Lax' обязателен — Google делает cross-site redirect на /google/callback,
+// при 'Strict' браузер не отправит cookie и OAuth-вход всегда падает с invalid_state.
 const OAUTH_STATE_COOKIE_OPTIONS = {
   httpOnly: true,
   path: '/',
-  sameSite: 'Strict',
+  sameSite: 'Lax',
   maxAge: OAUTH_STATE_TTL_SECONDS,
   secure: isProduction,
 } as const
@@ -2148,6 +2312,7 @@ const OAUTH_STATE_COOKIE_OPTIONS = {
 const loginLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const registerLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
 const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
+const googleStartLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const refreshLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 
@@ -2207,15 +2372,14 @@ export function makeAuthRouter(
     return c.json({ user })
   })
 
-  router.get('/verify-email', verifyEmailLimiter.middleware, async (c) => {
-    const token = c.req.query('token')
-    if (!token) return c.json({ error: 'Missing token' }, 400)
+  router.post('/verify-email', verifyEmailLimiter.middleware, zValidator('json', verifyEmailSchema), async (c) => {
+    const { token } = c.req.valid('json')
     const result = await verifyEmail(token)
     setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
     return c.json({ accessToken: result.accessToken, user: result.user })
   })
 
-  router.get('/google', (c) => {
+  router.get('/google', googleStartLimiter.middleware, (c) => {
     const { url, state } = getGoogleAuthUrl()
     setCookie(c, 'oauth_state', state, OAUTH_STATE_COOKIE_OPTIONS)
     return c.redirect(url)
@@ -2271,6 +2435,10 @@ describe('submit', () => {
 
 
 === apps/api/src/features/contact/application/submit.ts ===
+// Содержит конкретный сценарий использования (use-case) — «Отправить сообщение».
+// Она просто берет данные и передает их репозиторию. Она не знает ничего о базе данных или 
+// протоколе HTTP.
+
 import type { ContactRepository } from '../infrastructure/contactRepository'
 
 type SubmitData = { name: string; email: string; message: string }
@@ -2289,6 +2457,8 @@ export { makeContactRouter } from './presentation/contactRoutes'
 
 
 === apps/api/src/features/contact/infrastructure/contactRepository.ts ===
+// **Сохранение**: Данные записываются в таблицу `ContactMessage`, где ID создается автоматически.
+
 import { type PrismaClient } from '@prisma/client'
 import { handlePrismaError } from '../../../shared/infrastructure'
 
@@ -2310,8 +2480,7 @@ export function makeContactRepository(prisma: PrismaClient): ContactRepository {
 
 
 === apps/api/src/features/contact/presentation/contactRoutes.test.ts ===
-// apps/api/src/features/contact/presentation/contactRoutes.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
 import { makeContactRouter } from './contactRoutes'
 
@@ -2378,7 +2547,7 @@ describe('POST /api/contact', () => {
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
-import { createRateLimiter } from '../../../shared/middleware/rateLimit'
+import { createRateLimiter } from '../../../shared/middleware'
 
 const contactBodySchema = z.object({
   name: z.string().min(1).max(100),
@@ -2442,6 +2611,8 @@ describe('getHomeGallery', () => {
 === apps/api/src/features/gallery/application/getHomeGallery.ts ===
 import type { GalleryRepository, HomeGallery } from '../types'
 
+// Собирает данные для главной страницы: превью-товар и пул товаров для ленты.
+// Оба запроса выполняются параллельно через Promise.all.
 export function makeGetHomeGallery(repo: GalleryRepository) {
   return async function getHomeGallery(): Promise<HomeGallery> {
     const [preview, pool] = await Promise.all([
@@ -2526,6 +2697,8 @@ const GALLERY_SELECT = {
   position: true,
 } as const
 
+// Репозиторий галереи: читает активные элементы из БД и отдаёт фронту
+// в виде { id, imageUrl, position } — отсортированных по полю position
 export function makeGalleryRepository(prisma: PrismaClient) {
   return {
     async getHomePreview(): Promise<GalleryItem[]> {
@@ -2563,6 +2736,7 @@ import type { HomeGallery } from '../types'
 
 type GetHomeGallery = () => Promise<HomeGallery>
 
+// GET /gallery/home — возвращает фронту превью и пул товаров для главной страницы
 export function makeGalleryRouter(getHomeGallery: GetHomeGallery) {
   const router = new Hono()
 
@@ -2573,7 +2747,21 @@ export function makeGalleryRouter(getHomeGallery: GetHomeGallery) {
 
   return router
 }
+// Полная цепочка обработки одного HTTP-запроса от фронта до базы данных и 
+  // обратно. То есть что происходит, когда Vue-компонент на главной странице
+  // запрашивает данные галереи — шаг за шагом через все слои бэкенда.
 
+//   GET /gallery/home  (фронт)
+//     ↓
+//   galleryRouter      ← этот файл
+//     ↓
+//   getHomeGallery()   (use-case)
+//     ↓
+//   repo.getHomePreview() + repo.getHomePool()  (параллельно)
+//     ↓
+//   Prisma → PostgreSQL
+//     ↓
+//   { preview: [...], pool: [...] }  → обратно фронту
 
 === apps/api/src/features/gallery/types.ts ===
 export type GalleryItem = {
@@ -2727,7 +2915,7 @@ export function makeNewsletterRepository(prisma: PrismaClient): NewsletterReposi
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
-import { createRateLimiter } from '../../../shared/middleware/rateLimit'
+import { createRateLimiter } from '../../../shared/middleware'
 
 const subscribeBodySchema = z.object({
   email: z.string().email(),
@@ -2754,6 +2942,43 @@ export function makeNewsletterRouter(subscribe: Subscribe) {
 
 
 === apps/api/src/main.ts ===
+// Этот файл отвечает за запуск сервера на нужном порту, настройку периодической 
+// «уборки» базы данных от устаревших токенов и механизм **Graceful Shutdown** — безопасное завершение работы, которое 
+// гарантирует, что все соединения с базой данных будут корректно закрыты при остановке сервера
+
+// Короткое саммари для погружения в бэкенд:
+// ### 1. **Слои:**
+//   **Application:** Бизнес-логика (use-cases), где один файл отвечает за одну операцию (например, `login.ts`).
+//   **Infrastructure:** Работа с БД через репозитории Prisma.
+//   **Presentation:** HTTP-маршруты и обработчики Hono.
+
+// ### 2. Модель данных (База данных)
+//  **`apps/api/prisma/schema.prisma`**. Описывает все сущности и связи.
+
+// ### 3. **`apps/api/src/main.ts`**: Точка входа, где запускается сервер Hono
+// и настраиваются системные процессы, такие как очистка устаревших токенов.
+// **`apps/api/src/app.ts`**: Так называемый **Composition Root**. Это 
+// единственный файл, который импортирует все слои (Application и
+// Infrastructure) и связывает их в маршруты. Здесь же
+// настраиваются CORS и обработка ошибок.
+
+// ### 4. Разбор конкретной фичи (на примере Auth)  
+// **`apps/api/src/features/auth/`**:
+// **Infrastructure:** `authRepository.ts` — прямые запросы к Prisma
+// **Application:** файлы вроде `login.ts` или `register.ts` — здесь
+// находится чистая логика (хеширование паролей, выдача токенов)
+// **Presentation:** `authRoutes.ts` — определение эндпоинтов,
+// валидация входящих данных через **Zod** и применение Rate Limiting.
+
+// ### 5. Общие инструменты (Shared)
+// **`apps/api/src/shared/`**
+// * Обработка ошибок базы данных (`handlePrismaError.ts`)
+// *Middleware для проверки авторизации (`requireAuth.ts`) и ограничения
+// частоты запросов (`rateLimit.ts`)
+// *Утилиты для работы с JWT и хешированием токенов (`tokens.ts`)
+// Точка входа бэкенд-приложения.** 
+
+
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { prisma, cleanupExpiredAuthRecords } from './shared/infrastructure'
@@ -2843,7 +3068,14 @@ export async function cleanupExpiredAuthRecords(prisma: PrismaClient): Promise<v
   const now = new Date()
   try {
     const [tokens, verifications] = await Promise.all([
-      prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: now } } }),
+      prisma.refreshToken.deleteMany({
+        where: {
+          OR: [
+            { expiresAt: { lt: now } },
+            { revokedAt: { not: null } },
+          ],
+        },
+      }),
       prisma.emailVerification.deleteMany({ where: { expiresAt: { lt: now } } }),
     ])
     if (tokens.count || verifications.count) {
@@ -2896,15 +3128,60 @@ export const prisma = new PrismaClient({
 
 
 === apps/api/src/shared/lib/config.ts ===
-export const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173'
-
-// TODO: restore HTTPS check when SSL is configured
-if (process.env.NODE_ENV === 'production' && !FRONTEND_URL.startsWith('http')) {
+if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
   throw new Error('FRONTEND_URL is required in production')
 }
 
+export const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+
+
+=== apps/api/src/shared/lib/index.ts ===
+export {
+  ACCESS_TOKEN_TTL,
+  REFRESH_TOKEN_TTL_MS,
+  REFRESH_TOKEN_TTL_SECONDS,
+  EMAIL_VERIFICATION_TTL_MS,
+  COOKIE_NAME,
+  MAX_ACTIVE_SESSIONS_PER_USER,
+  signAccessToken,
+  verifyAccessToken,
+  generateRefreshToken,
+  hashToken,
+} from './tokens'
+export type { AccessTokenPayload } from './tokens'
+export { FRONTEND_URL } from './config'
+export { COMMON_PASSWORDS } from './passwordBlocklist'
+
+
+=== apps/api/src/shared/lib/passwordBlocklist.ts ===
+// Топ-100 самых распространённых паролей по данным утечек (NordPass/SecLists 2024).
+// Используется при регистрации, чтобы отрезать тривиальные пароли, которые ломаются
+// первой же словарной атакой ещё до того, как сработают rate-limit и Argon2.
+// Все значения в нижнем регистре — сравнение делать через .toLowerCase().
+
+export const COMMON_PASSWORDS: ReadonlySet<string> = new Set([
+  '123456', '123456789', '12345678', '12345', '1234567', '1234567890', '123123', '123321',
+  '111111', '000000', '666666', '696969', '7777777', '11111111', '22222222', '33333333',
+  '44444444', '55555555', '88888888', '99999999', '112233', '121212', '147258369', '159357', '159753',
+  'password', 'password1', 'password12', 'password123', 'password1234', 'passw0rd', 'p@ssword', 'p@ssw0rd', 'pa$$word',
+  'qwerty', 'qwerty1', 'qwerty12', 'qwerty123', 'qwerty1234', 'qwertyuiop', 'qazwsx',
+  '1q2w3e', '1q2w3e4r', '1q2w3e4r5t', '1qaz2wsx', 'q1w2e3r4', 'q1w2e3r4t5',
+  'asdfgh', 'asdfghjkl', 'asdf1234', 'zxcvbn', 'zxcvbnm', 'abc123', 'abc12345', 'abcd1234', 'abcdef',
+  'admin', 'admin123', 'administrator', 'welcome', 'welcome1', 'welcome123', 'login', 'master', 'letmein',
+  'iloveyou', 'sunshine', 'princess', 'monkey', 'dragon', 'shadow', 'mustang', 'hunter', 'hottie', 'freedom', 'trustno1',
+  'football', 'baseball', 'basketball', 'hockey', 'soccer', 'batman', 'superman', 'starwars', 'pokemon', 'yugioh',
+  'michael', 'jessica', 'michelle', 'matthew', 'daniel', 'charlie', 'mickey', 'ashley', 'jordan', 'jordan23',
+  'computer', 'internet', 'samsung', 'iphone', 'android', 'google', 'test', 'test123', 'test1234',
+  'natsdoll', 'natsdoll123',
+])
+
 
 === apps/api/src/shared/lib/tokens.ts ===
+// **Access Token**: Короткоживущий JWT (15 минут), хранится в памяти фронтенда.
+// **Refresh Token**: Хранится в **httpOnly Cookie**, живет 30 дней и используется для получения нового Access Token 
+// без участия пользователя.
+// **Безопасность**: Используется библиотека `jose` для подписи JWT и `node:crypto` для создания HMAC-хешей
+
 import { SignJWT, jwtVerify } from 'jose'
 import { createHmac, randomUUID } from 'node:crypto'
 import { AppError } from '../errors'
@@ -2914,6 +3191,7 @@ export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000
 export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60
 export const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000
 export const COOKIE_NAME = 'refresh_token'
+export const MAX_ACTIVE_SESSIONS_PER_USER = 5
 
 export type AccessTokenPayload = {
   sub: string
@@ -2963,6 +3241,11 @@ export function hashToken(token: string): string {
 }
 
 
+=== apps/api/src/shared/middleware/index.ts ===
+export { requireAuth } from './requireAuth'
+export { createRateLimiter } from './rateLimit'
+
+
 === apps/api/src/shared/middleware/rateLimit.test.ts ===
 import { describe, it, expect } from 'vitest'
 import { Hono } from 'hono'
@@ -3009,10 +3292,18 @@ describe('createRateLimiter', () => {
     expect((await request(app, '2.2.2.2')).status).toBe(200)
   })
 
-  it('берёт первый IP из x-forwarded-for со списком', async () => {
+  it('берёт последний IP из x-forwarded-for (тот что добавил nginx)', async () => {
     const { app } = buildApp(1, 60_000)
+    // Атакующий шлёт `x-forwarded-for: 5.5.5.5`, nginx добавляет свой IP справа: `5.5.5.5, 10.0.0.1`.
+    // Лимитер должен использовать `10.0.0.1`, а не подделанное значение клиента.
     expect((await app.request('/', { headers: { 'x-forwarded-for': '5.5.5.5, 10.0.0.1' } })).status).toBe(200)
-    expect((await app.request('/', { headers: { 'x-forwarded-for': '5.5.5.5, 99.99.99.99' } })).status).toBe(429)
+    expect((await app.request('/', { headers: { 'x-forwarded-for': '99.99.99.99, 10.0.0.1' } })).status).toBe(429)
+  })
+
+  it('игнорирует подделанный x-forwarded-for когда есть x-real-ip', async () => {
+    const { app } = buildApp(1, 60_000)
+    expect((await app.request('/', { headers: { 'x-forwarded-for': '5.5.5.5', 'x-real-ip': '10.0.0.1' } })).status).toBe(200)
+    expect((await app.request('/', { headers: { 'x-forwarded-for': '6.6.6.6', 'x-real-ip': '10.0.0.1' } })).status).toBe(429)
   })
 
   it('сбрасывается через reset()', async () => {
@@ -3029,7 +3320,7 @@ describe('createRateLimiter', () => {
     expect((await app.request('/')).status).toBe(429)
   })
 
-  it('использует x-real-ip как fallback', async () => {
+  it('использует x-real-ip когда нет x-forwarded-for', async () => {
     const limiter = createRateLimiter({ max: 1, windowMs: 60_000 })
     const app = new Hono()
     app.get('/', limiter.middleware, (c) => c.json({ ok: true }))
@@ -3041,7 +3332,10 @@ describe('createRateLimiter', () => {
 
 
 === apps/api/src/shared/middleware/rateLimit.ts ===
+// Мидлвар ограничивает количество запросов с одного IP.
+// Хранит счётчики в памяти (Map). При превышении лимита возвращает 429.
 import type { MiddlewareHandler } from 'hono'
+
 
 type RateLimitOptions = {
   max: number
@@ -3050,15 +3344,25 @@ type RateLimitOptions = {
 
 type Entry = { count: number; resetAt: number }
 
-function extractClientIp(header: string | undefined): string {
-  if (!header) return 'unknown'
-  const first = header.split(',')[0]?.trim()
-  return first || 'unknown'
+// X-Real-IP — приоритет, его выставляет nginx из $remote_addr (клиент подделать не может).
+// X-Forwarded-For — клиент может прислать произвольный заголовок, nginx добавляет к нему свой IP справа,
+// поэтому доверяем только последнему элементу списка.
+function extractClientIp(realIp: string | undefined, forwardedFor: string | undefined): string {
+  const real = realIp?.trim()
+  if (real) return real
+
+  if (forwardedFor) {
+    const ips = forwardedFor.split(',').map((s) => s.trim()).filter(Boolean)
+    if (ips.length > 0) return ips[ips.length - 1]
+  }
+  return 'unknown'
 }
 
 export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
   const hits = new Map<string, Entry>()
 
+  // Чистим устаревшие записи, чтобы Map не рос бесконечно.
+  // unref() — таймер не мешает Node.js завершиться при остановке сервера
   const cleanupTimer = setInterval(() => {
     const now = Date.now()
     for (const [key, entry] of hits) {
@@ -3068,7 +3372,7 @@ export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
   cleanupTimer.unref()
 
   const middleware: MiddlewareHandler = async (c, next) => {
-    const ip = extractClientIp(c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'))
+    const ip = extractClientIp(c.req.header('x-real-ip'), c.req.header('x-forwarded-for'))
     const now = Date.now()
     const entry = hits.get(ip)
 
@@ -3080,7 +3384,6 @@ export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
     } else {
       hits.set(ip, { count: 1, resetAt: now + windowMs })
     }
-
     return next()
   }
 
@@ -3345,7 +3648,7 @@ import { AppHeader } from '@/widgets/app-header'
 import { AppFooter } from '@/widgets/app-footer'
 import { ContactModal } from '@/features/contact-modal'
 import { AuthModal } from '@/features/auth-modal'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 
 const authStore = useAuthStore()
 onMounted(() => { authStore.initAuth() })
@@ -3356,8 +3659,8 @@ onMounted(() => { authStore.initAuth() })
 $tablet: 768px;
 $desktop: 1200px;
 
-@mixin tablet { @media (min-width: $tablet) { @content; } }
-@mixin desktop { @media (min-width: $desktop) { @content; } }
+@mixin tablet { @media (width >= $tablet) { @content; } }
+@mixin desktop { @media (width >= $desktop) { @content; } }
 
 :export {
   tablet: 768;
@@ -3388,12 +3691,12 @@ body {
 }
 
 
-=== apps/web/src/features/auth/index.ts ===
+=== apps/web/src/entities/user/index.ts ===
 export { useAuthStore } from './store'
 export type { User } from './types'
 
 
-=== apps/web/src/features/auth/store.test.ts ===
+=== apps/web/src/entities/user/store.test.ts ===
 import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from './store'
@@ -3482,7 +3785,7 @@ describe('useAuthStore', () => {
 })
 
 
-=== apps/web/src/features/auth/store.ts ===
+=== apps/web/src/entities/user/store.ts ===
 // Централизованное хранилище Pinia для управления состоянием аутентификации пользователя.
 //  Основные функции:
 //  - Управление сессией: хранение данных профиля (User) и Access Token в памяти приложения.
@@ -3558,11 +3861,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loginFromCookie(): Promise<void> {
-    initPromise = _doInitAuth()
-    return initPromise
-  }
-
   async function initAuth(): Promise<void> {
     if (initPromise) return initPromise
     initPromise = _doInitAuth()
@@ -3589,6 +3887,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function loginWithToken(token: string): Promise<void> {
+    if (initPromise) await initPromise
     initPromise = _doLoginWithToken(token)
     return initPromise
   }
@@ -3607,6 +3906,7 @@ export const useAuthStore = defineStore('auth', () => {
       accessToken.value = null
     } finally {
       authReady.value = true
+      initPromise = null
     }
   }
 
@@ -3621,39 +3921,12 @@ export const useAuthStore = defineStore('auth', () => {
     clearState,
     initAuth,
     loginWithToken,
-    loginFromCookie,
     setAccessToken,
   }
 })
-// Этот стор (хранилище **Pinia**) можно представить как **«главного администратора»** на входе в здание. Он отвечает за то, 
-// чтобы узнавать пользователей, выдавать им пропуска и следить, чтобы они не заходили туда, куда им нельзя.
-// Вот как он работает «на пальцах» и где он подключается в коде:
-// ### 1. Как работает стор (ELI5 — просто о сложном)
-// *   **У него есть «память» (State):** Он помнит, кто сейчас залогинен (`user`) и есть ли у него специальный «ключ» для 
-// запросов к серверу (`accessToken`). 
-// *   **Он умеет «проверять документы» (Actions):** 
-//     *   Когда ты вводишь логин и пароль, метод **`login`** отправляет их на сервер. Если всё верно, сервер дает «ключ», 
-// который стор кладет себе в карман.
-//     *   Если ты закрыл и снова открыл сайт, стор вызывает **`initAuth`**. Он тихо спрашивает сервер: «У меня тут в печеньках
-// (cookies) осталась старая метка, дашь мне новый ключ?». Если сервер кивает, ты входишь автоматически.
-// *   **Безопасность:** Стор хранит «ключ» (`accessToken`) только в своей оперативной памяти. Если ты обновишь страницу, ключ 
-// исчезнет, и стор тут же побежит за новым, используя защищенную метку из куки.
-// ### 2. Где он подключается?
-// Стор не просто лежит в папке, он интегрирован в «кровеносную» и «нервную» системы приложения:
-// *   **В главной точке входа (`main.ts`):** Как только приложение запускается, стор подключается к **сетевому перехватчику   
-// (Interceptor)**.
-//     *   Это значит, что при каждом запросе к серверу (например, «дай список товаров»), система автоматически лезет в стор,  
-// берет оттуда `accessToken` и прикрепляет его к письму для сервера.
-//     *   Если сервер ответит «Ключ не подходит!», стор тут же попробует его обновить или выкинет пользователя из системы.
-// *   **В навигаторе (`router/index.ts`):** Стор работает «охранником» на дверях страниц.
-//     *   Перед тем как пустить тебя на страницу «Личный кабинет», роутер спрашивает у стора: **`isLoggedIn?`**.
-//     *   Если стор говорит «Нет», роутер не дает тебе пройти и вместо этого открывает окно входа (`AuthModal`).
-// *   **В компонентах интерфейса:** Например, в шапке сайта (`AppHeader`). Если стор говорит, что пользователь вошел, шапка   
-// показывает кнопку «Выход» и имя пользователя. Если нет — кнопку «Войти».
-// **Итог:** Стор — это единственный источник правды об авторизации, к которому обращаются и сетевые запросы, и страницы сайта,
-// и кнопки в меню.
 
-=== apps/web/src/features/auth/types.ts ===
+
+=== apps/web/src/entities/user/types.ts ===
 export type User = {
   id: string
   name: string
@@ -3677,16 +3950,36 @@ export type User = {
         type="button"
         @click="handleGoogle"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+          />
+          <path
+            fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+          />
+          <path
+            fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+          />
+          <path
+            fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+          />
         </svg>
         Continue with Google
       </button>
 
-      <div v-if="mode !== 'verify-pending'" class="auth-modal__divider">
+      <div
+        v-if="mode !== 'verify-pending'"
+        class="auth-modal__divider"
+      >
         <span>or</span>
       </div>
 
@@ -3694,11 +3987,20 @@ export type User = {
         v-if="mode === 'verify-pending'"
         class="auth-modal__verify"
       >
-        <h2 id="auth-modal-verify-title" class="auth-modal__title">Check your email</h2>
+        <h2
+          id="auth-modal-verify-title"
+          class="auth-modal__title"
+        >
+          Check your email
+        </h2>
         <p class="auth-modal__verify-text">
           We've sent a confirmation link to your email address. Please check your inbox and click the link to activate your account.
         </p>
-        <button type="button" class="auth-modal__switch-btn" @click="open('login')">
+        <button
+          type="button"
+          class="auth-modal__switch-btn"
+          @click="open('login')"
+        >
           Back to sign in
         </button>
       </div>
@@ -3709,10 +4011,18 @@ export type User = {
         novalidate
         @submit.prevent="handleLogin"
       >
-        <h2 id="auth-modal-login-title" class="auth-modal__title">Sign in</h2>
+        <h2
+          id="auth-modal-login-title"
+          class="auth-modal__title"
+        >
+          Sign in
+        </h2>
 
         <div class="auth-modal__field">
-          <label class="auth-modal__label" for="auth-email">Email</label>
+          <label
+            class="auth-modal__label"
+            for="auth-email"
+          >Email</label>
           <input
             id="auth-email"
             v-model="loginForm.email"
@@ -3721,11 +4031,17 @@ export type User = {
             type="email"
             autocomplete="email"
           >
-          <span v-if="loginErrors.email" class="auth-modal__error">{{ loginErrors.email }}</span>
+          <span
+            v-if="loginErrors.email"
+            class="auth-modal__error"
+          >{{ loginErrors.email }}</span>
         </div>
 
         <div class="auth-modal__field">
-          <label class="auth-modal__label" for="auth-password">Password</label>
+          <label
+            class="auth-modal__label"
+            for="auth-password"
+          >Password</label>
           <input
             id="auth-password"
             v-model="loginForm.password"
@@ -3734,10 +4050,18 @@ export type User = {
             type="password"
             autocomplete="current-password"
           >
-          <span v-if="loginErrors.password" class="auth-modal__error">{{ loginErrors.password }}</span>
+          <span
+            v-if="loginErrors.password"
+            class="auth-modal__error"
+          >{{ loginErrors.password }}</span>
         </div>
 
-        <p v-if="submitError" class="auth-modal__error auth-modal__error--global">{{ submitError }}</p>
+        <p
+          v-if="submitError"
+          class="auth-modal__error auth-modal__error--global"
+        >
+          {{ submitError }}
+        </p>
 
         <button
           class="auth-modal__submit"
@@ -3749,7 +4073,11 @@ export type User = {
 
         <p class="auth-modal__switch">
           No account?
-          <button type="button" class="auth-modal__switch-btn" @click="open('register')">
+          <button
+            type="button"
+            class="auth-modal__switch-btn"
+            @click="open('register')"
+          >
             Create one
           </button>
         </p>
@@ -3761,10 +4089,18 @@ export type User = {
         novalidate
         @submit.prevent="handleRegister"
       >
-        <h2 id="auth-modal-register-title" class="auth-modal__title">Create account</h2>
+        <h2
+          id="auth-modal-register-title"
+          class="auth-modal__title"
+        >
+          Create account
+        </h2>
 
         <div class="auth-modal__field">
-          <label class="auth-modal__label" for="auth-name">Name</label>
+          <label
+            class="auth-modal__label"
+            for="auth-name"
+          >Name</label>
           <input
             id="auth-name"
             v-model="registerForm.name"
@@ -3773,11 +4109,17 @@ export type User = {
             type="text"
             autocomplete="name"
           >
-          <span v-if="registerErrors.name" class="auth-modal__error">{{ registerErrors.name }}</span>
+          <span
+            v-if="registerErrors.name"
+            class="auth-modal__error"
+          >{{ registerErrors.name }}</span>
         </div>
 
         <div class="auth-modal__field">
-          <label class="auth-modal__label" for="auth-reg-email">Email</label>
+          <label
+            class="auth-modal__label"
+            for="auth-reg-email"
+          >Email</label>
           <input
             id="auth-reg-email"
             v-model="registerForm.email"
@@ -3786,11 +4128,17 @@ export type User = {
             type="email"
             autocomplete="email"
           >
-          <span v-if="registerErrors.email" class="auth-modal__error">{{ registerErrors.email }}</span>
+          <span
+            v-if="registerErrors.email"
+            class="auth-modal__error"
+          >{{ registerErrors.email }}</span>
         </div>
 
         <div class="auth-modal__field">
-          <label class="auth-modal__label" for="auth-reg-password">Password</label>
+          <label
+            class="auth-modal__label"
+            for="auth-reg-password"
+          >Password</label>
           <input
             id="auth-reg-password"
             v-model="registerForm.password"
@@ -3799,10 +4147,18 @@ export type User = {
             type="password"
             autocomplete="new-password"
           >
-          <span v-if="registerErrors.password" class="auth-modal__error">{{ registerErrors.password }}</span>
+          <span
+            v-if="registerErrors.password"
+            class="auth-modal__error"
+          >{{ registerErrors.password }}</span>
         </div>
 
-        <p v-if="submitError" class="auth-modal__error auth-modal__error--global">{{ submitError }}</p>
+        <p
+          v-if="submitError"
+          class="auth-modal__error auth-modal__error--global"
+        >
+          {{ submitError }}
+        </p>
 
         <button
           class="auth-modal__submit"
@@ -3814,7 +4170,11 @@ export type User = {
 
         <p class="auth-modal__switch">
           Already have an account?
-          <button type="button" class="auth-modal__switch-btn" @click="open('login')">
+          <button
+            type="button"
+            class="auth-modal__switch-btn"
+            @click="open('login')"
+          >
             Sign in
           </button>
         </p>
@@ -3828,7 +4188,7 @@ import { reactive, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthModal } from './useAuthModal'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { BaseModal, validateEmail } from '@/shared'
 
 const authModal = useAuthModal()
@@ -3880,7 +4240,11 @@ function validateLogin(): boolean {
 function validateRegister(): boolean {
   registerErrors.name = registerForm.name.trim() ? '' : 'Name is required'
   registerErrors.email = validateEmail(registerForm.email)
-  registerErrors.password = registerForm.password ? '' : 'Password is required'
+  registerErrors.password = !registerForm.password
+    ? 'Password is required'
+    : registerForm.password.length < 8
+      ? 'Password must be at least 8 characters'
+      : ''
   return !registerErrors.name && !registerErrors.email && !registerErrors.password
 }
 
@@ -4891,7 +5255,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { setupAuthInterceptor } from '@/shared'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -4922,10 +5286,14 @@ import { PlaceholderPage } from '@/shared'
 === apps/web/src/pages/AuthCallbackPage.vue ===
 <template>
   <div class="auth-callback">
-    <p v-if="!failed">Completing sign in...</p>
+    <p v-if="!failed">
+      Completing sign in...
+    </p>
     <p v-if="failed">
       Authentication failed.
-      <RouterLink to="/">Go home</RouterLink>
+      <RouterLink to="/">
+        Go home
+      </RouterLink>
     </p>
   </div>
 </template>
@@ -4933,7 +5301,7 @@ import { PlaceholderPage } from '@/shared'
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { resolveSafeRedirect } from '@/shared'
 
 const router = useRouter()
@@ -4952,7 +5320,7 @@ onMounted(async () => {
 
   history.replaceState(null, '', window.location.pathname)
 
-  await authStore.loginFromCookie()
+  await authStore.initAuth()
 
   if (!authStore.isLoggedIn) {
     failed.value = true
@@ -5036,10 +5404,14 @@ import { PlaceholderPage } from '@/shared'
 === apps/web/src/pages/VerifyEmailPage.vue ===
 <template>
   <div class="verify-email">
-    <p v-if="!failed">Verifying your email...</p>
+    <p v-if="!failed">
+      Verifying your email...
+    </p>
     <p v-if="failed">
       The link is invalid or has expired.
-      <RouterLink to="/">Go home</RouterLink>
+      <RouterLink to="/">
+        Go home
+      </RouterLink>
     </p>
   </div>
 </template>
@@ -5047,7 +5419,7 @@ import { PlaceholderPage } from '@/shared'
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { apiFetch, apiErrorMessage } from '@/shared'
 import { z } from 'zod'
 
@@ -5073,7 +5445,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`)
+    const res = await apiFetch('/auth/verify-email', { method: 'POST', json: { token } })
     if (!res.ok) {
       console.error(await apiErrorMessage(res, 'Verification failed'))
       failed.value = true
@@ -5098,7 +5470,7 @@ declare module 'vue-router' {
     requiresAuth?: boolean
   }
 }
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { useAuthModal } from '@/features/auth-modal'
 
 const routes: RouteRecordRaw[] = [
@@ -5315,8 +5687,8 @@ export async function authFetch(path: string, init: ApiRequestInit = {}): Promis
 import bp from '@/assets/styles/breakpoints.module.scss'
 
 export const MEDIA = {
-  tablet: `(min-width: ${bp.tablet}px)`,
-  desktop: `(min-width: ${bp.desktop}px)`,
+  tablet: `(width >= ${bp.tablet}px)`,
+  desktop: `(width >= ${bp.desktop}px)`,
 } as const
 
 
@@ -5482,25 +5854,6 @@ describe('useSlider', () => {
     expect(currentIndex.value).toBe(1)
     app.unmount()
   })
-
-  it('pause останавливает автоплей', async () => {
-    const [{ currentIndex, pause }, app] = withSetup(() => useSlider(4, 3000))
-    pause()
-    vi.advanceTimersByTime(3000)
-    await nextTick()
-    expect(currentIndex.value).toBe(0)
-    app.unmount()
-  })
-
-  it('resume после pause возобновляет автоплей', async () => {
-    const [{ currentIndex, pause, resume }, app] = withSetup(() => useSlider(4, 3000))
-    pause()
-    resume()
-    vi.advanceTimersByTime(3000)
-    await nextTick()
-    expect(currentIndex.value).toBe(1)
-    app.unmount()
-  })
 })
 
 
@@ -5558,15 +5911,6 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
     resetTimer()
   }
 
-  function pause() {
-    if (timer) clearInterval(timer)
-    timer = null
-  }
-
-  function resume() {
-    if (!timer) startTimer()
-  }
-
   watch(total, (newTotal) => {
     if (currentIndex.value >= newTotal) {
       currentIndex.value = Math.max(0, newTotal - 1)
@@ -5578,7 +5922,7 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
     if (timer) clearInterval(timer)
   })
 
-  return { currentIndex, next, prev, goTo, pause, resume }
+  return { currentIndex, next, prev, goTo }
 }
 
 
@@ -6213,7 +6557,7 @@ defineProps<{ title: string }>()
 // Этот файл является «инструкцией» для TypeScript, которая позволяет ему бесшовно работать с современными  
 // инструментами сборки и специфическими форматами файлов
 
- <reference types="vite/client"/>
+/// <reference types="vite/client" />
 
 declare module "*.vue" {
   import type { DefineComponent } from "vue";
@@ -6255,7 +6599,7 @@ declare module "*.webp" {
 === apps/web/src/widgets/app-footer/AppFooter.vue ===
 <template>
   <footer class="app-footer">
-       <div class="app-footer__brand">
+    <div class="app-footer__brand">
       <span class="app-footer__logo">NatsDoll</span>
       <p class="app-footer__tagline">
         Handmade polymer clay art
@@ -6982,7 +7326,7 @@ import { navItems, shopCategories, homeItem } from "../navigationConfig";
 import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 
 const { open: openContactModal } = useContactModal()
 const { open: openAuthModal } = useAuthModal()
@@ -7573,7 +7917,7 @@ import { navItems, shopCategories, homeItem } from '../navigationConfig'
 import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
-import { useAuthStore } from '@/features/auth'
+import { useAuthStore } from '@/entities/user'
 import { useClickOutside } from '@/shared'
 
 const { open: openContactModal } = useContactModal()
@@ -7625,7 +7969,7 @@ async function handleLogout() {
 
   &__link {
     font-family: var(--font-display);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-base);
     color: var(--color-text);
     text-decoration: none;
     letter-spacing: 0.05em;
@@ -7651,7 +7995,7 @@ async function handleLogout() {
 
     &--btn {
       font-family: var(--font-display);
-      font-size: var(--fs-sm);
+      font-size: var(--fs-base);
       color: var(--color-text);
       letter-spacing: 0.05em;
 
@@ -7858,7 +8202,10 @@ Drop me a message and we'll figure out the details together — pricing, timelin
 
 === apps/web/src/widgets/artist-section/ArtistSection.vue ===
 <template>
-  <section id="artist" class="artist-section">
+  <section
+    id="artist"
+    class="artist-section"
+  >
     <div class="artist-section__header">
       <img
         class="artist-section__photo"
@@ -8221,7 +8568,10 @@ describe('FaqSection — открытие/закрытие', () => {
 
 === apps/web/src/widgets/faq-section/FaqSection.vue ===
 <template>
-  <section id="faq" class="faq-section">
+  <section
+    id="faq"
+    class="faq-section"
+  >
     <div class="faq-section__header">
       <span class="faq-section__tag">FAQ</span>
       <h2 class="faq-section__title">
@@ -8564,7 +8914,10 @@ export async function fetchHomeGallery(): Promise<HomeGallery> {
 
 === apps/web/src/widgets/gallery-grid/GalleryGrid.vue ===
 <template>
-  <section class="gallery-grid" aria-label="Gallery">
+  <section
+    class="gallery-grid"
+    aria-label="Gallery"
+  >
     <GalleryGridSkeleton v-if="isLoading" />
     <div
       v-else-if="hasError"
@@ -8580,7 +8933,8 @@ export async function fetchHomeGallery(): Promise<HomeGallery> {
         :class="`gallery-grid__cell gallery-grid__cell--${i + 1}`"
       >
         <img
-          :src="previewCells[i]?.imageUrl"
+          v-if="previewCells[i]"
+          :src="previewCells[i]!.imageUrl"
           :alt="`Gallery image ${i + 1}`"
           class="gallery-grid__img"
           :class="{ 'gallery-grid__img--hidden': flipped[i] }"
@@ -8595,8 +8949,11 @@ export async function fetchHomeGallery(): Promise<HomeGallery> {
       </div>
 
       <div class="gallery-grid__overlay">
+        <p class="gallery-grid__title">
+          THE GALLERY
+        </p>
         <AppButton to="/gallery">
-          The Gallery
+          Explore
         </AppButton>
       </div>
     </template>
@@ -8656,6 +9013,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints.module' as *;
+
 .gallery-grid {
   position: relative;
   display: grid;
@@ -8665,21 +9024,21 @@ onUnmounted(() => {
   height: calc(100dvh - var(--header-height));
   gap: 2px;
   grid-template-areas:
-    "p1 p1 p1 p2 p2 p2 p3 p3 p3"
-    "p1 p1 p1 p2 p2 p2 p3 p3 p3"
-    "p1 p1 p1 p2 p2 p2 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p4 p4 p5 p5 p5 p5 p3 p3 p3"
-    "p6 p6 p5 p5 p5 p5 p3 p3 p3"
-    "p6 p6 p5 p5 p5 p5 p3 p3 p3"
-    "p6 p6 p5 p5 p5 p5 p7 p7 p7"
-    "p6 p6 p5 p5 p5 p5 p7 p7 p7"
-    "p6 p6 p5 p5 p5 p5 p7 p7 p7"
-    "p6 p6 p8 p8 p9 p9 p9 p9 p9"
-    "p6 p6 p8 p8 p9 p9 p9 p9 p9"
-    "p6 p6 p8 p8 p9 p9 p9 p9 p9";
+    "p1 p1 p1 p1 p2 p2 p3 p3 p3"
+    "p1 p1 p1 p1 p2 p2 p3 p3 p3"
+    "p1 p1 p1 p1 p2 p2 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p4 p4 p4 p5 p5 p5 p3 p3 p3"
+    "p6 p6 p6 p5 p5 p5 p3 p3 p3"
+    "p6 p6 p6 p5 p5 p5 p3 p3 p3"
+    "p6 p6 p6 p5 p5 p5 p7 p7 p7"
+    "p6 p6 p6 p5 p5 p5 p7 p7 p7"
+    "p6 p6 p6 p5 p5 p5 p7 p7 p7"
+    "p6 p6 p6 p8 p8 p9 p9 p9 p9"
+    "p6 p6 p6 p8 p8 p9 p9 p9 p9"
+    "p6 p6 p6 p8 p8 p9 p9 p9 p9";
 
   &__state {
     grid-column: 1 / -1;
@@ -8716,10 +9075,55 @@ onUnmounted(() => {
 
   &__overlay {
     position: absolute;
-    top: calc(100% / 15 * 3 + 2rem);
+    top: calc(100% / 15 * 3 - 1rem);
     left: 50%;
     transform: translateX(-50%);
     z-index: var(--z-gallery-grid-button);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+
+    @include tablet {
+      top: calc(100% / 11 * 3 + 1rem);
+      left: calc(100% / 8 * 2 + 1rem);
+      transform: none;
+      align-items: flex-start;
+      --color-text: var(--color-white);
+    }
+  }
+
+  &__title {
+    font-family: var(--font-brand);
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    color: var(--color-text);
+    text-align: center;
+    margin-top: 1.5rem;
+    line-height: 0.9;
+
+    @include tablet {
+      margin-top: 0;
+      line-height: 1.1;
+      color: var(--color-white);
+      text-align: left;
+    }
+  }
+  @include tablet {
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(11, 1fr);
+    grid-template-areas:
+      "p2 p2 p4 p4 p1 p1 p3 p3"
+      "p2 p2 p4 p4 p1 p1 p3 p3"
+      "p2 p2 p4 p4 p1 p1 p3 p3"
+      "p2 p2 p9 p9 p9 p9 p3 p3"
+      "p2 p2 p9 p9 p9 p9 p3 p3"
+      "p5 p5 p9 p9 p9 p9 p7 p7"
+      "p5 p5 p9 p9 p9 p9 p7 p7"
+      "p5 p5 p9 p9 p9 p9 p7 p7"
+      "p5 p5 p6 p6 p8 p8 p7 p7"
+      "p5 p5 p6 p6 p8 p8 p7 p7"
+      "p5 p5 p6 p6 p8 p8 p7 p7";
   }
 
   @for $i from 1 through 9 {
@@ -8736,7 +9140,10 @@ onUnmounted(() => {
 
 === apps/web/src/widgets/gallery-grid/GalleryGridSkeleton.vue ===
 <template>
-  <div class="gallery-skeleton" aria-hidden="true">
+  <div
+    class="gallery-skeleton"
+    aria-hidden="true"
+  >
     <div
       v-for="i in GALLERY_GRID_SIZE"
       :key="i"
@@ -8964,7 +9371,7 @@ describe('HeroSlider', () => {
   it('показывает текст и кнопку', () => {
     const wrapper = mountSlider()
     expect(wrapper.find('.hero-slider__text').text()).toBe('Find a unique gift here')
-    expect(wrapper.find('.app-button').text()).toBe('The shop')
+    expect(wrapper.find('.app-button').text()).toBe('Explore')
   })
 
   it('активный слайд по умолчанию — первый', () => {
@@ -9020,7 +9427,10 @@ describe('HeroSlider', () => {
 
 === apps/web/src/widgets/hero-slider/HeroSlider.vue ===
 <template>
-  <section class="hero-slider" aria-label="Hero banner">
+  <section
+    class="hero-slider"
+    aria-label="Hero banner"
+  >
     <div class="hero-slider__track">
       <div
         v-for="(slide, i) in slides"
@@ -9035,9 +9445,12 @@ describe('HeroSlider', () => {
       <p class="hero-slider__text">
         Find a unique gift here
       </p>
+      <p class="hero-slider__text hero-slider__text--sub">
+        THE SHOP
+      </p>
       <div class="hero-slider__cta">
         <AppButton to="/shop">
-          The shop
+          Explore
         </AppButton>
       </div>
     </div>
@@ -9072,9 +9485,9 @@ describe('HeroSlider', () => {
 
 <script setup lang="ts">
 import { useSlider, AppButton } from '@/shared'
-import slide1 from '@/assets/slides/slide1.jpg'
+import slide1 from '@/assets/slides/slide1.webp'
 import slide2 from '@/assets/slides/slide2.webp'
-import slide3 from '@/assets/slides/slide3.jpg'
+import slide3 from '@/assets/slides/slide3.webp'
 import slide4 from '@/assets/slides/slide4.webp'
 
 const AUTOPLAY_INTERVAL_MS = 4000
@@ -9144,6 +9557,11 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
 
   &__cta {
     margin-top: calc($overlay-vertical-nudge / -2);
+    --color-text: var(--color-text);
+
+    @include tablet {
+      --color-text: var(--color-white);
+    }
   }
 
   &__text {
@@ -9155,7 +9573,11 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
     color: var(--color-white);
     text-align: right;
     line-height: 1.1;
-   
+
+    &--sub {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      margin-top: -0.5rem;
+    }
   }
 
   &__arrow {
@@ -9227,11 +9649,11 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
 export { default as HeroSlider } from './HeroSlider.vue'
 
 
-=== apps/web/src/widgets/reviews-slider/components/index.ts ===
-export { default as ReviewCard } from './ReviewCard.vue'
+=== apps/web/src/widgets/reviews-slider/index.ts ===
+export { default as ReviewsSlider } from './ReviewsSlider.vue'
 
 
-=== apps/web/src/widgets/reviews-slider/components/ReviewCard.vue ===
+=== apps/web/src/widgets/reviews-slider/ReviewCard.vue ===
 <template>
   <div class="review-card">
     <div class="review-card__stars">
@@ -9350,10 +9772,6 @@ defineProps<{
   }
 }
 </style>
-
-
-=== apps/web/src/widgets/reviews-slider/index.ts ===
-export { default as ReviewsSlider } from './ReviewsSlider.vue'
 
 
 === apps/web/src/widgets/reviews-slider/reviews.ts ===
@@ -11273,7 +11691,7 @@ describe('ReviewsSlider', () => {
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useSlider, MEDIA } from '@/shared'
-import { ReviewCard } from './components'
+import ReviewCard from './ReviewCard.vue'
 import { REVIEWS } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000
@@ -11615,17 +12033,44 @@ shared/
 **Цвета с прозрачностью:** всегда `rgb(r g b / alpha)`, никогда `rgba(r, g, b, alpha)`.
 **Статичные цвета:** hex. **Прозрачные:** через CSS-каналы `rgb(var(--x) / alpha)`.
 **Z-index:** каскадом через `calc(var(--предыдущий) + 1)`, все значения в `variables.scss`.
+**Адаптация:** только через миксины `@include tablet { ... }` и `@include desktop { ... }` из `@/assets/styles/breakpoints.module`. Запрещены хардкод-значения типа `@media (width >= 768px)`. В начале `<style scoped lang="scss">` подключать через `@use '@/assets/styles/breakpoints.module' as *;`.
 
 ## Стиль кода
 
 - **Простота** — пиши минимальный код, который решает задачу; простой и читаемый код лучше умного и сложного
-- **Комментарии** — только сложные участки; не комментируй очевидное
 - **Вложенность** — используй early return вместо вложенных `if`; максимум 2–3 уровня
 - **Единообразие** — для схожих задач используй одинаковые подходы (если в проекте уже есть паттерн — следуй ему)
 - **Одна ответственность** — функция делает одно; если в названии есть "и" — это два метода
 - **Async/await** — не `.then()` цепочки
 - **Нет магических чисел** — только именованные константы (`REFRESH_TOKEN_TTL_MS`, не `604800000`)
 - **TypeScript** — запрет `any`; на системных границах (HTTP, внешние API) использовать `unknown` с последующей валидацией через Zod
+- **Комментарии** — не добавлять и не предлагать; пользователь сам решает когда и что комментировать; существующие не удалять
+
+## Локальные проверки
+
+Кириллица в пути (`D:\Наташа\NatsDoll`) ломает Glob-инструмент и заставляет `tsc` падать с OOM при дефолтных параметрах. Запускать через root-tsc/vitest с увеличенным heap:
+
+```bash
+# typecheck api (большая кодовая база — 8GB)
+node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit
+# typecheck web
+node --max-old-space-size=4096 ./node_modules/vue-tsc/bin/vue-tsc.js --noEmit
+# tests
+node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic
+```
+
+Для поиска файлов в пути с кириллицей использовать `find` через Bash, не Glob.
+
+## Security invariants
+
+Не менять без понимания последствий — это не стиль, а защита от конкретных атак:
+
+- **`refresh_token` cookie — `sameSite='Strict'`** (CSRF). **`oauth_state` cookie — `sameSite='Lax'`** (Strict ломает Google-callback redirect).
+- **Verify-email — POST с JSON-body**, не GET с query-string (токен иначе попадает в `access.log` nginx и History браузера).
+- **Refresh-rotation strict без grace-period**: два параллельных refresh с одного cookie → reuse-detection → удаление всех сессий пользователя. By design.
+- **Password — `min(8)` + блок-лист топ-100** (`apps/api/src/shared/lib/passwordBlocklist.ts`). Сообщение об отказе: `This password is too common, please choose a stronger one`.
+- **Rate limiter — in-memory `Map`**. Production-compose ограничен одной репликой `api`. **Не запускать `--scale api>1`** — лимиты обойдут.
+- **`HMAC_SECRET` отдельно от `JWT_SECRET`** (см. `.env.example`). Fallback на JWT_SECRET сохранён, но в продакшене — два разных секрета.
 
 ## Git
 
@@ -11697,6 +12142,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       YANDEX_S3_ACCESS_KEY: ${YANDEX_S3_ACCESS_KEY}
       YANDEX_S3_SECRET_KEY: ${YANDEX_S3_SECRET_KEY}
       YANDEX_S3_BUCKET: ${YANDEX_S3_BUCKET}
@@ -11708,8 +12154,10 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
-    deploy:
-      replicas: 1  # rate limiter in-memory — строго одна реплика
+    # ВНИМАНИЕ: rate limiter и счётчики хранятся в памяти процесса (см. shared/middleware/rateLimit.ts).
+    # Запускать строго в одной реплике. Поле `deploy.replicas` в Compose stand-alone игнорируется,
+    # поэтому НЕ ИСПОЛЬЗОВАТЬ `docker compose up --scale api=N` (N>1) — лимиты обойдут защиту.
+    # Для горизонтального масштабирования вынести rate limit в Redis.
 
   web:
     build:
@@ -12378,18 +12826,31 @@ export default [
 
 **Стек:** Vue 3 + Hono + PostgreSQL + Prisma + Docker
 
-## Запуск
+## Локальный запуск
 
 **Требования:** Docker Desktop
 
-Положи `.env` в `apps/api/.env`, затем:
+### 1. Создай файл окружения
+
+Создай файл `apps/api/.env` 
+
+Для базового запуска (галерея, регистрация/вход) достаточно пустого файла — Docker Compose уже содержит все значения по умолчанию для разработки (БД, JWT-секрет и т.д.).
+
+### 2. Запусти
 
 ```bash
 docker compose up
 ```
 
+При первом запуске Docker скачает образы и установит зависимости (~3–5 мин).
+
 - Frontend: http://localhost:5173
 - API: http://localhost:3000
+- Health check: http://localhost:3000/health
+
+### Архитектура
+
+`docs/architecture.md`
 
 
 === tsconfig.json ===
@@ -12412,1856 +12873,3 @@ docker compose up
   ]
 }
 
-
-=== upload-dialog.md ===
-- generic [ref=e1]:
-  - generic [ref=e5]:
-    - button "Приложения Google" [ref=e1765] [cursor=pointer]:
-      - img [ref=e10]
-    - 'button "Аккаунт Google: Наталья Позняк (u8109697745@gmail.com)" [ref=e1766] [cursor=pointer]':
-      - img [ref=e17]
-  - generic [ref=e195]:
-    - generic [ref=e199]:
-      - link "Главная страница NotebookLM" [ref=e1767] [cursor=pointer]:
-        - /url: /
-        - img "Логотип NotebookLM" [ref=e1768]
-      - textbox [ref=e208]: NatsDoll Full-Stack E-commerce Project Source Code
-      - generic [ref=e209]:
-        - button "Создать блокнот" [ref=e1769]:
-          - img [ref=e211]: add
-          - generic [ref=e212]: Создать блокнот
-        - generic "Поделиться блокнотом" [ref=e1770]:
-          - button "Поделиться блокнотом" [ref=e1771]:
-            - img [ref=e221]: share
-            - generic [ref=e223]: Поделиться
-        - generic "Настройки" [ref=e1772]:
-          - button "Настройки" [ref=e1773]:
-            - img [ref=e231]: settings
-            - generic [ref=e233]: Настройки
-    - generic [ref=e236]:
-      - generic [ref=e237]:
-        - generic [ref=e238]:
-          - navigation [ref=e239]:
-            - heading "Источники" [level=2] [ref=e1774]:
-              - generic [ref=e241]: Источники
-          - button "Свернуть панель источников" [ref=e1775] [cursor=pointer]:
-            - img [ref=e244]: dock_to_right
-        - generic [ref=e249]:
-          - generic [ref=e250]:
-            - button "Добавить источник" [active] [ref=e1776]:
-              - img [ref=e253]: add
-              - generic [ref=e254]: Добавить источники
-            - generic [ref=e260]:
-              - generic [ref=e261]:
-                - img [ref=e262]: search
-                - textbox "Находите источники на основе введенного запроса" [ref=e1777]:
-                  - /placeholder: Найдите новые источники в интернете
-              - generic [ref=e268]:
-                - generic [ref=e269]:
-                  - button "Интернет" [ref=e1778]:
-                    - generic [ref=e274]:
-                      - generic [ref=e275]:
-                        - img [ref=e276]: language
-                        - generic [ref=e277]: Интернет
-                      - img [ref=e278]: keyboard_arrow_down
-                  - button "Быстрый поиск" [ref=e1779]:
-                    - generic [ref=e285]:
-                      - generic [ref=e286]:
-                        - img [ref=e287]: search_spark
-                        - generic [ref=e288]: Быстрый поиск
-                      - img [ref=e289]: keyboard_arrow_down
-                - generic [ref=e292]:
-                  - button "Отправить" [disabled]:
-                    - img: arrow_forward
-            - generic [ref=e293]:
-              - generic [ref=e295]: Выбрать все источники
-              - generic [ref=e299] [cursor=pointer]:
-                - checkbox "Выбрать все источники" [checked] [ref=e1780]
-                - generic:
-                  - img
-          - generic [ref=e304] [cursor=pointer]:
-            - button "sources.txt" [ref=e1781]
-            - button "Ещё" [ref=e1782]:
-              - img [ref=e311]: markdown
-            - generic:
-              - generic:
-                - generic: sources.txt
-            - generic [ref=e317]:
-              - checkbox "sources.txt" [checked] [ref=e1783]
-              - generic:
-                - img
-      - generic [ref=e321]:
-        - generic [ref=e322]:
-          - heading "Чат" [level=2] [ref=e1784]
-          - generic [ref=e325]:
-            - button "Настроить блокнот" [ref=e1785] [cursor=pointer]:
-              - img [ref=e327]: tune
-            - button "Настройки чата" [ref=e1786] [cursor=pointer]:
-              - img [ref=e331]: more_vert
-        - generic [ref=e334]:
-          - generic [ref=e335]:
-            - generic [ref=e337]:
-              - img [ref=e338]: landscape_2
-              - generic [ref=e339] [cursor=pointer]: 🧸
-              - button "Настроить блокнот" [ref=e1787]:
-                - img [ref=e341]: photo_spark
-                - generic [ref=e342]: Настроить
-              - generic [ref=e345]:
-                - generic [ref=e346]: NatsDoll Full-Stack E-commerce Project Source Code
-                - generic [ref=e347]:
-                  - generic [ref=e348]: 1 источник
-                  - generic [ref=e349]: ·
-                  - generic "Tue Apr 14 2026 17:36:55 GMT+0300 (Москва, стандартное время)" [ref=e1788]: 14 апр. 2026 г.
-            - generic [ref=e351]:
-              - paragraph [ref=e354]:
-                - text: Данные исходные коды описывают архитектуру и реализацию
-                - strong [ref=e355]: NatsDoll
-                - text: — специализированного интернет-магазина для продажи изделий ручной работы из полимерной глины. Технологический стек включает
-                - strong [ref=e356]: Vue 3
-                - text: на фронтенде и
-                - strong [ref=e357]: Hono
-                - text: с
-                - strong [ref=e358]: Prisma ORM
-                - text: "на бэкенде, организованных в рамках монорепозитория с использованием Docker. Система охватывает ключевые бизнес-процессы: управление каталогом товаров, корзиной, заказами, а также интеграцию с платежным сервисом"
-                - strong [ref=e359]: PayPal
-                - text: и хранилищем
-                - strong [ref=e360]: Yandex S3
-                - text: . Фронтенд спроектирован по методологии
-                - strong [ref=e361]: Feature-Sliced Design
-                - text: ", что обеспечивает строгую структуру компонентов и логики. Безопасность реализована через аутентификацию с помощью"
-                - strong [ref=e362]: JWT
-                - text: и
-                - strong [ref=e363]: Google OAuth
-                - text: ", а надежность подтверждается обширным набором тестов на"
-                - strong [ref=e364]: Vitest
-                - text: и
-                - strong [ref=e365]: Playwright
-                - text: . Проект представляет собой полноценное e-commerce решение, готовое к развертыванию через
-                - strong [ref=e366]: Docker Compose
-                - text: .
-              - generic [ref=e367]:
-                - button "Сохранить в заметке" [ref=e1789]:
-                  - img [ref=e369]: keep
-                  - generic [ref=e370]: Сохранить в заметке
-                - button "Копировать краткое содержание" [ref=e1790] [cursor=pointer]:
-                  - img [ref=e374]: copy_all
-                - button "Хороший пересказ" [ref=e1791] [cursor=pointer]:
-                  - img [ref=e378]: thumb_up
-                - button "Плохой пересказ" [ref=e1792] [cursor=pointer]:
-                  - img [ref=e382]: thumb_down
-              - generic [ref=e387]:
-                - button "Расскажи об архитектуре проекта и используемых технологиях" [ref=e1793] [cursor=pointer]:
-                  - generic [ref=e389]: Расскажи об архитектуре проекта и используемых технологиях
-                - button "Как устроена структура базы данных и основные модели?" [ref=e1794] [cursor=pointer]:
-                  - generic [ref=e391]: Как устроена структура базы данных и основные модели?
-                - button "Какие функциональные возможности уже реализованы на фронтенде?" [ref=e1795] [cursor=pointer]:
-                  - generic [ref=e393]: Какие функциональные возможности уже реализованы на фронтенде?
-            - generic [ref=e394]: вторник, 14 апреля
-            - generic [ref=e395]:
-              - heading "Расскажи, как реализована база данных и какие основные модели описаны?" [level=3] [ref=e1796]:
-                - paragraph [ref=e402]: Расскажи, как реализована база данных и какие основные модели описаны?
-              - generic [ref=e405]:
-                - generic [ref=e409]:
-                  - generic [ref=e412]:
-                    - text: База данных в проекте NatsDoll реализована на основе реляционной СУБД PostgreSQL
-                    - 'button "1: sources.txt" [ref=e1797] [cursor=pointer]':
-                      - 'generic "1: sources.txt" [ref=e1798]': "1"
-                    - 'button "2: sources.txt" [ref=e1799] [cursor=pointer]':
-                      - 'generic "2: sources.txt" [ref=e1800]': "2"
-                    - text: . Для взаимодействия с ней используется Prisma ORM, которая обеспечивает типобезопасность и управление миграциями
-                    - 'button "1: sources.txt" [ref=e1801] [cursor=pointer]':
-                      - 'generic "1: sources.txt" [ref=e1802]': "1"
-                    - button [ref=e423] [cursor=pointer]:
-                      - img [ref=e424]: more_horiz
-                    - text: .
-                  - generic [ref=e427]:
-                    - text: В архитектуре бэкенда работа с базой вынесена в слой Infrastructure, где располагаются репозитории, инкапсулирующие Prisma-операции
-                    - 'button "5: sources.txt" [ref=e1803] [cursor=pointer]':
-                      - 'generic "5: sources.txt" [ref=e1804]': "5"
-                    - 'button "6: sources.txt" [ref=e1805] [cursor=pointer]':
-                      - 'generic "6: sources.txt" [ref=e1806]': "6"
-                    - text: .
-                  - heading "Основные модели данных" [level=3] [ref=e1807]
-                  - generic [ref=e439]:
-                    - text: Согласно файлу
-                    - code [ref=e440]: schema.prisma
-                    - text: ", модели разделены на несколько ключевых блоков:"
-                  - heading "1. Пользователи и аутентификация" [level=4] [ref=e1808]
-                  - list [ref=e444]:
-                    - listitem [ref=e447]:
-                      - text: "User: Хранит данные о пользователях (email, хеш пароля, имя). Поддерживает роли"
-                      - code [ref=e448]: CUSTOMER
-                      - text: и
-                      - code [ref=e449]: ADMIN
-                      - 'button "7: sources.txt" [ref=e1809] [cursor=pointer]':
-                        - 'generic "7: sources.txt" [ref=e1810]': "7"
-                      - text: . Связана с корзиной, заказами и отзывами
-                      - 'button "7: sources.txt" [ref=e1811] [cursor=pointer]':
-                        - 'generic "7: sources.txt" [ref=e1812]': "7"
-                      - text: .
-                    - listitem [ref=e458]:
-                      - text: "RefreshToken: Используется для механизма JWT-аутентификации (хранит хеш токена и срок действия)"
-                      - 'button "7: sources.txt" [ref=e1813] [cursor=pointer]':
-                        - 'generic "7: sources.txt" [ref=e1814]': "7"
-                      - text: .
-                  - heading "2. Каталог товаров" [level=4] [ref=e1815]
-                  - list [ref=e465]:
-                    - listitem [ref=e468]:
-                      - text: "Category: Категории изделий (например, \"Art Dolls\", \"Cake Toppers\")"
-                      - 'button "8: sources.txt" [ref=e1816] [cursor=pointer]':
-                        - 'generic "8: sources.txt" [ref=e1817]': "8"
-                      - 'button "9: sources.txt" [ref=e1818] [cursor=pointer]':
-                        - 'generic "9: sources.txt" [ref=e1819]': "9"
-                      - text: .
-                    - listitem [ref=e477]:
-                      - text: "Product: Основная сущность товара. Включает название, описание, цену (тип"
-                      - code [ref=e478]: Decimal
-                      - text: ), остаток на складе и массив ссылок на изображения
-                      - 'button "8: sources.txt" [ref=e1820] [cursor=pointer]':
-                        - 'generic "8: sources.txt" [ref=e1821]': "8"
-                      - text: . Поддерживает soft delete (поле
-                      - code [ref=e482]: deletedAt
-                      - text: ), чтобы сохранять историю заказов после «удаления» товара
-                      - 'button "8: sources.txt" [ref=e1822] [cursor=pointer]':
-                        - 'generic "8: sources.txt" [ref=e1823]': "8"
-                      - 'button "10: sources.txt" [ref=e1824] [cursor=pointer]':
-                        - 'generic "10: sources.txt" [ref=e1825]': "10"
-                      - text: .
-                  - heading "3. Корзина и заказы" [level=4] [ref=e1826]
-                  - list [ref=e492]:
-                    - listitem [ref=e495]:
-                      - text: "Cart и CartItem: Модели для хранения текущего состояния корзины пользователя"
-                      - 'button "11: sources.txt" [ref=e1827] [cursor=pointer]':
-                        - 'generic "11: sources.txt" [ref=e1828]': "11"
-                      - 'button "12: sources.txt" [ref=e1829] [cursor=pointer]':
-                        - 'generic "12: sources.txt" [ref=e1830]': "12"
-                      - text: .
-                    - listitem [ref=e504]:
-                      - text: "Order: Информация о заказе, включая статус ("
-                      - code [ref=e505]: OrderStatus
-                      - text: ": от"
-                      - code [ref=e506]: PENDING
-                      - text: до
-                      - code [ref=e507]: DELIVERED
-                      - text: ), общую сумму, адрес доставки в формате JSONB и ID транзакции PayPal
-                      - 'button "12: sources.txt" [ref=e1831] [cursor=pointer]':
-                        - 'generic "12: sources.txt" [ref=e1832]': "12"
-                      - 'button "13: sources.txt" [ref=e1833] [cursor=pointer]':
-                        - 'generic "13: sources.txt" [ref=e1834]': "13"
-                      - text: .
-                    - listitem [ref=e516]:
-                      - text: "OrderItem: Список товаров в конкретном заказе с фиксацией цены на момент покупки"
-                      - 'button "13: sources.txt" [ref=e1835] [cursor=pointer]':
-                        - 'generic "13: sources.txt" [ref=e1836]': "13"
-                      - text: .
-                  - heading "4. Контент и отзывы" [level=4] [ref=e1837]
-                  - list [ref=e523]:
-                    - listitem [ref=e526]:
-                      - text: "GalleryItem: Элементы галереи для главной страницы и коллекций. Содержат ссылки на изображения из Yandex S3 и позицию для сортировки"
-                      - 'button "14: sources.txt" [ref=e1838] [cursor=pointer]':
-                        - 'generic "14: sources.txt" [ref=e1839]': "14"
-                      - button [ref=e531] [cursor=pointer]:
-                        - img [ref=e532]: more_horiz
-                      - text: .
-                    - listitem [ref=e535]:
-                      - text: "Review: Отзывы пользователей о товарах с рейтингом и комментариями"
-                      - 'button "17: sources.txt" [ref=e1840] [cursor=pointer]':
-                        - 'generic "17: sources.txt" [ref=e1841]': "17"
-                      - text: .
-                    - listitem [ref=e541]:
-                      - text: "NewsletterSubscriber: Список email-адресов для рассылки"
-                      - 'button "9: sources.txt" [ref=e1842] [cursor=pointer]':
-                        - 'generic "9: sources.txt" [ref=e1843]': "9"
-                      - 'button "18: sources.txt" [ref=e1844] [cursor=pointer]':
-                        - 'generic "18: sources.txt" [ref=e1845]': "18"
-                      - text: .
-                  - heading "Ключевые особенности реализации" [level=3] [ref=e1846]
-                  - list [ref=e551]:
-                    - listitem [ref=e554]:
-                      - text: "Индексация: На всех полях внешних ключей (Foreign Keys) явно прописаны индексы ("
-                      - code [ref=e555]: "@@index"
-                      - text: ) для обеспечения высокой производительности запросов
-                      - 'button "10: sources.txt" [ref=e1847] [cursor=pointer]':
-                        - 'generic "10: sources.txt" [ref=e1848]': "10"
-                      - button [ref=e560] [cursor=pointer]:
-                        - img [ref=e561]: more_horiz
-                      - text: .
-                    - listitem [ref=e564]:
-                      - text: "Целостность данных: Используется правило"
-                      - code [ref=e565]: "onDelete: Restrict"
-                      - text: для связей с товарами — это гарантирует, что товар нельзя удалить физически, если на него ссылаются существующие заказы или отзывы
-                      - 'button "10: sources.txt" [ref=e1849] [cursor=pointer]':
-                        - 'generic "10: sources.txt" [ref=e1850]': "10"
-                      - 'button "21: sources.txt" [ref=e1851] [cursor=pointer]':
-                        - 'generic "21: sources.txt" [ref=e1852]': "21"
-                      - text: .
-                    - listitem [ref=e574]:
-                      - text: "Развертывание: База данных запускается в Docker-контейнере (образ"
-                      - code [ref=e575]: postgres:16-alpine
-                      - text: ), а миграции применяются автоматически при запуске через
-                      - code [ref=e576]: prisma migrate deploy
-                      - 'button "22: sources.txt" [ref=e1853] [cursor=pointer]':
-                        - 'generic "22: sources.txt" [ref=e1854]': "22"
-                      - button [ref=e581] [cursor=pointer]:
-                        - img [ref=e582]: more_horiz
-                      - text: .
-                    - listitem [ref=e585]:
-                      - text: "Наполнение (Seeding): Предусмотрен скрипт"
-                      - code [ref=e586]: seed.ts
-                      - text: ", который автоматически наполняет базу базовыми категориями и элементами галереи при первичной настройке"
-                      - 'button "9: sources.txt" [ref=e1855] [cursor=pointer]':
-                        - 'generic "9: sources.txt" [ref=e1856]': "9"
-                      - button [ref=e591] [cursor=pointer]:
-                        - img [ref=e592]: more_horiz
-                      - text: .
-                - generic [ref=e593]:
-                  - button "Сохранить сообщение в заметки" [ref=e1857]:
-                    - img [ref=e595]: keep_pin
-                    - generic [ref=e596]: Сохранить в заметке
-                  - generic [ref=e599]:
-                    - button "Копировать ответ модели в буфер обмена" [ref=e1858] [cursor=pointer]:
-                      - img [ref=e604]: copy_all
-                    - button "Оценить ответ как хороший" [ref=e1859] [cursor=pointer]:
-                      - img [ref=e611]: thumb_up
-                    - button "Оценить ответ как плохой" [ref=e1860] [cursor=pointer]:
-                      - img [ref=e618]: thumb_down
-            - generic [ref=e621]:
-              - heading "объясни принцип работы слайдера" [level=3] [ref=e1861]:
-                - paragraph [ref=e628]: объясни принцип работы слайдера
-              - generic [ref=e631]:
-                - generic [ref=e635]:
-                  - generic [ref=e638]:
-                    - text: Принцип работы слайдера в проекте NatsDoll реализован через разделение логики и представления. Основная механика сосредоточена в переиспользуемом хуке (composable) useSlider, который управляет состоянием, а визуальное отображение настраивается в конкретных виджетах (например,
-                    - code [ref=e639]: HeroSlider
-                    - text: или
-                    - code [ref=e640]: ReviewsSlider
-                    - text: )
-                    - 'button "1: sources.txt" [ref=e1862] [cursor=pointer]':
-                      - 'generic "1: sources.txt" [ref=e1863]': "1"
-                    - button [ref=e645] [cursor=pointer]:
-                      - img [ref=e646]: more_horiz
-                    - text: .
-                  - heading "1. Управление состоянием (useSlider)" [level=3] [ref=e1864]:
-                    - text: 1. Управление состоянием (
-                    - code [ref=e650]: useSlider
-                    - text: )
-                  - generic [ref=e653]: "Логика слайдера построена на реактивном отслеживании текущего индекса активного слайда:"
-                  - list [ref=e654]:
-                    - listitem [ref=e657]:
-                      - text: "currentIndex: Реактивная переменная ("
-                      - code [ref=e658]: ref
-                      - text: ), хранящая номер текущего слайда (начинается с 0)
-                      - 'button "2: sources.txt" [ref=e1865] [cursor=pointer]':
-                        - 'generic "2: sources.txt" [ref=e1866]': "2"
-                      - 'button "4: sources.txt" [ref=e1867] [cursor=pointer]':
-                        - 'generic "4: sources.txt" [ref=e1868]': "4"
-                      - text: .
-                    - listitem [ref=e667]:
-                      - text: "Циклическая навигация: Переключение реализовано так, чтобы слайды шли «по кругу»."
-                      - list [ref=e668]:
-                        - listitem [ref=e671]:
-                          - text: Для перехода вперед используется формула
-                          - code [ref=e672]: (index + 1) % total
-                          - text: ", что возвращает индекс к 0 после последнего слайда"
-                          - 'button "5: sources.txt" [ref=e1869] [cursor=pointer]':
-                            - 'generic "5: sources.txt" [ref=e1870]': "5"
-                          - text: .
-                        - listitem [ref=e678]:
-                          - text: Для перехода назад используется
-                          - code [ref=e679]: (index - 1 + total) % total
-                          - text: ", что позволяет с первого слайда мгновенно попасть на последний"
-                          - 'button "5: sources.txt" [ref=e1871] [cursor=pointer]':
-                            - 'generic "5: sources.txt" [ref=e1872]': "5"
-                          - text: .
-                    - listitem [ref=e685]:
-                      - text: "Ручное управление: Предоставляются функции"
-                      - code [ref=e686]: next()
-                      - text: ","
-                      - code [ref=e687]: prev()
-                      - text: и
-                      - code [ref=e688]: goTo(index)
-                      - text: для навигации через стрелки или точки-индикаторы
-                      - 'button "5: sources.txt" [ref=e1873] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1874]': "5"
-                      - text: .
-                  - heading "2. Автоматическое переключение (Autoplay)" [level=3] [ref=e1875]
-                  - generic [ref=e697]: "Слайдер поддерживает автоматическую прокрутку:"
-                  - list [ref=e698]:
-                    - listitem [ref=e701]:
-                      - text: "Таймер: При монтировании компонента ("
-                      - code [ref=e702]: onMounted
-                      - text: ) запускается
-                      - code [ref=e703]: setInterval
-                      - text: ", который вызывает функцию"
-                      - code [ref=e704]: next()
-                      - text: через заданный интервал (например, 4000 мс для HeroSlider)
-                      - 'button "5: sources.txt" [ref=e1876] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1877]': "5"
-                      - button [ref=e709] [cursor=pointer]:
-                        - img [ref=e710]: more_horiz
-                      - text: .
-                    - listitem [ref=e713]:
-                      - text: "Сброс при взаимодействии: Каждый раз, когда пользователь нажимает кнопку «назад» или «вперед», таймер сбрасывается ("
-                      - code [ref=e714]: resetTimer
-                      - text: ), чтобы автоматический переход не случился сразу после ручного
-                      - 'button "5: sources.txt" [ref=e1878] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1879]': "5"
-                      - text: .
-                    - listitem [ref=e720]:
-                      - text: "Очистка: При уничтожении компонента ("
-                      - code [ref=e721]: onUnmounted
-                      - text: ) таймер удаляется через
-                      - code [ref=e722]: clearInterval
-                      - text: ", чтобы избежать утечек памяти"
-                      - 'button "6: sources.txt" [ref=e1880] [cursor=pointer]':
-                        - 'generic "6: sources.txt" [ref=e1881]': "6"
-                      - text: .
-                  - heading "3. Визуальная реализация в UI" [level=3] [ref=e1882]
-                  - generic [ref=e731]: "Проект демонстрирует два подхода к отображению:"
-                  - list [ref=e732]:
-                    - listitem [ref=e735]:
-                      - text: "Переключение классов (HeroSlider): Активному слайду присваивается специальный CSS-класс (например,"
-                      - code [ref=e736]: hero-slider__slide--active
-                      - text: ), который управляет его видимостью или анимацией появления
-                      - 'button "3: sources.txt" [ref=e1883] [cursor=pointer]':
-                        - 'generic "3: sources.txt" [ref=e1884]': "3"
-                      - 'button "8: sources.txt" [ref=e1885] [cursor=pointer]':
-                        - 'generic "8: sources.txt" [ref=e1886]': "8"
-                      - text: .
-                    - listitem [ref=e745]:
-                      - text: "Смещение контейнера (ReviewsSlider): Все слайды находятся в одну линию внутри «трека» ("
-                      - code [ref=e746]: track
-                      - text: ). Смещение реализуется через CSS-свойство
-                      - code [ref=e747]: "transform: translateX()"
-                      - text: ", где значение вычисляется как"
-                      - code [ref=e748]: "-currentIndex * 100%"
-                      - 'button "9: sources.txt" [ref=e1887] [cursor=pointer]':
-                        - 'generic "9: sources.txt" [ref=e1888]': "9"
-                      - 'button "10: sources.txt" [ref=e1889] [cursor=pointer]':
-                        - 'generic "10: sources.txt" [ref=e1890]': "10"
-                      - text: .
-                  - heading "4. Параметры и гибкость" [level=3] [ref=e1891]
-                  - generic [ref=e760]:
-                    - text: Хук
-                    - code [ref=e761]: useSlider
-                    - text: принимает два параметра
-                    - 'button "4: sources.txt" [ref=e1892] [cursor=pointer]':
-                      - 'generic "4: sources.txt" [ref=e1893]': "4"
-                    - text: ":"
-                  - list [ref=e765]:
-                    - listitem [ref=e768]: "count: Общее количество слайдов (может быть как числом, так и реактивной ссылкой)."
-                    - listitem [ref=e771]:
-                      - text: "intervalMs: Длительность задержки автоплея. Если передать значение меньше 100 мс, автоплей не включится"
-                      - 'button "5: sources.txt" [ref=e1894] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1895]': "5"
-                      - text: .
-                  - generic [ref=e777]:
-                    - text: Эта архитектура позволяет легко создавать новые слайдеры (например, для отзывов или промо-баннеров), просто подключая готовую логику к новым компонентам
-                    - 'button "3: sources.txt" [ref=e1896] [cursor=pointer]':
-                      - 'generic "3: sources.txt" [ref=e1897]': "3"
-                    - 'button "10: sources.txt" [ref=e1898] [cursor=pointer]':
-                      - 'generic "10: sources.txt" [ref=e1899]': "10"
-                    - text: .
-                - generic [ref=e784]:
-                  - button "Сохранить сообщение в заметки" [ref=e1900]:
-                    - img [ref=e786]: keep_pin
-                    - generic [ref=e787]: Сохранить в заметке
-                  - generic [ref=e790]:
-                    - button "Копировать ответ модели в буфер обмена" [ref=e1901] [cursor=pointer]:
-                      - img [ref=e795]: copy_all
-                    - button "Оценить ответ как хороший" [ref=e1902] [cursor=pointer]:
-                      - img [ref=e802]: thumb_up
-                    - button "Оценить ответ как плохой" [ref=e1903] [cursor=pointer]:
-                      - img [ref=e809]: thumb_down
-            - generic [ref=e812]:
-              - heading "В чем разница между HeroSlider и ReviewsSlider?" [level=3] [ref=e1904]:
-                - paragraph [ref=e819]: В чем разница между HeroSlider и ReviewsSlider?
-              - generic [ref=e822]:
-                - generic [ref=e826]:
-                  - generic [ref=e829]: Хотя оба компонента используют общую логику из хука useSlider, они различаются по назначению, визуальной реализации и настройкам автоплея.
-                  - generic [ref=e832]:
-                    - text: Основные различия между
-                    - code [ref=e833]: HeroSlider
-                    - text: и
-                    - code [ref=e834]: ReviewsSlider
-                    - text: ":"
-                  - heading "1. Назначение и контент" [level=3] [ref=e1905]
-                  - list [ref=e838]:
-                    - listitem [ref=e841]:
-                      - text: "HeroSlider: Это главный промо-баннер на домашней странице. Он содержит маркетинговый текст (например, \"Find a unique gift here\") и призыв к действию в виде кнопки AppButton, ведущей в магазин"
-                      - 'button "1: sources.txt" [ref=e1906] [cursor=pointer]':
-                        - 'generic "1: sources.txt" [ref=e1907]': "1"
-                      - text: . Количество слайдов фиксировано — 4
-                      - 'button "1: sources.txt" [ref=e1908] [cursor=pointer]':
-                        - 'generic "1: sources.txt" [ref=e1909]': "1"
-                      - text: .
-                    - listitem [ref=e850]:
-                      - text: "ReviewsSlider: Предназначен для отображения социального подтверждения (отзывов клиентов). Он отображает карточки ReviewCard, которые включают текст отзыва, имя автора, страну и рейтинг"
-                      - 'button "2: sources.txt" [ref=e1910] [cursor=pointer]':
-                        - 'generic "2: sources.txt" [ref=e1911]': "2"
-                      - 'button "3: sources.txt" [ref=e1912] [cursor=pointer]':
-                        - 'generic "3: sources.txt" [ref=e1913]': "3"
-                      - text: . Количество слайдов зависит от данных в массиве
-                      - code [ref=e857]: REVIEWS
-                      - text: (на данный момент их 6)
-                      - 'button "3: sources.txt" [ref=e1914] [cursor=pointer]':
-                        - 'generic "3: sources.txt" [ref=e1915]': "3"
-                      - text: .
-                  - heading "2. Техническая реализация анимации" [level=3] [ref=e1916]
-                  - list [ref=e864]:
-                    - listitem [ref=e867]:
-                      - text: "HeroSlider: Использует принцип переключения классов. Активному слайду присваивается модификатор"
-                      - code [ref=e868]: "--active"
-                      - text: (например,
-                      - code [ref=e869]: hero-slider__slide--active
-                      - text: ), что обычно управляет прозрачностью или наложением слоев через CSS
-                      - 'button "4: sources.txt" [ref=e1917] [cursor=pointer]':
-                        - 'generic "4: sources.txt" [ref=e1918]': "4"
-                      - text: .
-                    - listitem [ref=e875]:
-                      - text: "ReviewsSlider: Использует принцип смещения трека. Все отзывы выстроены в линию внутри контейнера"
-                      - code [ref=e876]: .reviews-slider__track
-                      - text: ", который сдвигается по горизонтали с помощью"
-                      - code [ref=e877]: translateX
-                      - text: (например,
-                      - code [ref=e878]: "-100%"
-                      - text: для второго слайда)
-                      - 'button "5: sources.txt" [ref=e1919] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1920]': "5"
-                      - text: .
-                  - heading "3. Элементы управления и индикация" [level=3] [ref=e1921]
-                  - list [ref=e885]:
-                    - listitem [ref=e888]:
-                      - text: "HeroSlider: Оснащен кнопками навигации («вперед»/«назад») и точками-индикаторами (dots) в нижней части, позволяющими быстро перепрыгнуть на нужный слайд"
-                      - 'button "4: sources.txt" [ref=e1922] [cursor=pointer]':
-                        - 'generic "4: sources.txt" [ref=e1923]': "4"
-                      - 'button "6: sources.txt" [ref=e1924] [cursor=pointer]':
-                        - 'generic "6: sources.txt" [ref=e1925]': "6"
-                      - text: .
-                    - listitem [ref=e897]:
-                      - text: "ReviewsSlider: Вместо точек использует текстовый счетчик в формате «1 / N» (например, «1 / 6»), информирующий пользователя о текущей позиции в списке отзывов"
-                      - 'button "5: sources.txt" [ref=e1926] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1927]': "5"
-                      - text: .
-                  - heading "4. Настройки автоплея" [level=3] [ref=e1928]
-                  - generic [ref=e906]:
-                    - text: Компоненты используют разную частоту смены кадров, заданную при вызове
-                    - code [ref=e907]: useSlider
-                    - text: ":"
-                  - list [ref=e908]:
-                    - listitem [ref=e911]:
-                      - text: "HeroSlider: Интервал обновления составляет 4 секунды (4000 мс)"
-                      - 'button "7: sources.txt" [ref=e1929] [cursor=pointer]':
-                        - 'generic "7: sources.txt" [ref=e1930]': "7"
-                      - text: .
-                    - listitem [ref=e917]:
-                      - text: "ReviewsSlider: Интервал обновления составляет 5 секунд (5000 мс), что дает пользователю больше времени на чтение текста отзыва"
-                      - 'button "5: sources.txt" [ref=e1931] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1932]': "5"
-                      - text: .
-                  - generic [ref=e923]:
-                    - text: Оба виджета спроектированы в соответствии с архитектурой FSD и хранят свои unit-тесты рядом с файлами компонентов, что гарантирует корректность работы их логики переключения
-                    - 'button "8: sources.txt" [ref=e1933] [cursor=pointer]':
-                      - 'generic "8: sources.txt" [ref=e1934]': "8"
-                    - button [ref=e928] [cursor=pointer]:
-                      - img [ref=e929]: more_horiz
-                    - text: .
-                - generic [ref=e930]:
-                  - button "Сохранить сообщение в заметки" [ref=e1935]:
-                    - img [ref=e932]: keep_pin
-                    - generic [ref=e933]: Сохранить в заметке
-                  - generic [ref=e936]:
-                    - button "Копировать ответ модели в буфер обмена" [ref=e1936] [cursor=pointer]:
-                      - img [ref=e941]: copy_all
-                    - button "Оценить ответ как хороший" [ref=e1937] [cursor=pointer]:
-                      - img [ref=e948]: thumb_up
-                    - button "Оценить ответ как плохой" [ref=e1938] [cursor=pointer]:
-                      - img [ref=e955]: thumb_down
-            - generic [ref=e958]:
-              - heading "Как протестирована логика переключения слайдов в Vitest?" [level=3] [ref=e1939]:
-                - paragraph [ref=e965]: Как протестирована логика переключения слайдов в Vitest?
-              - generic [ref=e968]:
-                - generic [ref=e972]:
-                  - generic [ref=e975]:
-                    - text: "Логика переключения слайдов в проекте протестирована на двух уровнях: модульное тестирование (unit) базового хука"
-                    - code [ref=e976]: useSlider
-                    - text: и интеграционное тестирование конкретных виджетов (
-                    - code [ref=e977]: HeroSlider
-                    - text: и
-                    - code [ref=e978]: ReviewsSlider
-                    - text: ).
-                  - heading "1. Тестирование базовой логики (useSlider)" [level=3] [ref=e1940]:
-                    - text: 1. Тестирование базовой логики (
-                    - code [ref=e982]: useSlider
-                    - text: )
-                  - generic [ref=e985]:
-                    - text: Для проверки переиспользуемого хука используется вспомогательная функция
-                    - code [ref=e986]: withSetup
-                    - text: ", которая позволяет запускать хуки в контексте жизненного цикла Vue-компонента"
-                    - 'button "1: sources.txt" [ref=e1941] [cursor=pointer]':
-                      - 'generic "1: sources.txt" [ref=e1942]': "1"
-                    - text: ". Основные сценарии включают:"
-                  - list [ref=e990]:
-                    - listitem [ref=e993]:
-                      - text: "Начальное состояние: Проверяется, что"
-                      - code [ref=e994]: currentIndex
-                      - text: всегда инициализируется с 0
-                      - 'button "2: sources.txt" [ref=e1943] [cursor=pointer]':
-                        - 'generic "2: sources.txt" [ref=e1944]': "2"
-                      - text: .
-                    - listitem [ref=e1000]:
-                      - text: "Ручная навигация:"
-                      - list [ref=e1001]:
-                        - listitem [ref=e1004]:
-                          - text: "next(): Проверяется переход на следующий индекс и циклическое переключение (с последнего слайда на первый)"
-                          - 'button "2: sources.txt" [ref=e1945] [cursor=pointer]':
-                            - 'generic "2: sources.txt" [ref=e1946]': "2"
-                          - text: .
-                        - listitem [ref=e1010]:
-                          - text: "prev(): Тестируется переход назад, включая «оборачивание» с первого слайда на последний"
-                          - 'button "3: sources.txt" [ref=e1947] [cursor=pointer]':
-                            - 'generic "3: sources.txt" [ref=e1948]': "3"
-                          - text: .
-                        - listitem [ref=e1016]:
-                          - text: "goTo(index): Проверяется установка конкретного индекса и игнорирование некорректных значений (например, отрицательных или выходящих за границы массива)"
-                          - 'button "3: sources.txt" [ref=e1949] [cursor=pointer]':
-                            - 'generic "3: sources.txt" [ref=e1950]': "3"
-                          - text: .
-                    - listitem [ref=e1022]:
-                      - text: "Автоплей: С помощью vi.useFakeTimers() имитируется прохождение времени"
-                      - 'button "2: sources.txt" [ref=e1951] [cursor=pointer]':
-                        - 'generic "2: sources.txt" [ref=e1952]': "2"
-                      - text: . Тесты подтверждают, что через заданный
-                      - code [ref=e1026]: intervalMs
-                      - text: индекс инкрементируется автоматически
-                      - 'button "3: sources.txt" [ref=e1953] [cursor=pointer]':
-                        - 'generic "3: sources.txt" [ref=e1954]': "3"
-                      - text: .
-                    - listitem [ref=e1032]:
-                      - text: "Управление таймером: Проверяется работа функций"
-                      - code [ref=e1033]: pause()
-                      - text: и
-                      - code [ref=e1034]: resume()
-                      - text: ", которые должны останавливать и возобновлять автоматическую смену слайдов"
-                      - 'button "4: sources.txt" [ref=e1955] [cursor=pointer]':
-                        - 'generic "4: sources.txt" [ref=e1956]': "4"
-                      - text: .
-                  - heading "2. Тестирование виджета HeroSlider" [level=3] [ref=e1957]
-                  - generic [ref=e1043]:
-                    - text: В файле
-                    - code [ref=e1044]: HeroSlider.test.ts
-                    - text: "проверяется интеграция логики с UI:"
-                  - list [ref=e1045]:
-                    - listitem [ref=e1048]:
-                      - text: "Активный класс: Тесты проверяют наличие CSS-класса"
-                      - code [ref=e1049]: hero-slider__slide--active
-                      - text: на первом слайде по умолчанию и его перемещение при кликах
-                      - 'button "5: sources.txt" [ref=e1958] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1959]': "5"
-                      - text: .
-                    - listitem [ref=e1055]:
-                      - text: "Интерактивы: Симулируется нажатие на кнопки-стрелки ("
-                      - code [ref=e1056]: .hero-slider__arrow--next/prev
-                      - text: ) и точки-индикаторы (
-                      - code [ref=e1057]: .hero-slider__dot
-                      - text: ), после чего проверяется изменение активного слайда
-                      - 'button "5: sources.txt" [ref=e1960] [cursor=pointer]':
-                        - 'generic "5: sources.txt" [ref=e1961]': "5"
-                      - button [ref=e1062] [cursor=pointer]:
-                        - img [ref=e1063]: more_horiz
-                      - text: .
-                    - listitem [ref=e1066]:
-                      - text: "Очистка ресурсов: Используется шпион ("
-                      - code [ref=e1067]: vi.spyOn
-                      - text: ) на функцию
-                      - code [ref=e1068]: window.clearInterval
-                      - text: ", чтобы убедиться, что при уничтожении компонента ("
-                      - code [ref=e1069]: unmount
-                      - text: ) таймер автоплея удаляется
-                      - 'button "7: sources.txt" [ref=e1962] [cursor=pointer]':
-                        - 'generic "7: sources.txt" [ref=e1963]': "7"
-                      - text: .
-                  - heading "3. Тестирование виджета ReviewsSlider" [level=3] [ref=e1964]
-                  - generic [ref=e1078]: "Тесты этого компонента сосредоточены на его специфических особенностях:"
-                  - list [ref=e1079]:
-                    - listitem [ref=e1082]:
-                      - text: "CSS-трансформации: Проверяется, что при смене слайда контейнеру"
-                      - code [ref=e1083]: .reviews-slider__track
-                      - text: устанавливается корректное значение
-                      - code [ref=e1084]: translateX
-                      - text: (например,
-                      - code [ref=e1085]: "-100%"
-                      - text: для второго слайда)
-                      - 'button "8: sources.txt" [ref=e1965] [cursor=pointer]':
-                        - 'generic "8: sources.txt" [ref=e1966]': "8"
-                      - text: .
-                    - listitem [ref=e1091]:
-                      - text: "Счетчик: Валидируется отображение текстового индикатора в формате «1 / N»"
-                      - 'button "8: sources.txt" [ref=e1967] [cursor=pointer]':
-                        - 'generic "8: sources.txt" [ref=e1968]': "8"
-                      - text: .
-                    - listitem [ref=e1097]:
-                      - text: "Интервал: Проверяется, что в этом слайдере автоплей срабатывает именно через 5 секунд"
-                      - 'button "8: sources.txt" [ref=e1969] [cursor=pointer]':
-                        - 'generic "8: sources.txt" [ref=e1970]': "8"
-                      - text: .
-                  - generic [ref=e1103]:
-                    - text: Все тесты запускаются в среде jsdom с включенными глобальными переменными Vitest
-                    - 'button "9: sources.txt" [ref=e1971] [cursor=pointer]':
-                      - 'generic "9: sources.txt" [ref=e1972]': "9"
-                    - text: .
-                - generic [ref=e1107]:
-                  - button "Сохранить сообщение в заметки" [ref=e1973]:
-                    - img [ref=e1109]: keep_pin
-                    - generic [ref=e1110]: Сохранить в заметке
-                  - generic [ref=e1113]:
-                    - button "Копировать ответ модели в буфер обмена" [ref=e1974] [cursor=pointer]:
-                      - img [ref=e1118]: copy_all
-                    - button "Оценить ответ как хороший" [ref=e1975] [cursor=pointer]:
-                      - img [ref=e1125]: thumb_up
-                    - button "Оценить ответ как плохой" [ref=e1976] [cursor=pointer]:
-                      - img [ref=e1132]: thumb_down
-            - generic [ref=e1135]:
-              - heading "Какие сценарии проверяются в интеграционных тестах HeroSlider.test.ts?" [level=3] [ref=e1977]:
-                - paragraph [ref=e1142]: Какие сценарии проверяются в интеграционных тестах HeroSlider.test.ts?
-              - generic [ref=e1145]:
-                - generic [ref=e1149]:
-                  - generic [ref=e1152]:
-                    - text: Интеграционные тесты для компонента
-                    - code [ref=e1153]: HeroSlider
-                    - text: (файл
-                    - code [ref=e1154]: HeroSlider.test.ts
-                    - text: ") охватывают следующие сценарии:"
-                  - list [ref=e1155]:
-                    - listitem [ref=e1158]:
-                      - text: "Корректность рендеринга:"
-                      - list [ref=e1159]:
-                        - listitem [ref=e1162]:
-                          - text: Проверяется, что компонент отрисовывает ровно четыре слайда
-                          - 'button "1: sources.txt" [ref=e1978] [cursor=pointer]':
-                            - 'generic "1: sources.txt" [ref=e1979]': "1"
-                          - text: .
-                        - listitem [ref=e1168]:
-                          - text: Подтверждается наличие основного маркетингового текста ("Find a unique gift here") и кнопки действия ("The shop")
-                          - 'button "1: sources.txt" [ref=e1980] [cursor=pointer]':
-                            - 'generic "1: sources.txt" [ref=e1981]': "1"
-                          - text: .
-                        - listitem [ref=e1174]:
-                          - text: Проверяется рендеринг четырех точек-индикаторов (dots) для навигации
-                          - 'button "2: sources.txt" [ref=e1982] [cursor=pointer]':
-                            - 'generic "2: sources.txt" [ref=e1983]': "2"
-                          - text: .
-                    - listitem [ref=e1180]:
-                      - text: "Начальное состояние и навигация:"
-                      - list [ref=e1181]:
-                        - listitem [ref=e1184]:
-                          - text: "Активный слайд по умолчанию: Тест проверяет, что при загрузке первый слайд имеет CSS-класс"
-                          - code [ref=e1185]: hero-slider__slide--active
-                          - 'button "3: sources.txt" [ref=e1984] [cursor=pointer]':
-                            - 'generic "3: sources.txt" [ref=e1985]': "3"
-                          - text: .
-                        - listitem [ref=e1191]:
-                          - text: "Переход «вперед»: Симулируется клик по стрелке"
-                          - code [ref=e1192]: .hero-slider__arrow--next
-                          - text: ", после чего проверяется, что активным стал второй слайд"
-                          - 'button "3: sources.txt" [ref=e1986] [cursor=pointer]':
-                            - 'generic "3: sources.txt" [ref=e1987]': "3"
-                          - text: .
-                        - listitem [ref=e1198]:
-                          - text: "Переход «назад» с зацикливанием: Проверяется, что при клике на стрелку"
-                          - code [ref=e1199]: .hero-slider__arrow--prev
-                          - text: на первом слайде происходит переход на последний (четвертый) слайд
-                          - 'button "4: sources.txt" [ref=e1988] [cursor=pointer]':
-                            - 'generic "4: sources.txt" [ref=e1989]': "4"
-                          - text: .
-                        - listitem [ref=e1205]:
-                          - text: "Навигация через точки: Симулируется клик по конкретной точке-индикатору (например, третьей), и проверяется переход на соответствующий ей слайд"
-                          - 'button "2: sources.txt" [ref=e1990] [cursor=pointer]':
-                            - 'generic "2: sources.txt" [ref=e1991]': "2"
-                          - text: .
-                    - listitem [ref=e1211]:
-                      - text: "Автоматизация и жизненный цикл:"
-                      - list [ref=e1212]:
-                        - listitem [ref=e1215]:
-                          - text: "Автоплей: С помощью имитации таймеров ("
-                          - code [ref=e1216]: vi.advanceTimersByTime(4000)
-                          - text: ) проверяется, что слайдер автоматически переключается на следующий сегмент ровно через 4 секунды
-                          - 'button "4: sources.txt" [ref=e1992] [cursor=pointer]':
-                            - 'generic "4: sources.txt" [ref=e1993]': "4"
-                          - text: .
-                        - listitem [ref=e1222]:
-                          - text: "Очистка ресурсов: Тест использует шпион ("
-                          - code [ref=e1223]: spyOn
-                          - text: ) для
-                          - code [ref=e1224]: window.clearInterval
-                          - text: ", чтобы убедиться, что при уничтожении компонента ("
-                          - code [ref=e1225]: unmount
-                          - text: ) таймер автоплея корректно удаляется для предотвращения утечек памяти
-                          - 'button "2: sources.txt" [ref=e1994] [cursor=pointer]':
-                            - 'generic "2: sources.txt" [ref=e1995]': "2"
-                          - text: .
-                  - generic [ref=e1231]:
-                    - text: Для работы этих тестов используется окружение jsdom и плагины Vue Router, так как слайдер содержит ссылки
-                    - code [ref=e1232]: RouterLink
-                    - 'button "1: sources.txt" [ref=e1996] [cursor=pointer]':
-                      - 'generic "1: sources.txt" [ref=e1997]': "1"
-                    - 'button "5: sources.txt" [ref=e1998] [cursor=pointer]':
-                      - 'generic "5: sources.txt" [ref=e1999]': "5"
-                    - text: .
-                - generic [ref=e1239]:
-                  - button "Сохранить сообщение в заметки" [ref=e2000]:
-                    - img [ref=e1241]: keep_pin
-                    - generic [ref=e1242]: Сохранить в заметке
-                  - generic [ref=e1245]:
-                    - button "Копировать ответ модели в буфер обмена" [ref=e2001] [cursor=pointer]:
-                      - img [ref=e1250]: copy_all
-                    - button "Оценить ответ как хороший" [ref=e2002] [cursor=pointer]:
-                      - img [ref=e1257]: thumb_up
-                    - button "Оценить ответ как плохой" [ref=e2003] [cursor=pointer]:
-                      - img [ref=e1264]: thumb_down
-            - generic [ref=e1267]: Сегодня • 22:38
-          - generic [ref=e1276]:
-            - textbox "Поле для запросов" [ref=e2004]:
-              - /placeholder: Введите текст…
-            - generic [ref=e1278]:
-              - generic [ref=e1280]: 1 источник
-              - button "Отправить" [disabled]:
-                - img: arrow_forward
-      - generic [ref=e1282]:
-        - generic [ref=e1283]:
-          - navigation [ref=e1284]:
-            - heading "Студия" [level=2] [ref=e2005]:
-              - generic [ref=e1286]: Студия
-          - button "Свернуть панель студии" [ref=e2006] [cursor=pointer]:
-            - img [ref=e1288]: dock_to_left
-        - generic [ref=e1292]:
-          - generic [ref=e1293]:
-            - button "Аудиопересказ" [ref=e2007] [cursor=pointer]:
-              - generic [ref=e1296]:
-                - generic [ref=e1297]:
-                  - img [ref=e2008]: audio_magic_eraser
-                  - generic [ref=e1300]: Аудиопересказ
-                - button "Настроить аудиопересказ" [ref=e2009]:
-                  - img [ref=e1303]: chevron_forward
-            - button "Презентация" [ref=e2010] [cursor=pointer]:
-              - generic [ref=e1308]:
-                - generic [ref=e1309]:
-                  - generic [ref=e1310]:
-                    - img [ref=e2011]: tablet
-                    - generic [ref=e1312]: БЕТА
-                  - generic [ref=e1313]: Презентация
-                - button "Настроить презентацию" [ref=e2012]:
-                  - img [ref=e1316]: chevron_forward
-            - button "Видеопересказ" [ref=e2013] [cursor=pointer]:
-              - generic [ref=e1321]:
-                - generic [ref=e1322]:
-                  - img [ref=e2014]: subscriptions
-                  - generic [ref=e1325]: Видеопересказ
-                - img [ref=e1327]: chevron_forward
-            - button "Ментальная карта" [ref=e2015] [cursor=pointer]:
-              - generic [ref=e1331]:
-                - img [ref=e2016]: flowchart
-                - generic [ref=e1334]: Ментальная карта
-            - button "Отчеты" [ref=e2017] [cursor=pointer]:
-              - generic [ref=e1337]:
-                - generic [ref=e1338]:
-                  - img "Значок \"Создать объект\"" [ref=e2018]
-                  - generic [ref=e1341]: Отчеты
-                - img [ref=e1343]: chevron_forward
-            - button "Карточки" [ref=e2019] [cursor=pointer]:
-              - generic [ref=e1346]:
-                - generic [ref=e1347]:
-                  - img [ref=e1349]: cards_star
-                  - generic [ref=e1350]: Карточки
-                - button "Настроить карточки" [ref=e2020]:
-                  - img [ref=e1353]: chevron_forward
-            - button "Тест" [ref=e2021] [cursor=pointer]:
-              - generic [ref=e1358]:
-                - generic [ref=e1359]:
-                  - img [ref=e1361]: quiz
-                  - generic [ref=e1362]: Тест
-                - button "Настроить тест" [ref=e2022]:
-                  - img [ref=e1365]: chevron_forward
-            - button "Инфографика" [ref=e2023] [cursor=pointer]:
-              - generic [ref=e1370]:
-                - generic [ref=e1371]:
-                  - generic [ref=e1372]:
-                    - img [ref=e1373]: stacked_bar_chart
-                    - generic [ref=e1374]: БЕТА
-                  - generic [ref=e1375]: Инфографика
-                - button "Настроить инфографику" [ref=e2024]:
-                  - img [ref=e1378]: chevron_forward
-            - button "Таблица данных" [ref=e2025] [cursor=pointer]:
-              - generic [ref=e1383]:
-                - generic [ref=e1384]:
-                  - img [ref=e1386]: table_view
-                  - generic [ref=e1387]: Таблица данных
-                - button "Настроить таблицу данных" [ref=e2026]:
-                  - img [ref=e1390]: chevron_forward
-          - generic [ref=e1394]:
-            - generic [ref=e1398] [cursor=pointer]:
-              - button "NatsDoll Architectural Blueprint 1 источник · 4 дн. назад" [ref=e2027]
-              - generic:
-                - img: tablet
-                - generic:
-                  - generic:
-                    - generic: NatsDoll Architectural Blueprint
-                  - generic: 1 источник · 4 дн. назад
-              - button "Ещё" [ref=e2028]:
-                - img [ref=e1404]: more_vert
-            - button "Добавить заметку" [ref=e2029]:
-              - img [ref=e1408]: sticky_note_2
-              - generic [ref=e1409]: Добавить заметку
-    - contentinfo [ref=e1412]: Ответы NotebookLM могут быть неточны. Обязательно проверяйте их.
-  - generic [ref=e2033]: Создать отчеты на основе ваших источников
-
-=== upload-dialog2.md ===
-- generic [ref=e1]:
-  - generic [ref=e5]:
-    - button [ref=e2034] [cursor=pointer]:
-      - img [ref=e10]
-    - button [ref=e2035] [cursor=pointer]:
-      - img [ref=e17]
-  - generic [ref=e195]:
-    - generic [ref=e199]:
-      - link [ref=e2036] [cursor=pointer]:
-        - /url: /
-        - img [ref=e2037]
-      - textbox [ref=e208]: NatsDoll Full-Stack E-commerce Project Source Code
-      - generic [ref=e209]:
-        - button [ref=e2038]:
-          - img [ref=e211]: add
-          - generic [ref=e212]: Создать блокнот
-        - button [ref=e2040]:
-          - img [ref=e221]: share
-          - generic [ref=e223]: Поделиться
-        - button [ref=e2042]:
-          - img [ref=e231]: settings
-          - generic [ref=e233]: Настройки
-    - generic [ref=e236]:
-      - generic [ref=e237]:
-        - generic [ref=e238]:
-          - navigation [ref=e239]:
-            - heading [level=2] [ref=e2043]:
-              - generic [ref=e241]: Источники
-          - button [ref=e2044] [cursor=pointer]:
-            - img [ref=e244]: dock_to_right
-        - generic [ref=e249]:
-          - generic [ref=e250]:
-            - button [ref=e2045]:
-              - img [ref=e253]: add
-              - generic [ref=e254]: Добавить источники
-            - generic [ref=e260]:
-              - generic [ref=e261]:
-                - img [ref=e262]: search
-                - textbox [ref=e2046]:
-                  - /placeholder: Найдите новые источники в интернете
-              - generic [ref=e268]:
-                - generic [ref=e269]:
-                  - button [ref=e2047]:
-                    - generic [ref=e274]:
-                      - generic [ref=e275]:
-                        - img [ref=e276]: language
-                        - generic [ref=e277]: Интернет
-                      - img [ref=e278]: keyboard_arrow_down
-                  - button [ref=e2048]:
-                    - generic [ref=e285]:
-                      - generic [ref=e286]:
-                        - img [ref=e287]: search_spark
-                        - generic [ref=e288]: Быстрый поиск
-                      - img [ref=e289]: keyboard_arrow_down
-                - generic [ref=e292]:
-                  - button [disabled]:
-                    - img: arrow_forward
-            - generic [ref=e293]:
-              - generic [ref=e295]: Выбрать все источники
-              - generic [ref=e299] [cursor=pointer]:
-                - checkbox [checked] [ref=e2049]
-                - generic:
-                  - img
-          - generic [ref=e304] [cursor=pointer]:
-            - button [ref=e2050]
-            - button [ref=e2051]:
-              - img [ref=e311]: markdown
-            - generic:
-              - generic:
-                - generic: sources.txt
-            - generic [ref=e317]:
-              - checkbox [checked] [ref=e2052]
-              - generic:
-                - img
-      - generic [ref=e321]:
-        - generic [ref=e322]:
-          - heading [level=2] [ref=e2053]: Чат
-          - generic [ref=e325]:
-            - button [ref=e2054] [cursor=pointer]:
-              - img [ref=e327]: tune
-            - button [ref=e2055] [cursor=pointer]:
-              - img [ref=e331]: more_vert
-        - generic [ref=e334]:
-          - generic [ref=e335]:
-            - generic [ref=e337]:
-              - img [ref=e338]: landscape_2
-              - generic [ref=e339] [cursor=pointer]: 🧸
-              - button [ref=e2056]:
-                - img [ref=e341]: photo_spark
-                - generic [ref=e342]: Настроить
-              - generic [ref=e345]:
-                - generic [ref=e346]: NatsDoll Full-Stack E-commerce Project Source Code
-                - generic [ref=e347]:
-                  - generic [ref=e348]: 1 источник
-                  - generic [ref=e349]: ·
-                  - generic [ref=e2057]: 14 апр. 2026 г.
-            - generic [ref=e351]:
-              - paragraph [ref=e354]:
-                - text: Данные исходные коды описывают архитектуру и реализацию
-                - strong [ref=e355]: NatsDoll
-                - text: — специализированного интернет-магазина для продажи изделий ручной работы из полимерной глины. Технологический стек включает
-                - strong [ref=e356]: Vue 3
-                - text: на фронтенде и
-                - strong [ref=e357]: Hono
-                - text: с
-                - strong [ref=e358]: Prisma ORM
-                - text: "на бэкенде, организованных в рамках монорепозитория с использованием Docker. Система охватывает ключевые бизнес-процессы: управление каталогом товаров, корзиной, заказами, а также интеграцию с платежным сервисом"
-                - strong [ref=e359]: PayPal
-                - text: и хранилищем
-                - strong [ref=e360]: Yandex S3
-                - text: . Фронтенд спроектирован по методологии
-                - strong [ref=e361]: Feature-Sliced Design
-                - text: ", что обеспечивает строгую структуру компонентов и логики. Безопасность реализована через аутентификацию с помощью"
-                - strong [ref=e362]: JWT
-                - text: и
-                - strong [ref=e363]: Google OAuth
-                - text: ", а надежность подтверждается обширным набором тестов на"
-                - strong [ref=e364]: Vitest
-                - text: и
-                - strong [ref=e365]: Playwright
-                - text: . Проект представляет собой полноценное e-commerce решение, готовое к развертыванию через
-                - strong [ref=e366]: Docker Compose
-                - text: .
-              - generic [ref=e367]:
-                - button [ref=e2058]:
-                  - img [ref=e369]: keep
-                  - generic [ref=e370]: Сохранить в заметке
-                - button [ref=e2059] [cursor=pointer]:
-                  - img [ref=e374]: copy_all
-                - button [ref=e2060] [cursor=pointer]:
-                  - img [ref=e378]: thumb_up
-                - button [ref=e2061] [cursor=pointer]:
-                  - img [ref=e382]: thumb_down
-              - generic [ref=e387]:
-                - button [ref=e2062] [cursor=pointer]:
-                  - generic [ref=e389]: Расскажи об архитектуре проекта и используемых технологиях
-                - button [ref=e2063] [cursor=pointer]:
-                  - generic [ref=e391]: Как устроена структура базы данных и основные модели?
-                - button [ref=e2064] [cursor=pointer]:
-                  - generic [ref=e393]: Какие функциональные возможности уже реализованы на фронтенде?
-            - generic [ref=e394]: вторник, 14 апреля
-            - generic [ref=e395]:
-              - heading [level=3] [ref=e2065]:
-                - paragraph [ref=e402]: Расскажи, как реализована база данных и какие основные модели описаны?
-              - generic [ref=e405]:
-                - generic [ref=e409]:
-                  - generic [ref=e412]:
-                    - text: База данных в проекте NatsDoll реализована на основе реляционной СУБД PostgreSQL
-                    - button [ref=e2066] [cursor=pointer]:
-                      - generic [ref=e2067]: "1"
-                    - button [ref=e2068] [cursor=pointer]:
-                      - generic [ref=e2069]: "2"
-                    - text: . Для взаимодействия с ней используется Prisma ORM, которая обеспечивает типобезопасность и управление миграциями
-                    - button [ref=e2070] [cursor=pointer]:
-                      - generic [ref=e2071]: "1"
-                    - button [ref=e423] [cursor=pointer]:
-                      - img [ref=e424]: more_horiz
-                    - text: .
-                  - generic [ref=e427]:
-                    - text: В архитектуре бэкенда работа с базой вынесена в слой Infrastructure, где располагаются репозитории, инкапсулирующие Prisma-операции
-                    - button [ref=e2072] [cursor=pointer]:
-                      - generic [ref=e2073]: "5"
-                    - button [ref=e2074] [cursor=pointer]:
-                      - generic [ref=e2075]: "6"
-                    - text: .
-                  - heading [level=3] [ref=e2076]: Основные модели данных
-                  - generic [ref=e439]:
-                    - text: Согласно файлу
-                    - code [ref=e440]: schema.prisma
-                    - text: ", модели разделены на несколько ключевых блоков:"
-                  - heading [level=4] [ref=e2077]: 1. Пользователи и аутентификация
-                  - list [ref=e444]:
-                    - listitem [ref=e447]:
-                      - text: "User: Хранит данные о пользователях (email, хеш пароля, имя). Поддерживает роли"
-                      - code [ref=e448]: CUSTOMER
-                      - text: и
-                      - code [ref=e449]: ADMIN
-                      - button [ref=e2078] [cursor=pointer]:
-                        - generic [ref=e2079]: "7"
-                      - text: . Связана с корзиной, заказами и отзывами
-                      - button [ref=e2080] [cursor=pointer]:
-                        - generic [ref=e2081]: "7"
-                      - text: .
-                    - listitem [ref=e458]:
-                      - text: "RefreshToken: Используется для механизма JWT-аутентификации (хранит хеш токена и срок действия)"
-                      - button [ref=e2082] [cursor=pointer]:
-                        - generic [ref=e2083]: "7"
-                      - text: .
-                  - heading [level=4] [ref=e2084]: 2. Каталог товаров
-                  - list [ref=e465]:
-                    - listitem [ref=e468]:
-                      - text: "Category: Категории изделий (например, \"Art Dolls\", \"Cake Toppers\")"
-                      - button [ref=e2085] [cursor=pointer]:
-                        - generic [ref=e2086]: "8"
-                      - button [ref=e2087] [cursor=pointer]:
-                        - generic [ref=e2088]: "9"
-                      - text: .
-                    - listitem [ref=e477]:
-                      - text: "Product: Основная сущность товара. Включает название, описание, цену (тип"
-                      - code [ref=e478]: Decimal
-                      - text: ), остаток на складе и массив ссылок на изображения
-                      - button [ref=e2089] [cursor=pointer]:
-                        - generic [ref=e2090]: "8"
-                      - text: . Поддерживает soft delete (поле
-                      - code [ref=e482]: deletedAt
-                      - text: ), чтобы сохранять историю заказов после «удаления» товара
-                      - button [ref=e2091] [cursor=pointer]:
-                        - generic [ref=e2092]: "8"
-                      - button [ref=e2093] [cursor=pointer]:
-                        - generic [ref=e2094]: "10"
-                      - text: .
-                  - heading [level=4] [ref=e2095]: 3. Корзина и заказы
-                  - list [ref=e492]:
-                    - listitem [ref=e495]:
-                      - text: "Cart и CartItem: Модели для хранения текущего состояния корзины пользователя"
-                      - button [ref=e2096] [cursor=pointer]:
-                        - generic [ref=e2097]: "11"
-                      - button [ref=e2098] [cursor=pointer]:
-                        - generic [ref=e2099]: "12"
-                      - text: .
-                    - listitem [ref=e504]:
-                      - text: "Order: Информация о заказе, включая статус ("
-                      - code [ref=e505]: OrderStatus
-                      - text: ": от"
-                      - code [ref=e506]: PENDING
-                      - text: до
-                      - code [ref=e507]: DELIVERED
-                      - text: ), общую сумму, адрес доставки в формате JSONB и ID транзакции PayPal
-                      - button [ref=e2100] [cursor=pointer]:
-                        - generic [ref=e2101]: "12"
-                      - button [ref=e2102] [cursor=pointer]:
-                        - generic [ref=e2103]: "13"
-                      - text: .
-                    - listitem [ref=e516]:
-                      - text: "OrderItem: Список товаров в конкретном заказе с фиксацией цены на момент покупки"
-                      - button [ref=e2104] [cursor=pointer]:
-                        - generic [ref=e2105]: "13"
-                      - text: .
-                  - heading [level=4] [ref=e2106]: 4. Контент и отзывы
-                  - list [ref=e523]:
-                    - listitem [ref=e526]:
-                      - text: "GalleryItem: Элементы галереи для главной страницы и коллекций. Содержат ссылки на изображения из Yandex S3 и позицию для сортировки"
-                      - button [ref=e2107] [cursor=pointer]:
-                        - generic [ref=e2108]: "14"
-                      - button [ref=e531] [cursor=pointer]:
-                        - img [ref=e532]: more_horiz
-                      - text: .
-                    - listitem [ref=e535]:
-                      - text: "Review: Отзывы пользователей о товарах с рейтингом и комментариями"
-                      - button [ref=e2109] [cursor=pointer]:
-                        - generic [ref=e2110]: "17"
-                      - text: .
-                    - listitem [ref=e541]:
-                      - text: "NewsletterSubscriber: Список email-адресов для рассылки"
-                      - button [ref=e2111] [cursor=pointer]:
-                        - generic [ref=e2112]: "9"
-                      - button [ref=e2113] [cursor=pointer]:
-                        - generic [ref=e2114]: "18"
-                      - text: .
-                  - heading [level=3] [ref=e2115]: Ключевые особенности реализации
-                  - list [ref=e551]:
-                    - listitem [ref=e554]:
-                      - text: "Индексация: На всех полях внешних ключей (Foreign Keys) явно прописаны индексы ("
-                      - code [ref=e555]: "@@index"
-                      - text: ) для обеспечения высокой производительности запросов
-                      - button [ref=e2116] [cursor=pointer]:
-                        - generic [ref=e2117]: "10"
-                      - button [ref=e560] [cursor=pointer]:
-                        - img [ref=e561]: more_horiz
-                      - text: .
-                    - listitem [ref=e564]:
-                      - text: "Целостность данных: Используется правило"
-                      - code [ref=e565]: "onDelete: Restrict"
-                      - text: для связей с товарами — это гарантирует, что товар нельзя удалить физически, если на него ссылаются существующие заказы или отзывы
-                      - button [ref=e2118] [cursor=pointer]:
-                        - generic [ref=e2119]: "10"
-                      - button [ref=e2120] [cursor=pointer]:
-                        - generic [ref=e2121]: "21"
-                      - text: .
-                    - listitem [ref=e574]:
-                      - text: "Развертывание: База данных запускается в Docker-контейнере (образ"
-                      - code [ref=e575]: postgres:16-alpine
-                      - text: ), а миграции применяются автоматически при запуске через
-                      - code [ref=e576]: prisma migrate deploy
-                      - button [ref=e2122] [cursor=pointer]:
-                        - generic [ref=e2123]: "22"
-                      - button [ref=e581] [cursor=pointer]:
-                        - img [ref=e582]: more_horiz
-                      - text: .
-                    - listitem [ref=e585]:
-                      - text: "Наполнение (Seeding): Предусмотрен скрипт"
-                      - code [ref=e586]: seed.ts
-                      - text: ", который автоматически наполняет базу базовыми категориями и элементами галереи при первичной настройке"
-                      - button [ref=e2124] [cursor=pointer]:
-                        - generic [ref=e2125]: "9"
-                      - button [ref=e591] [cursor=pointer]:
-                        - img [ref=e592]: more_horiz
-                      - text: .
-                - generic [ref=e593]:
-                  - button [ref=e2126]:
-                    - img [ref=e595]: keep_pin
-                    - generic [ref=e596]: Сохранить в заметке
-                  - generic [ref=e599]:
-                    - button [ref=e2127] [cursor=pointer]:
-                      - img [ref=e604]: copy_all
-                    - button [ref=e2128] [cursor=pointer]:
-                      - img [ref=e611]: thumb_up
-                    - button [ref=e2129] [cursor=pointer]:
-                      - img [ref=e618]: thumb_down
-            - generic [ref=e621]:
-              - heading [level=3] [ref=e2130]:
-                - paragraph [ref=e628]: объясни принцип работы слайдера
-              - generic [ref=e631]:
-                - generic [ref=e635]:
-                  - generic [ref=e638]:
-                    - text: Принцип работы слайдера в проекте NatsDoll реализован через разделение логики и представления. Основная механика сосредоточена в переиспользуемом хуке (composable) useSlider, который управляет состоянием, а визуальное отображение настраивается в конкретных виджетах (например,
-                    - code [ref=e639]: HeroSlider
-                    - text: или
-                    - code [ref=e640]: ReviewsSlider
-                    - text: )
-                    - button [ref=e2131] [cursor=pointer]:
-                      - generic [ref=e2132]: "1"
-                    - button [ref=e645] [cursor=pointer]:
-                      - img [ref=e646]: more_horiz
-                    - text: .
-                  - heading [level=3] [ref=e2133]:
-                    - text: 1. Управление состоянием (
-                    - code [ref=e650]: useSlider
-                    - text: )
-                  - generic [ref=e653]: "Логика слайдера построена на реактивном отслеживании текущего индекса активного слайда:"
-                  - list [ref=e654]:
-                    - listitem [ref=e657]:
-                      - text: "currentIndex: Реактивная переменная ("
-                      - code [ref=e658]: ref
-                      - text: ), хранящая номер текущего слайда (начинается с 0)
-                      - button [ref=e2134] [cursor=pointer]:
-                        - generic [ref=e2135]: "2"
-                      - button [ref=e2136] [cursor=pointer]:
-                        - generic [ref=e2137]: "4"
-                      - text: .
-                    - listitem [ref=e667]:
-                      - text: "Циклическая навигация: Переключение реализовано так, чтобы слайды шли «по кругу»."
-                      - list [ref=e668]:
-                        - listitem [ref=e671]:
-                          - text: Для перехода вперед используется формула
-                          - code [ref=e672]: (index + 1) % total
-                          - text: ", что возвращает индекс к 0 после последнего слайда"
-                          - button [ref=e2138] [cursor=pointer]:
-                            - generic [ref=e2139]: "5"
-                          - text: .
-                        - listitem [ref=e678]:
-                          - text: Для перехода назад используется
-                          - code [ref=e679]: (index - 1 + total) % total
-                          - text: ", что позволяет с первого слайда мгновенно попасть на последний"
-                          - button [ref=e2140] [cursor=pointer]:
-                            - generic [ref=e2141]: "5"
-                          - text: .
-                    - listitem [ref=e685]:
-                      - text: "Ручное управление: Предоставляются функции"
-                      - code [ref=e686]: next()
-                      - text: ","
-                      - code [ref=e687]: prev()
-                      - text: и
-                      - code [ref=e688]: goTo(index)
-                      - text: для навигации через стрелки или точки-индикаторы
-                      - button [ref=e2142] [cursor=pointer]:
-                        - generic [ref=e2143]: "5"
-                      - text: .
-                  - heading [level=3] [ref=e2144]: 2. Автоматическое переключение (Autoplay)
-                  - generic [ref=e697]: "Слайдер поддерживает автоматическую прокрутку:"
-                  - list [ref=e698]:
-                    - listitem [ref=e701]:
-                      - text: "Таймер: При монтировании компонента ("
-                      - code [ref=e702]: onMounted
-                      - text: ) запускается
-                      - code [ref=e703]: setInterval
-                      - text: ", который вызывает функцию"
-                      - code [ref=e704]: next()
-                      - text: через заданный интервал (например, 4000 мс для HeroSlider)
-                      - button [ref=e2145] [cursor=pointer]:
-                        - generic [ref=e2146]: "5"
-                      - button [ref=e709] [cursor=pointer]:
-                        - img [ref=e710]: more_horiz
-                      - text: .
-                    - listitem [ref=e713]:
-                      - text: "Сброс при взаимодействии: Каждый раз, когда пользователь нажимает кнопку «назад» или «вперед», таймер сбрасывается ("
-                      - code [ref=e714]: resetTimer
-                      - text: ), чтобы автоматический переход не случился сразу после ручного
-                      - button [ref=e2147] [cursor=pointer]:
-                        - generic [ref=e2148]: "5"
-                      - text: .
-                    - listitem [ref=e720]:
-                      - text: "Очистка: При уничтожении компонента ("
-                      - code [ref=e721]: onUnmounted
-                      - text: ) таймер удаляется через
-                      - code [ref=e722]: clearInterval
-                      - text: ", чтобы избежать утечек памяти"
-                      - button [ref=e2149] [cursor=pointer]:
-                        - generic [ref=e2150]: "6"
-                      - text: .
-                  - heading [level=3] [ref=e2151]: 3. Визуальная реализация в UI
-                  - generic [ref=e731]: "Проект демонстрирует два подхода к отображению:"
-                  - list [ref=e732]:
-                    - listitem [ref=e735]:
-                      - text: "Переключение классов (HeroSlider): Активному слайду присваивается специальный CSS-класс (например,"
-                      - code [ref=e736]: hero-slider__slide--active
-                      - text: ), который управляет его видимостью или анимацией появления
-                      - button [ref=e2152] [cursor=pointer]:
-                        - generic [ref=e2153]: "3"
-                      - button [ref=e2154] [cursor=pointer]:
-                        - generic [ref=e2155]: "8"
-                      - text: .
-                    - listitem [ref=e745]:
-                      - text: "Смещение контейнера (ReviewsSlider): Все слайды находятся в одну линию внутри «трека» ("
-                      - code [ref=e746]: track
-                      - text: ). Смещение реализуется через CSS-свойство
-                      - code [ref=e747]: "transform: translateX()"
-                      - text: ", где значение вычисляется как"
-                      - code [ref=e748]: "-currentIndex * 100%"
-                      - button [ref=e2156] [cursor=pointer]:
-                        - generic [ref=e2157]: "9"
-                      - button [ref=e2158] [cursor=pointer]:
-                        - generic [ref=e2159]: "10"
-                      - text: .
-                  - heading [level=3] [ref=e2160]: 4. Параметры и гибкость
-                  - generic [ref=e760]:
-                    - text: Хук
-                    - code [ref=e761]: useSlider
-                    - text: принимает два параметра
-                    - button [ref=e2161] [cursor=pointer]:
-                      - generic [ref=e2162]: "4"
-                    - text: ":"
-                  - list [ref=e765]:
-                    - listitem [ref=e768]: "count: Общее количество слайдов (может быть как числом, так и реактивной ссылкой)."
-                    - listitem [ref=e771]:
-                      - text: "intervalMs: Длительность задержки автоплея. Если передать значение меньше 100 мс, автоплей не включится"
-                      - button [ref=e2163] [cursor=pointer]:
-                        - generic [ref=e2164]: "5"
-                      - text: .
-                  - generic [ref=e777]:
-                    - text: Эта архитектура позволяет легко создавать новые слайдеры (например, для отзывов или промо-баннеров), просто подключая готовую логику к новым компонентам
-                    - button [ref=e2165] [cursor=pointer]:
-                      - generic [ref=e2166]: "3"
-                    - button [ref=e2167] [cursor=pointer]:
-                      - generic [ref=e2168]: "10"
-                    - text: .
-                - generic [ref=e784]:
-                  - button [ref=e2169]:
-                    - img [ref=e786]: keep_pin
-                    - generic [ref=e787]: Сохранить в заметке
-                  - generic [ref=e790]:
-                    - button [ref=e2170] [cursor=pointer]:
-                      - img [ref=e795]: copy_all
-                    - button [ref=e2171] [cursor=pointer]:
-                      - img [ref=e802]: thumb_up
-                    - button [ref=e2172] [cursor=pointer]:
-                      - img [ref=e809]: thumb_down
-            - generic [ref=e812]:
-              - heading [level=3] [ref=e2173]:
-                - paragraph [ref=e819]: В чем разница между HeroSlider и ReviewsSlider?
-              - generic [ref=e822]:
-                - generic [ref=e826]:
-                  - generic [ref=e829]: Хотя оба компонента используют общую логику из хука useSlider, они различаются по назначению, визуальной реализации и настройкам автоплея.
-                  - generic [ref=e832]:
-                    - text: Основные различия между
-                    - code [ref=e833]: HeroSlider
-                    - text: и
-                    - code [ref=e834]: ReviewsSlider
-                    - text: ":"
-                  - heading [level=3] [ref=e2174]: 1. Назначение и контент
-                  - list [ref=e838]:
-                    - listitem [ref=e841]:
-                      - text: "HeroSlider: Это главный промо-баннер на домашней странице. Он содержит маркетинговый текст (например, \"Find a unique gift here\") и призыв к действию в виде кнопки AppButton, ведущей в магазин"
-                      - button [ref=e2175] [cursor=pointer]:
-                        - generic [ref=e2176]: "1"
-                      - text: . Количество слайдов фиксировано — 4
-                      - button [ref=e2177] [cursor=pointer]:
-                        - generic [ref=e2178]: "1"
-                      - text: .
-                    - listitem [ref=e850]:
-                      - text: "ReviewsSlider: Предназначен для отображения социального подтверждения (отзывов клиентов). Он отображает карточки ReviewCard, которые включают текст отзыва, имя автора, страну и рейтинг"
-                      - button [ref=e2179] [cursor=pointer]:
-                        - generic [ref=e2180]: "2"
-                      - button [ref=e2181] [cursor=pointer]:
-                        - generic [ref=e2182]: "3"
-                      - text: . Количество слайдов зависит от данных в массиве
-                      - code [ref=e857]: REVIEWS
-                      - text: (на данный момент их 6)
-                      - button [ref=e2183] [cursor=pointer]:
-                        - generic [ref=e2184]: "3"
-                      - text: .
-                  - heading [level=3] [ref=e2185]: 2. Техническая реализация анимации
-                  - list [ref=e864]:
-                    - listitem [ref=e867]:
-                      - text: "HeroSlider: Использует принцип переключения классов. Активному слайду присваивается модификатор"
-                      - code [ref=e868]: "--active"
-                      - text: (например,
-                      - code [ref=e869]: hero-slider__slide--active
-                      - text: ), что обычно управляет прозрачностью или наложением слоев через CSS
-                      - button [ref=e2186] [cursor=pointer]:
-                        - generic [ref=e2187]: "4"
-                      - text: .
-                    - listitem [ref=e875]:
-                      - text: "ReviewsSlider: Использует принцип смещения трека. Все отзывы выстроены в линию внутри контейнера"
-                      - code [ref=e876]: .reviews-slider__track
-                      - text: ", который сдвигается по горизонтали с помощью"
-                      - code [ref=e877]: translateX
-                      - text: (например,
-                      - code [ref=e878]: "-100%"
-                      - text: для второго слайда)
-                      - button [ref=e2188] [cursor=pointer]:
-                        - generic [ref=e2189]: "5"
-                      - text: .
-                  - heading [level=3] [ref=e2190]: 3. Элементы управления и индикация
-                  - list [ref=e885]:
-                    - listitem [ref=e888]:
-                      - text: "HeroSlider: Оснащен кнопками навигации («вперед»/«назад») и точками-индикаторами (dots) в нижней части, позволяющими быстро перепрыгнуть на нужный слайд"
-                      - button [ref=e2191] [cursor=pointer]:
-                        - generic [ref=e2192]: "4"
-                      - button [ref=e2193] [cursor=pointer]:
-                        - generic [ref=e2194]: "6"
-                      - text: .
-                    - listitem [ref=e897]:
-                      - text: "ReviewsSlider: Вместо точек использует текстовый счетчик в формате «1 / N» (например, «1 / 6»), информирующий пользователя о текущей позиции в списке отзывов"
-                      - button [ref=e2195] [cursor=pointer]:
-                        - generic [ref=e2196]: "5"
-                      - text: .
-                  - heading [level=3] [ref=e2197]: 4. Настройки автоплея
-                  - generic [ref=e906]:
-                    - text: Компоненты используют разную частоту смены кадров, заданную при вызове
-                    - code [ref=e907]: useSlider
-                    - text: ":"
-                  - list [ref=e908]:
-                    - listitem [ref=e911]:
-                      - text: "HeroSlider: Интервал обновления составляет 4 секунды (4000 мс)"
-                      - button [ref=e2198] [cursor=pointer]:
-                        - generic [ref=e2199]: "7"
-                      - text: .
-                    - listitem [ref=e917]:
-                      - text: "ReviewsSlider: Интервал обновления составляет 5 секунд (5000 мс), что дает пользователю больше времени на чтение текста отзыва"
-                      - button [ref=e2200] [cursor=pointer]:
-                        - generic [ref=e2201]: "5"
-                      - text: .
-                  - generic [ref=e923]:
-                    - text: Оба виджета спроектированы в соответствии с архитектурой FSD и хранят свои unit-тесты рядом с файлами компонентов, что гарантирует корректность работы их логики переключения
-                    - button [ref=e2202] [cursor=pointer]:
-                      - generic [ref=e2203]: "8"
-                    - button [ref=e928] [cursor=pointer]:
-                      - img [ref=e929]: more_horiz
-                    - text: .
-                - generic [ref=e930]:
-                  - button [ref=e2204]:
-                    - img [ref=e932]: keep_pin
-                    - generic [ref=e933]: Сохранить в заметке
-                  - generic [ref=e936]:
-                    - button [ref=e2205] [cursor=pointer]:
-                      - img [ref=e941]: copy_all
-                    - button [ref=e2206] [cursor=pointer]:
-                      - img [ref=e948]: thumb_up
-                    - button [ref=e2207] [cursor=pointer]:
-                      - img [ref=e955]: thumb_down
-            - generic [ref=e958]:
-              - heading [level=3] [ref=e2208]:
-                - paragraph [ref=e965]: Как протестирована логика переключения слайдов в Vitest?
-              - generic [ref=e968]:
-                - generic [ref=e972]:
-                  - generic [ref=e975]:
-                    - text: "Логика переключения слайдов в проекте протестирована на двух уровнях: модульное тестирование (unit) базового хука"
-                    - code [ref=e976]: useSlider
-                    - text: и интеграционное тестирование конкретных виджетов (
-                    - code [ref=e977]: HeroSlider
-                    - text: и
-                    - code [ref=e978]: ReviewsSlider
-                    - text: ).
-                  - heading [level=3] [ref=e2209]:
-                    - text: 1. Тестирование базовой логики (
-                    - code [ref=e982]: useSlider
-                    - text: )
-                  - generic [ref=e985]:
-                    - text: Для проверки переиспользуемого хука используется вспомогательная функция
-                    - code [ref=e986]: withSetup
-                    - text: ", которая позволяет запускать хуки в контексте жизненного цикла Vue-компонента"
-                    - button [ref=e2210] [cursor=pointer]:
-                      - generic [ref=e2211]: "1"
-                    - text: ". Основные сценарии включают:"
-                  - list [ref=e990]:
-                    - listitem [ref=e993]:
-                      - text: "Начальное состояние: Проверяется, что"
-                      - code [ref=e994]: currentIndex
-                      - text: всегда инициализируется с 0
-                      - button [ref=e2212] [cursor=pointer]:
-                        - generic [ref=e2213]: "2"
-                      - text: .
-                    - listitem [ref=e1000]:
-                      - text: "Ручная навигация:"
-                      - list [ref=e1001]:
-                        - listitem [ref=e1004]:
-                          - text: "next(): Проверяется переход на следующий индекс и циклическое переключение (с последнего слайда на первый)"
-                          - button [ref=e2214] [cursor=pointer]:
-                            - generic [ref=e2215]: "2"
-                          - text: .
-                        - listitem [ref=e1010]:
-                          - text: "prev(): Тестируется переход назад, включая «оборачивание» с первого слайда на последний"
-                          - button [ref=e2216] [cursor=pointer]:
-                            - generic [ref=e2217]: "3"
-                          - text: .
-                        - listitem [ref=e1016]:
-                          - text: "goTo(index): Проверяется установка конкретного индекса и игнорирование некорректных значений (например, отрицательных или выходящих за границы массива)"
-                          - button [ref=e2218] [cursor=pointer]:
-                            - generic [ref=e2219]: "3"
-                          - text: .
-                    - listitem [ref=e1022]:
-                      - text: "Автоплей: С помощью vi.useFakeTimers() имитируется прохождение времени"
-                      - button [ref=e2220] [cursor=pointer]:
-                        - generic [ref=e2221]: "2"
-                      - text: . Тесты подтверждают, что через заданный
-                      - code [ref=e1026]: intervalMs
-                      - text: индекс инкрементируется автоматически
-                      - button [ref=e2222] [cursor=pointer]:
-                        - generic [ref=e2223]: "3"
-                      - text: .
-                    - listitem [ref=e1032]:
-                      - text: "Управление таймером: Проверяется работа функций"
-                      - code [ref=e1033]: pause()
-                      - text: и
-                      - code [ref=e1034]: resume()
-                      - text: ", которые должны останавливать и возобновлять автоматическую смену слайдов"
-                      - button [ref=e2224] [cursor=pointer]:
-                        - generic [ref=e2225]: "4"
-                      - text: .
-                  - heading [level=3] [ref=e2226]: 2. Тестирование виджета HeroSlider
-                  - generic [ref=e1043]:
-                    - text: В файле
-                    - code [ref=e1044]: HeroSlider.test.ts
-                    - text: "проверяется интеграция логики с UI:"
-                  - list [ref=e1045]:
-                    - listitem [ref=e1048]:
-                      - text: "Активный класс: Тесты проверяют наличие CSS-класса"
-                      - code [ref=e1049]: hero-slider__slide--active
-                      - text: на первом слайде по умолчанию и его перемещение при кликах
-                      - button [ref=e2227] [cursor=pointer]:
-                        - generic [ref=e2228]: "5"
-                      - text: .
-                    - listitem [ref=e1055]:
-                      - text: "Интерактивы: Симулируется нажатие на кнопки-стрелки ("
-                      - code [ref=e1056]: .hero-slider__arrow--next/prev
-                      - text: ) и точки-индикаторы (
-                      - code [ref=e1057]: .hero-slider__dot
-                      - text: ), после чего проверяется изменение активного слайда
-                      - button [ref=e2229] [cursor=pointer]:
-                        - generic [ref=e2230]: "5"
-                      - button [ref=e1062] [cursor=pointer]:
-                        - img [ref=e1063]: more_horiz
-                      - text: .
-                    - listitem [ref=e1066]:
-                      - text: "Очистка ресурсов: Используется шпион ("
-                      - code [ref=e1067]: vi.spyOn
-                      - text: ) на функцию
-                      - code [ref=e1068]: window.clearInterval
-                      - text: ", чтобы убедиться, что при уничтожении компонента ("
-                      - code [ref=e1069]: unmount
-                      - text: ) таймер автоплея удаляется
-                      - button [ref=e2231] [cursor=pointer]:
-                        - generic [ref=e2232]: "7"
-                      - text: .
-                  - heading [level=3] [ref=e2233]: 3. Тестирование виджета ReviewsSlider
-                  - generic [ref=e1078]: "Тесты этого компонента сосредоточены на его специфических особенностях:"
-                  - list [ref=e1079]:
-                    - listitem [ref=e1082]:
-                      - text: "CSS-трансформации: Проверяется, что при смене слайда контейнеру"
-                      - code [ref=e1083]: .reviews-slider__track
-                      - text: устанавливается корректное значение
-                      - code [ref=e1084]: translateX
-                      - text: (например,
-                      - code [ref=e1085]: "-100%"
-                      - text: для второго слайда)
-                      - button [ref=e2234] [cursor=pointer]:
-                        - generic [ref=e2235]: "8"
-                      - text: .
-                    - listitem [ref=e1091]:
-                      - text: "Счетчик: Валидируется отображение текстового индикатора в формате «1 / N»"
-                      - button [ref=e2236] [cursor=pointer]:
-                        - generic [ref=e2237]: "8"
-                      - text: .
-                    - listitem [ref=e1097]:
-                      - text: "Интервал: Проверяется, что в этом слайдере автоплей срабатывает именно через 5 секунд"
-                      - button [ref=e2238] [cursor=pointer]:
-                        - generic [ref=e2239]: "8"
-                      - text: .
-                  - generic [ref=e1103]:
-                    - text: Все тесты запускаются в среде jsdom с включенными глобальными переменными Vitest
-                    - button [ref=e2240] [cursor=pointer]:
-                      - generic [ref=e2241]: "9"
-                    - text: .
-                - generic [ref=e1107]:
-                  - button [ref=e2242]:
-                    - img [ref=e1109]: keep_pin
-                    - generic [ref=e1110]: Сохранить в заметке
-                  - generic [ref=e1113]:
-                    - button [ref=e2243] [cursor=pointer]:
-                      - img [ref=e1118]: copy_all
-                    - button [ref=e2244] [cursor=pointer]:
-                      - img [ref=e1125]: thumb_up
-                    - button [ref=e2245] [cursor=pointer]:
-                      - img [ref=e1132]: thumb_down
-            - generic [ref=e1135]:
-              - heading [level=3] [ref=e2246]:
-                - paragraph [ref=e1142]: Какие сценарии проверяются в интеграционных тестах HeroSlider.test.ts?
-              - generic [ref=e1145]:
-                - generic [ref=e1149]:
-                  - generic [ref=e1152]:
-                    - text: Интеграционные тесты для компонента
-                    - code [ref=e1153]: HeroSlider
-                    - text: (файл
-                    - code [ref=e1154]: HeroSlider.test.ts
-                    - text: ") охватывают следующие сценарии:"
-                  - list [ref=e1155]:
-                    - listitem [ref=e1158]:
-                      - text: "Корректность рендеринга:"
-                      - list [ref=e1159]:
-                        - listitem [ref=e1162]:
-                          - text: Проверяется, что компонент отрисовывает ровно четыре слайда
-                          - button [ref=e2247] [cursor=pointer]:
-                            - generic [ref=e2248]: "1"
-                          - text: .
-                        - listitem [ref=e1168]:
-                          - text: Подтверждается наличие основного маркетингового текста ("Find a unique gift here") и кнопки действия ("The shop")
-                          - button [ref=e2249] [cursor=pointer]:
-                            - generic [ref=e2250]: "1"
-                          - text: .
-                        - listitem [ref=e1174]:
-                          - text: Проверяется рендеринг четырех точек-индикаторов (dots) для навигации
-                          - button [ref=e2251] [cursor=pointer]:
-                            - generic [ref=e2252]: "2"
-                          - text: .
-                    - listitem [ref=e1180]:
-                      - text: "Начальное состояние и навигация:"
-                      - list [ref=e1181]:
-                        - listitem [ref=e1184]:
-                          - text: "Активный слайд по умолчанию: Тест проверяет, что при загрузке первый слайд имеет CSS-класс"
-                          - code [ref=e1185]: hero-slider__slide--active
-                          - button [ref=e2253] [cursor=pointer]:
-                            - generic [ref=e2254]: "3"
-                          - text: .
-                        - listitem [ref=e1191]:
-                          - text: "Переход «вперед»: Симулируется клик по стрелке"
-                          - code [ref=e1192]: .hero-slider__arrow--next
-                          - text: ", после чего проверяется, что активным стал второй слайд"
-                          - button [ref=e2255] [cursor=pointer]:
-                            - generic [ref=e2256]: "3"
-                          - text: .
-                        - listitem [ref=e1198]:
-                          - text: "Переход «назад» с зацикливанием: Проверяется, что при клике на стрелку"
-                          - code [ref=e1199]: .hero-slider__arrow--prev
-                          - text: на первом слайде происходит переход на последний (четвертый) слайд
-                          - button [ref=e2257] [cursor=pointer]:
-                            - generic [ref=e2258]: "4"
-                          - text: .
-                        - listitem [ref=e1205]:
-                          - text: "Навигация через точки: Симулируется клик по конкретной точке-индикатору (например, третьей), и проверяется переход на соответствующий ей слайд"
-                          - button [ref=e2259] [cursor=pointer]:
-                            - generic [ref=e2260]: "2"
-                          - text: .
-                    - listitem [ref=e1211]:
-                      - text: "Автоматизация и жизненный цикл:"
-                      - list [ref=e1212]:
-                        - listitem [ref=e1215]:
-                          - text: "Автоплей: С помощью имитации таймеров ("
-                          - code [ref=e1216]: vi.advanceTimersByTime(4000)
-                          - text: ) проверяется, что слайдер автоматически переключается на следующий сегмент ровно через 4 секунды
-                          - button [ref=e2261] [cursor=pointer]:
-                            - generic [ref=e2262]: "4"
-                          - text: .
-                        - listitem [ref=e1222]:
-                          - text: "Очистка ресурсов: Тест использует шпион ("
-                          - code [ref=e1223]: spyOn
-                          - text: ) для
-                          - code [ref=e1224]: window.clearInterval
-                          - text: ", чтобы убедиться, что при уничтожении компонента ("
-                          - code [ref=e1225]: unmount
-                          - text: ) таймер автоплея корректно удаляется для предотвращения утечек памяти
-                          - button [ref=e2263] [cursor=pointer]:
-                            - generic [ref=e2264]: "2"
-                          - text: .
-                  - generic [ref=e1231]:
-                    - text: Для работы этих тестов используется окружение jsdom и плагины Vue Router, так как слайдер содержит ссылки
-                    - code [ref=e1232]: RouterLink
-                    - button [ref=e2265] [cursor=pointer]:
-                      - generic [ref=e2266]: "1"
-                    - button [ref=e2267] [cursor=pointer]:
-                      - generic [ref=e2268]: "5"
-                    - text: .
-                - generic [ref=e1239]:
-                  - button [ref=e2269]:
-                    - img [ref=e1241]: keep_pin
-                    - generic [ref=e1242]: Сохранить в заметке
-                  - generic [ref=e1245]:
-                    - button [ref=e2270] [cursor=pointer]:
-                      - img [ref=e1250]: copy_all
-                    - button [ref=e2271] [cursor=pointer]:
-                      - img [ref=e1257]: thumb_up
-                    - button [ref=e2272] [cursor=pointer]:
-                      - img [ref=e1264]: thumb_down
-            - generic [ref=e1267]: Сегодня • 22:38
-          - generic [ref=e1276]:
-            - textbox [ref=e2273]:
-              - /placeholder: Введите текст…
-            - generic [ref=e1278]:
-              - generic [ref=e1280]: 1 источник
-              - button [disabled]:
-                - img: arrow_forward
-      - generic [ref=e1282]:
-        - generic [ref=e1283]:
-          - navigation [ref=e1284]:
-            - heading [level=2] [ref=e2274]:
-              - generic [ref=e1286]: Студия
-          - button [ref=e2275] [cursor=pointer]:
-            - img [ref=e1288]: dock_to_left
-        - generic [ref=e1292]:
-          - generic [ref=e1293]:
-            - button [ref=e2276] [cursor=pointer]:
-              - generic [ref=e1296]:
-                - generic [ref=e1297]:
-                  - img [ref=e2008]: audio_magic_eraser
-                  - generic [ref=e1300]: Аудиопересказ
-                - button [ref=e2277]:
-                  - img [ref=e1303]: chevron_forward
-            - button [ref=e2278] [cursor=pointer]:
-              - generic [ref=e1308]:
-                - generic [ref=e1309]:
-                  - generic [ref=e1310]:
-                    - img [ref=e2011]: tablet
-                    - generic [ref=e1312]: БЕТА
-                  - generic [ref=e1313]: Презентация
-                - button [ref=e2279]:
-                  - img [ref=e1316]: chevron_forward
-            - button [ref=e2280] [cursor=pointer]:
-              - generic [ref=e1321]:
-                - generic [ref=e1322]:
-                  - img [ref=e2014]: subscriptions
-                  - generic [ref=e1325]: Видеопересказ
-                - img [ref=e1327]: chevron_forward
-            - button [ref=e2281] [cursor=pointer]:
-              - generic [ref=e1331]:
-                - img [ref=e2016]: flowchart
-                - generic [ref=e1334]: Ментальная карта
-            - button [ref=e2282] [cursor=pointer]:
-              - generic [ref=e1337]:
-                - generic [ref=e1338]:
-                  - img [ref=e2283]
-                  - generic [ref=e1341]: Отчеты
-                - img [ref=e1343]: chevron_forward
-            - button [ref=e2284] [cursor=pointer]:
-              - generic [ref=e1346]:
-                - generic [ref=e1347]:
-                  - img [ref=e1349]: cards_star
-                  - generic [ref=e1350]: Карточки
-                - button [ref=e2285]:
-                  - img [ref=e1353]: chevron_forward
-            - button [ref=e2286] [cursor=pointer]:
-              - generic [ref=e1358]:
-                - generic [ref=e1359]:
-                  - img [ref=e1361]: quiz
-                  - generic [ref=e1362]: Тест
-                - button [ref=e2287]:
-                  - img [ref=e1365]: chevron_forward
-            - button [ref=e2288] [cursor=pointer]:
-              - generic [ref=e1370]:
-                - generic [ref=e1371]:
-                  - generic [ref=e1372]:
-                    - img [ref=e1373]: stacked_bar_chart
-                    - generic [ref=e1374]: БЕТА
-                  - generic [ref=e1375]: Инфографика
-                - button [ref=e2289]:
-                  - img [ref=e1378]: chevron_forward
-            - button [ref=e2290] [cursor=pointer]:
-              - generic [ref=e1383]:
-                - generic [ref=e1384]:
-                  - img [ref=e1386]: table_view
-                  - generic [ref=e1387]: Таблица данных
-                - button [ref=e2291]:
-                  - img [ref=e1390]: chevron_forward
-          - generic [ref=e1394]:
-            - generic [ref=e1398] [cursor=pointer]:
-              - button [ref=e2292]
-              - generic:
-                - img: tablet
-                - generic:
-                  - generic:
-                    - generic: NatsDoll Architectural Blueprint
-                  - generic: 1 источник · 4 дн. назад
-              - button [ref=e2293]:
-                - img [ref=e1404]: more_vert
-            - button [ref=e2294]:
-              - img [ref=e1408]: sticky_note_2
-              - generic [ref=e1409]: Добавить заметку
-    - contentinfo [ref=e1412]: Ответы NotebookLM могут быть неточны. Обязательно проверяйте их.
-  - dialog "Создавайте аудиопересказы и видеообзоры на основе ваших документов" [ref=e2298]:
-    - generic [ref=e2302]:
-      - heading "Создавайте аудиопересказы и видеообзоры на основе ваших документов" [level=1] [ref=e2304]:
-        - text: Создавайте аудиопересказы и видеообзоры на основе
-        - generic [ref=e2386]: видео YouTube
-        - generic [ref=e2305]: ваших документов
-      - generic [ref=e2306]:
-        - generic [ref=e2310]:
-          - generic [ref=e2311]:
-            - img [ref=e2312]: search
-            - textbox "Находите источники на основе введенного запроса" [active] [ref=e2317]:
-              - /placeholder: Найдите новые источники в интернете
-          - generic [ref=e2318]:
-            - generic [ref=e2319]:
-              - button "Интернет" [ref=e2322]:
-                - generic [ref=e2324]:
-                  - generic [ref=e2325]:
-                    - img [ref=e2326]: language
-                    - generic [ref=e2327]: Интернет
-                  - img [ref=e2328]: keyboard_arrow_down
-              - button "Быстрый поиск" [ref=e2333]:
-                - generic [ref=e2335]:
-                  - generic [ref=e2336]:
-                    - img [ref=e2337]: search_spark
-                    - generic [ref=e2338]: Быстрый поиск
-                  - img [ref=e2339]: keyboard_arrow_down
-            - generic [ref=e2342]:
-              - button "Отправить" [disabled]:
-                - img: arrow_forward
-        - generic [ref=e2344]:
-          - generic [ref=e2345]:
-            - text: Также можно перетащить файлы
-            - generic [ref=e2346]: PDF, изображения, документы, аудио и не только
-          - generic [ref=e2347]:
-            - button "Загрузить файлы" [ref=e2348]:
-              - img [ref=e2349]: upload
-              - generic [ref=e2350]: Загрузить файлы
-            - button "Сайты" [ref=e2353]:
-              - img [ref=e2354]: link
-              - img [ref=e2355]: video_youtube
-              - generic [ref=e2356]: Сайты
-            - button "Диск" [ref=e2359]:
-              - img [ref=e2360]: drive
-              - generic [ref=e2361]: Диск
-            - button "Скопированный текст" [ref=e2364]:
-              - img [ref=e2365]: content_paste
-              - generic [ref=e2366]: Скопированный текст
-        - generic [ref=e2371]:
-          - progressbar [ref=e2373]
-          - generic [ref=e2378]: 1/50
-      - button "Закрыть" [ref=e2379] [cursor=pointer]:
-        - img [ref=e2380]: close

@@ -138,7 +138,15 @@
       "Bash(npm audit *)",
       "Bash(echo \"EXIT=$?\")",
       "Bash(echo \"API_EXIT=$?\")",
-      "Bash(echo \"WEB_EXIT=$?\")"
+      "Bash(echo \"WEB_EXIT=$?\")",
+      "mcp__plugin_playwright_playwright__browser_hover",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "PowerShell([System.IO.Directory]::GetDirectories\\(\"D:\\\\Наташа\\\\\"\\))",
+      "PowerShell([System.IO.Directory]::GetFileSystemEntries\\(\"D:\\\\Наташа\\\\Vue\"\\) | Select-Object -First 20)",
+      "Bash(cat apps/web/vite.config.ts)",
+      "Bash(cat apps/web/vitest.config.ts)",
+      "Bash(cat vitest.config.ts)",
+      "Bash(cat vitest.config.js)"
     ]
   }
 }

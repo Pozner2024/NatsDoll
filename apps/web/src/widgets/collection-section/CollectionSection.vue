@@ -62,23 +62,28 @@ defineProps<{
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(5, 1fr);
+    grid-template-rows: repeat(10, 1fr);
     gap: 2px;
-    aspect-ratio: 3 / 5;
+    aspect-ratio: 3 / 10;
     grid-template-areas:
-      "p1 p1 p2"
-      "p1 p1 p3"
-      "p4 p5 p3"
-      "p4 p6 p6"
-      "p7 p6 p6";
+      "m1  m1  m2"
+      "m1  m1  m3"
+      "m4  m5  m3"
+      "m4  m6  m6"
+      "m7  m6  m6"
+      "m8  m8  m9"
+      "m8  m8  m10"
+      "m11 m12 m10"
+      "m11 m13 m13"
+      "m14 m13 m13";
   }
 
   &__cell {
     overflow: hidden;
     background: var(--color-border);
 
-    @for $i from 1 through 7 {
-      &--#{$i} { grid-area: p#{$i}; }
+    @for $i from 1 through 14 {
+      &--#{$i} { grid-area: m#{$i}; }
     }
   }
 
