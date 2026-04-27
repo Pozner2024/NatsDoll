@@ -46,6 +46,21 @@ const galleryItems = [
     position: i + 1,
     imageUrl: `${BASE_URL}/sushi/s${i + 1}.webp`,
   })),
+  ...Array.from({ length: 14 }, (_, i) => ({
+    gallery: GallerySection.COLLECTION_3,
+    position: i + 1,
+    imageUrl: `${BASE_URL}/dolls/d${i + 1}.webp`,
+  })),
+  ...Array.from({ length: 7 }, (_, i) => ({
+    gallery: GallerySection.COLLECTION_4,
+    position: i + 1,
+    imageUrl: `${BASE_URL}/berries/b${i + 1}.webp`,
+  })),
+  ...Array.from({ length: 7 }, (_, i) => ({
+    gallery: GallerySection.COLLECTION_5,
+    position: i + 1,
+    imageUrl: `${BASE_URL}/food/f${i + 1}.webp`,
+  })),
 ]
 
 async function main() {
