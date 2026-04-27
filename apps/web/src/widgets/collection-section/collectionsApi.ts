@@ -1,12 +1,10 @@
 import { z } from 'zod'
 import { apiFetch } from '@/shared'
 
-export const COLLECTION_SIZE = 14
-
 const CollectionItemSchema = z.object({
   id: z.string(),
   imageUrl: z.string(),
-  position: z.number().int().min(1).max(COLLECTION_SIZE),
+  position: z.number().int().min(1),
 })
 
 const CollectionSchema = z.object({

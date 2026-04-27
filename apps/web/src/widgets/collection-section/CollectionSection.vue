@@ -7,7 +7,7 @@
       </h2>
     </div>
 
-    <div class="collection-section__grid">
+    <div :class="['collection-section__grid', `collection-section__grid--${collection.items.length}`]">
       <button
         v-for="item in collection.items"
         :key="item.id"
@@ -50,26 +50,57 @@
           <line x1="18" y1="2" x2="2" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
+      <button
+        v-if="hasPrev"
+        type="button"
+        class="collection-lightbox__nav collection-lightbox__nav--prev"
+        aria-label="Previous"
+        @click.stop="prev"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="13,3 6,10 13,17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
       <img
         :src="selected.url"
         :alt="`${collection.name} — image ${selected.position}`"
         class="collection-lightbox__img"
         @click.stop
       >
+      <button
+        v-if="hasNext"
+        type="button"
+        class="collection-lightbox__nav collection-lightbox__nav--next"
+        aria-label="Next"
+        @click.stop="next"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="7,3 14,10 7,17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { lockScroll, unlockScroll } from '@/shared'
 import type { Collection } from './collectionsApi'
 
-defineProps<{
+const props = defineProps<{
   collection: Collection
 }>()
 
 const selected = ref<{ url: string, position: number } | null>(null)
+
+const currentIndex = computed(() =>
+  selected.value
+    ? props.collection.items.findIndex(i => i.position === selected.value!.position)
+    : -1
+)
+
+const hasPrev = computed(() => currentIndex.value > 0)
+const hasNext = computed(() => currentIndex.value < props.collection.items.length - 1)
 
 function openLightbox(url: string, position: number) {
   selected.value = { url, position }
@@ -79,15 +110,29 @@ function closeLightbox() {
   selected.value = null
 }
 
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') closeLightbox()
+function prev() {
+  if (!hasPrev.value) return
+  const item = props.collection.items[currentIndex.value - 1]
+  selected.value = { url: item.imageUrl, position: item.position }
 }
 
-watch(selected, (next, prev) => {
-  if (next && !prev) {
+function next() {
+  if (!hasNext.value) return
+  const item = props.collection.items[currentIndex.value + 1]
+  selected.value = { url: item.imageUrl, position: item.position }
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') closeLightbox()
+  if (e.key === 'ArrowLeft') prev()
+  if (e.key === 'ArrowRight') next()
+}
+
+watch(selected, (cur, old) => {
+  if (cur && !old) {
     lockScroll()
     window.addEventListener('keydown', onKeydown)
-  } else if (!next && prev) {
+  } else if (!cur && old) {
     unlockScroll()
     window.removeEventListener('keydown', onKeydown)
   }
@@ -132,20 +177,34 @@ onBeforeUnmount(() => {
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(10, 1fr);
     gap: 4px;
-    aspect-ratio: 3 / 10;
-    grid-template-areas:
-      "m1  m1  m2"
-      "m1  m1  m3"
-      "m4  m5  m3"
-      "m4  m6  m6"
-      "m7  m6  m6"
-      "m8  m8  m9"
-      "m8  m8  m10"
-      "m11 m12 m10"
-      "m11 m13 m13"
-      "m14 m13 m13";
+
+    &--14 {
+      grid-template-rows: repeat(10, 1fr);
+      aspect-ratio: 3 / 10;
+      grid-template-areas:
+        "m1  m1  m2"
+        "m1  m1  m3"
+        "m4  m5  m3"
+        "m4  m6  m6"
+        "m7  m6  m6"
+        "m8  m8  m9"
+        "m8  m8  m10"
+        "m11 m12 m10"
+        "m11 m13 m13"
+        "m14 m13 m13";
+    }
+
+    &--7 {
+      grid-template-rows: repeat(5, 1fr);
+      aspect-ratio: 3 / 5;
+      grid-template-areas:
+        "m1  m1  m2"
+        "m1  m1  m3"
+        "m4  m5  m3"
+        "m4  m6  m6"
+        "m7  m6  m6";
+    }
   }
 
   &__cell {
@@ -220,6 +279,35 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     transition: background 0.2s ease;
+
+    &:active {
+      background: rgb(255 255 255 / 0.25);
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: rgb(255 255 255 / 0.25);
+      }
+    }
+  }
+
+  &__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.12);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    z-index: 1;
+
+    &--prev { left: 16px; }
+    &--next { right: 16px; }
 
     &:active {
       background: rgb(255 255 255 / 0.25);
