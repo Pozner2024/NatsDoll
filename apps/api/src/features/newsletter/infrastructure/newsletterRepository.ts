@@ -1,5 +1,4 @@
 import type { PrismaClient } from '@prisma/client'
-import { handlePrismaError } from '../../../shared/infrastructure'
 
 export type NewsletterSubscriber = {
   id: string
@@ -13,38 +12,22 @@ export type NewsletterRepository = {
   deleteById(id: string): Promise<void>
 }
 
-const NOT_FOUND_MESSAGE = 'Subscriber not found'
-
 export function makeNewsletterRepository(prisma: PrismaClient): NewsletterRepository {
   return {
-    async upsertSubscriber(email: string): Promise<void> {
-      try {
-        await prisma.newsletterSubscriber.upsert({
-          where: { email },
-          update: {},
-          create: { email },
-        })
-      } catch (err) {
-        handlePrismaError(err)
-      }
+    async upsertSubscriber(email) {
+      await prisma.newsletterSubscriber.upsert({
+        where: { email },
+        update: {},
+        create: { email },
+      })
     },
 
-    async getAll(): Promise<NewsletterSubscriber[]> {
-      try {
-        return await prisma.newsletterSubscriber.findMany({
-          orderBy: { subscribedAt: 'desc' },
-        })
-      } catch (err) {
-        return handlePrismaError(err)
-      }
-    },
+    getAll: () => prisma.newsletterSubscriber.findMany({
+      orderBy: { subscribedAt: 'desc' },
+    }),
 
-    async deleteById(id: string): Promise<void> {
-      try {
-        await prisma.newsletterSubscriber.delete({ where: { id } })
-      } catch (err) {
-        handlePrismaError(err, { notFoundMessage: NOT_FOUND_MESSAGE })
-      }
+    async deleteById(id) {
+      await prisma.newsletterSubscriber.delete({ where: { id } })
     },
   }
 }

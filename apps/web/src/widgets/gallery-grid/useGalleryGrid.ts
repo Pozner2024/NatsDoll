@@ -1,25 +1,12 @@
-import { ref, onMounted } from 'vue'
-import { fetchHomeGallery, type GalleryItem } from './galleryApi'
+import { computed } from 'vue'
+import { useAsyncData } from '@/shared'
+import { fetchHomeGallery, type HomeGallery } from './galleryApi'
+
+const EMPTY_GALLERY: HomeGallery = { preview: [], pool: [] }
 
 export function useGalleryGrid() {
-  const preview = ref<GalleryItem[]>([])
-  const pool = ref<GalleryItem[]>([])
-  const isLoading = ref(true)
-  const hasError = ref(false)
-
-  onMounted(async () => {
-    isLoading.value = true
-    try {
-      const data = await fetchHomeGallery()
-      preview.value = data.preview
-      pool.value = data.pool
-    } catch (err) {
-      console.error('Failed to load gallery', err instanceof Error ? err.message : String(err))
-      hasError.value = true
-    } finally {
-      isLoading.value = false
-    }
-  })
-
+  const { data, isLoading, hasError } = useAsyncData<HomeGallery>(fetchHomeGallery, EMPTY_GALLERY)
+  const preview = computed(() => data.value.preview)
+  const pool = computed(() => data.value.pool)
   return { preview, pool, isLoading, hasError }
 }

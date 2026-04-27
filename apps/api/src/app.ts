@@ -5,6 +5,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
+import { Prisma } from '@prisma/client'
 import { prisma } from './shared/infrastructure'
 import { AppError } from './shared/errors'
 import { makeGalleryRepository, makeGetHomeGallery, makeGetCollections, makeGalleryRouter } from './features/gallery'
@@ -47,6 +48,13 @@ export function createApp() {
   app.onError((err, c) => {
     if (err instanceof AppError) {
       return c.json({ error: err.message }, err.statusCode)
+    }
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError ||
+      err instanceof Prisma.PrismaClientUnknownRequestError
+    ) {
+      console.error('Prisma error:', err)
+      return c.json({ error: 'Database error' }, 500)
     }
     console.error('Unhandled error:', err)
     return c.json({ error: 'Internal server error' }, 500)

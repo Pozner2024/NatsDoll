@@ -31,7 +31,7 @@ describe('getCollections', () => {
     })
     expect(result[4]).toMatchObject({
       id: 'collection-5',
-      name: 'Enchanted Garden',
+      name: 'Food',
     })
   })
 

@@ -45,18 +45,9 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = token
   }
 
-  async function login(data: { email: string; password: string }): Promise<void> {
-    const res = await apiFetch('/auth/login', { method: 'POST', json: data })
-    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Login failed'))
-    const body = authResponseSchema.parse(await res.json())
-    accessToken.value = body.accessToken
-    user.value = body.user
-  }
-
-  async function register(data: { name: string; email: string; password: string }): Promise<'pending'> {
-    const res = await apiFetch('/auth/register', { method: 'POST', json: data })
-    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Registration failed'))
-    return 'pending'
+  function setAuth(token: string, nextUser: User) {
+    accessToken.value = token
+    user.value = nextUser
   }
 
   function clearState(): void {
@@ -65,12 +56,32 @@ export const useAuthStore = defineStore('auth', () => {
     initPromise = null
   }
 
+  async function login(data: { email: string; password: string }): Promise<void> {
+    const res = await apiFetch('/auth/login', { method: 'POST', json: data })
+    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Login failed'))
+    const body = authResponseSchema.parse(await res.json())
+    setAuth(body.accessToken, body.user)
+  }
+
+  async function register(data: { name: string; email: string; password: string }): Promise<'pending'> {
+    const res = await apiFetch('/auth/register', { method: 'POST', json: data })
+    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Registration failed'))
+    return 'pending'
+  }
+
   async function logout(): Promise<void> {
     try {
       await apiFetch('/auth/logout', { method: 'POST', accessToken: accessToken.value ?? undefined })
     } finally {
       clearState()
     }
+  }
+
+  async function fetchMe(token: string): Promise<User | null> {
+    const meRes = await apiFetch('/auth/me', { accessToken: token })
+    if (!meRes.ok) return null
+    const meBody = meResponseSchema.parse(await meRes.json())
+    return meBody.user
   }
 
   async function initAuth(): Promise<void> {
@@ -84,12 +95,8 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await apiFetch('/auth/refresh', { method: 'POST' })
       if (!res.ok) return
       const body = refreshResponseSchema.parse(await res.json())
-      accessToken.value = body.accessToken
-
-      const meRes = await apiFetch('/auth/me', { accessToken: body.accessToken })
-      if (!meRes.ok) return
-      const meBody = meResponseSchema.parse(await meRes.json())
-      user.value = meBody.user
+      const meUser = await fetchMe(body.accessToken)
+      if (meUser) setAuth(body.accessToken, meUser)
     } catch {
       // тихий фейл — пользователь просто остаётся неавторизованным
     } finally {
@@ -105,17 +112,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function _doLoginWithToken(token: string): Promise<void> {
-    accessToken.value = token
     try {
-      const meRes = await apiFetch('/auth/me', { accessToken: token })
-      if (!meRes.ok) {
-        accessToken.value = null
-        return
-      }
-      const meBody = meResponseSchema.parse(await meRes.json())
-      user.value = meBody.user
+      const meUser = await fetchMe(token)
+      if (meUser) setAuth(token, meUser)
+      else clearState()
     } catch {
-      accessToken.value = null
+      clearState()
     } finally {
       authReady.value = true
       initPromise = null
