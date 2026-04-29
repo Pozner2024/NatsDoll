@@ -39,7 +39,7 @@ const galleryItems = [
   ...Array.from({ length: 14 }, (_, i) => ({
     gallery: GallerySection.COLLECTION_1,
     position: i + 1,
-    imageUrl: `${BASE_URL}/collection%20mermaids/m${i + 1}.webp`,
+    imageUrl: `${BASE_URL}/mermaids/m${i + 1}.webp`,
   })),
   ...Array.from({ length: 14 }, (_, i) => ({
     gallery: GallerySection.COLLECTION_2,
@@ -56,10 +56,15 @@ const galleryItems = [
     position: i + 1,
     imageUrl: `${BASE_URL}/berries/b${i + 1}.webp`,
   })),
-  ...Array.from({ length: 7 }, (_, i) => ({
+  ...Array.from({ length: 14 }, (_, i) => ({
     gallery: GallerySection.COLLECTION_5,
     position: i + 1,
     imageUrl: `${BASE_URL}/food/f${i + 1}.webp`,
+  })),
+  ...Array.from({ length: 14 }, (_, i) => ({
+    gallery: GallerySection.COLLECTION_6,
+    position: i + 1,
+    imageUrl: `${BASE_URL}/halloween/h${i + 1}.webp`,
   })),
 ]
 

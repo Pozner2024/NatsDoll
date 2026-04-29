@@ -5,6 +5,7 @@ import type { GalleryRepository } from '../types'
 const mockRepo: GalleryRepository = {
   getHomePreview: vi.fn(),
   getHomePool: vi.fn(),
+  getCollectionItems: vi.fn(),
 }
 
 describe('getHomeGallery', () => {

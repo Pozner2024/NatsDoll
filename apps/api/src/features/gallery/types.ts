@@ -29,4 +29,5 @@ export const COLLECTIONS_CONFIG: { section: GallerySection; id: string; name: st
   { section: GallerySection.COLLECTION_3, id: 'collection-3', name: 'Art Dolls' },
   { section: GallerySection.COLLECTION_4, id: 'collection-4', name: 'Berries' },
   { section: GallerySection.COLLECTION_5, id: 'collection-5', name: 'Food' },
+  { section: GallerySection.COLLECTION_6, id: 'collection-6', name: 'Halloween' },
 ]

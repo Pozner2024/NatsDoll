@@ -147,6 +147,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints.module' as *;
+
 .collection-section {
   width: 100%;
 
@@ -193,6 +195,16 @@ onBeforeUnmount(() => {
         "m11 m12 m10"
         "m11 m13 m13"
         "m14 m13 m13";
+
+      @include tablet {
+        grid-template-columns: repeat(20, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        aspect-ratio: 5 / 3;
+        grid-template-areas:
+          "m1  m1  m1  m1  m2  m2  m2  m2  m3  m3  m3  m3  m4  m4  m4  m4  m5  m5  m5  m5 "
+          "m6  m6  m6  m6  m6  m7  m7  m7  m7  m7  m8  m8  m8  m8  m8  m9  m9  m9  m9  m9 "
+          "m10 m10 m10 m10 m11 m11 m11 m11 m12 m12 m12 m12 m13 m13 m13 m13 m14 m14 m14 m14";
+      }
     }
 
     &--7 {
@@ -204,6 +216,15 @@ onBeforeUnmount(() => {
         "m4  m5  m3"
         "m4  m6  m6"
         "m7  m6  m6";
+
+      @include tablet {
+        grid-template-columns: repeat(12, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        aspect-ratio: 2 / 1;
+        grid-template-areas:
+          "m1 m1 m1 m2 m2 m2 m3 m3 m3 m4 m4 m4"
+          "m5 m5 m5 m5 m6 m6 m6 m6 m7 m7 m7 m7";
+      }
     }
   }
 

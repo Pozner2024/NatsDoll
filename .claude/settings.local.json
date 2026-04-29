@@ -147,7 +147,9 @@
       "Bash(cat apps/web/vitest.config.ts)",
       "Bash(cat vitest.config.ts)",
       "Bash(cat vitest.config.js)",
-      "Bash(sort -t_ -k1 -n)"
+      "Bash(sort -t_ -k1 -n)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate dev --name add_collection_6 --skip-seed)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma db seed)"
     ]
   }
 }

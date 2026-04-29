@@ -4,7 +4,7 @@
 // подтверждением почты и быстрый вход через Google OAuth
 
 import { Hono } from 'hono'
-import { z } from 'zod'
+import { z } from 'zod/v3'
 import { zValidator } from '@hono/zod-validator'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { requireAuth, createRateLimiter } from '../../../shared/middleware'

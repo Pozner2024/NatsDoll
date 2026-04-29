@@ -23,15 +23,15 @@ describe('getCollections', () => {
 
     const result = await getCollections()
 
-    expect(result).toHaveLength(5)
+    expect(result).toHaveLength(6)
     expect(result[0]).toMatchObject({
       id: 'collection-1',
       name: 'Mermaids',
       items: mockItems,
     })
-    expect(result[4]).toMatchObject({
-      id: 'collection-5',
-      name: 'Food',
+    expect(result[5]).toMatchObject({
+      id: 'collection-6',
+      name: 'Halloween',
     })
   })
 
@@ -41,9 +41,9 @@ describe('getCollections', () => {
 
     await getCollections()
 
-    expect(repo.getCollectionItems).toHaveBeenCalledTimes(5)
+    expect(repo.getCollectionItems).toHaveBeenCalledTimes(6)
     expect(repo.getCollectionItems).toHaveBeenCalledWith(GallerySection.COLLECTION_1)
-    expect(repo.getCollectionItems).toHaveBeenCalledWith(GallerySection.COLLECTION_5)
+    expect(repo.getCollectionItems).toHaveBeenCalledWith(GallerySection.COLLECTION_6)
   })
 
   it('возвращает пустой items для пустой коллекции', async () => {
