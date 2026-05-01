@@ -64,8 +64,11 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
 
     findByGoogleId: (googleId) => prisma.user.findUnique({ where: { googleId } }),
 
+    // emailVerified: true ставится здесь, потому что Google уже подтвердил владение email.
+    // Caller (googleAuth) вызывает linkGoogleId только если existing.emailVerified=true,
+    // но на случай регресса оставляем явный set — чтобы линкованный аккаунт всегда был verified.
     linkGoogleId: (userId, googleId) =>
-      prisma.user.update({ where: { id: userId }, data: { googleId } }),
+      prisma.user.update({ where: { id: userId }, data: { googleId, emailVerified: true } }),
 
     createGoogleUser: (data) =>
       prisma.user.create({ data: { ...data, emailVerified: true } }),

@@ -15,7 +15,19 @@ export function makeGoogleAuth(repo: AuthRepository, getGoogleProfile: GetGoogle
     if (!user) {
       const existing = await repo.findByEmail(profile.email)
       if (existing) {
-        user = await repo.linkGoogleId(existing.id, profile.googleId)
+        // Unverified локальный аккаунт = email никогда не был подтверждён владельцем,
+        // поэтому Google-юзер вытесняет его. Иначе атакующий, заранее зарегавший чужой email
+        // с известным паролем, получил бы доступ к аккаунту жертвы после её Google-входа.
+        if (!existing.emailVerified) {
+          await repo.deleteUser(existing.id)
+          user = await repo.createGoogleUser({
+            name: profile.name,
+            email: profile.email,
+            googleId: profile.googleId,
+          })
+        } else {
+          user = await repo.linkGoogleId(existing.id, profile.googleId)
+        }
       } else {
         user = await repo.createGoogleUser({
           name: profile.name,

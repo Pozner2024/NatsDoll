@@ -27,6 +27,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/account/purchases',
+    name: 'account-purchases',
+    component: () => import('@/pages/AccountPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/account/messages',
+    name: 'account-messages',
+    component: () => import('@/pages/AccountPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/cart',
     name: 'cart',
     component: () => import('@/pages/CartPage.vue'),

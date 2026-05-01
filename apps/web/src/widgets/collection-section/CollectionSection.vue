@@ -22,11 +22,47 @@
           class="collection-section__img"
         >
         <div class="collection-section__zoom-hint">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="6.5" cy="6.5" r="5" stroke="white" stroke-width="1.5"/>
-            <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="6.5" y1="4" x2="6.5" y2="9" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="4" y1="6.5" x2="9" y2="6.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="6.5"
+              cy="6.5"
+              r="5"
+              stroke="white"
+              stroke-width="1.5"
+            />
+            <line
+              x1="10.5"
+              y1="10.5"
+              x2="14.5"
+              y2="14.5"
+              stroke="white"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+            <line
+              x1="6.5"
+              y1="4"
+              x2="6.5"
+              y2="9"
+              stroke="white"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+            <line
+              x1="4"
+              y1="6.5"
+              x2="9"
+              y2="6.5"
+              stroke="white"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
           </svg>
         </div>
       </button>
@@ -45,9 +81,31 @@
         aria-label="Close"
         @click.stop="closeLightbox"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <line x1="2" y1="2" x2="18" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          <line x1="18" y1="2" x2="2" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <line
+            x1="2"
+            y1="2"
+            x2="18"
+            y2="18"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <line
+            x1="18"
+            y1="2"
+            x2="2"
+            y2="18"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
         </svg>
       </button>
       <button
@@ -57,8 +115,20 @@
         aria-label="Previous"
         @click.stop="prev"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polyline points="13,3 6,10 13,17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <polyline
+            points="13,3 6,10 13,17"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
       </button>
       <img
@@ -74,8 +144,20 @@
         aria-label="Next"
         @click.stop="next"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polyline points="7,3 14,10 7,17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <polyline
+            points="7,3 14,10 7,17"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
       </button>
     </div>
@@ -325,7 +407,6 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     transition: background 0.2s ease;
-    z-index: 1;
 
     &--prev { left: 16px; }
     &--next { right: 16px; }

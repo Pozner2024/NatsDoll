@@ -115,6 +115,8 @@ onBeforeUnmount(() => {
   if (props.isOpen) {
     unlockScroll()
     window.removeEventListener('keydown', onKeydown)
+    previousFocus?.focus?.()
+    previousFocus = null
   }
 })
 

@@ -73,7 +73,7 @@ describe('googleAuth', () => {
     expect(result.user.id).toBe('u1')
   })
 
-  it('привязывает googleId к существующему пользователю найденному по email', async () => {
+  it('привязывает googleId к существующему verified пользователю найденному по email', async () => {
     const repo = makeRepo({
       findByGoogleId: vi.fn().mockResolvedValue(null),
       findByEmail: vi.fn().mockResolvedValue(mockUser),
@@ -83,7 +83,28 @@ describe('googleAuth', () => {
     const result = await googleAuth('auth-code')
 
     expect(repo.linkGoogleId).toHaveBeenCalledWith('u1', 'g1')
+    expect(repo.deleteUser).not.toHaveBeenCalled()
     expect(repo.createGoogleUser).not.toHaveBeenCalled()
     expect(result.user.id).toBe('u1')
+  })
+
+  it('удаляет существующего unverified пользователя и создаёт нового через Google (account takeover protection)', async () => {
+    const unverifiedUser = { ...mockUser, emailVerified: false, googleId: null, passwordHash: 'hash' }
+    const repo = makeRepo({
+      findByGoogleId: vi.fn().mockResolvedValue(null),
+      findByEmail: vi.fn().mockResolvedValue(unverifiedUser),
+    })
+    const googleAuth = makeGoogleAuth(repo, mockGetGoogleProfile)
+
+    const result = await googleAuth('auth-code')
+
+    expect(repo.deleteUser).toHaveBeenCalledWith('u1')
+    expect(repo.createGoogleUser).toHaveBeenCalledWith({
+      name: 'Test User',
+      email: 'test@example.com',
+      googleId: 'g1',
+    })
+    expect(repo.linkGoogleId).not.toHaveBeenCalled()
+    expect(result.user.email).toBe('test@example.com')
   })
 })

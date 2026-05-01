@@ -340,7 +340,8 @@ async function handleRegister() {
 }
 
 function handleGoogle() {
-  sessionStorage.setItem('auth_redirect', window.location.pathname)
+  const { pathname, search, hash } = window.location
+  sessionStorage.setItem('auth_redirect', pathname + search + hash)
   window.location.href = '/api/auth/google'
 }
 </script>
