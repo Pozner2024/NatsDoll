@@ -1,10 +1,51 @@
-import type { PrismaClient } from '@prisma/client'
-import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository } from '../types'
+import type { PrismaClient, Prisma } from '@prisma/client'
+import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder } from '../types'
+
+const PRODUCT_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  price: true,
+  images: true,
+  stock: true,
+} as const
+
+function orderByForSort(sort: ProductSortOrder): Prisma.ProductOrderByWithRelationInput {
+  if (sort === 'price-asc') return { price: 'asc' }
+  if (sort === 'price-desc') return { price: 'desc' }
+  return { createdAt: 'desc' }
+}
 
 export function makeProductRepository(prisma: PrismaClient): ProductRepository {
   return {
-    async findMany(_params: ProductListParams) {
-      return { items: [] as ProductListItem[], total: 0 }
+    async findMany(params: ProductListParams) {
+      const where: Prisma.ProductWhereInput = {
+        isPublished: true,
+        deletedAt: null,
+        ...(params.category ? { category: { slug: params.category } } : {}),
+      }
+
+      const [rows, total] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          orderBy: orderByForSort(params.sort),
+          select: PRODUCT_SELECT,
+          skip: (params.page - 1) * params.limit,
+          take: params.limit,
+        }),
+        prisma.product.count({ where }),
+      ])
+
+      const items: ProductListItem[] = rows.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        price: r.price.toNumber(),
+        image: r.images[0] ?? null,
+        stock: r.stock,
+      }))
+
+      return { items, total }
     },
     async listCategories(): Promise<CategoryListItem[]> {
       return prisma.category.findMany({
