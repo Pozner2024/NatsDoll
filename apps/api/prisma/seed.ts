@@ -5,7 +5,8 @@
  * повторных запусках, предотвращая появление дубликатов»
  */
 
-import { PrismaClient, GallerySection } from '@prisma/client' 
+import { PrismaClient, GallerySection } from '@prisma/client'
+import slugify from 'slugify'
 
 const prisma = new PrismaClient()
 
@@ -68,6 +69,23 @@ const galleryItems = [
   })),
 ]
 
+const sampleProducts = [
+  { name: 'Sleeping bunny figurine', categorySlug: 'art-dolls', price: 24.0, stock: 5, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Bunny'] },
+  { name: 'Forest fox magnet', categorySlug: 'birthday-gifts', price: 12.5, stock: 0, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Fox'] },
+  { name: 'Mini cake topper — heart', categorySlug: 'cake-toppers', price: 8.0, stock: 12, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Heart'] },
+  { name: 'Halloween pumpkin earrings', categorySlug: 'halloween-gifts', price: 18.0, stock: 3, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Pumpkin'] },
+  { name: 'Christmas tree miniature', categorySlug: 'christmas-gifts', price: 30.0, stock: 2, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Tree'] },
+  { name: 'Valentines bear with heart', categorySlug: 'valentines-day-gifts', price: 22.0, stock: 7, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Bear'] },
+  { name: 'Graduation cap badge', categorySlug: 'graduation-gifts', price: 15.0, stock: 4, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Cap'] },
+  { name: 'Tiny dollhouse teapot', categorySlug: 'dollhouse-miniature', price: 9.5, stock: 8, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Teapot'] },
+  { name: 'Party favor — unicorn pack of 10', categorySlug: 'party-favors-bulk', price: 45.0, stock: 1, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Unicorns'] },
+  { name: 'Strawberry charm', categorySlug: 'art-dolls', price: 6.0, stock: 20, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Strawberry'] },
+  { name: 'Sushi set magnets', categorySlug: 'cake-toppers', price: 14.0, stock: 0, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Sushi'] },
+  { name: 'Mermaid figurine', categorySlug: 'art-dolls', price: 32.0, stock: 6, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Mermaid'] },
+  { name: 'Cute hedgehog brooch', categorySlug: 'birthday-gifts', price: 11.0, stock: 9, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Hedgehog'] },
+  { name: 'Mini food platter', categorySlug: 'dollhouse-miniature', price: 16.5, stock: 5, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Platter'] },
+]
+
 async function main() {
   console.log('Seeding categories...')
 
@@ -92,6 +110,44 @@ async function main() {
   }
 
   console.log(`Seeded ${galleryItems.length} gallery items.`)
+
+  console.log('Seeding products...')
+
+  const categoriesBySlug = new Map(
+    (await prisma.category.findMany()).map((c) => [c.slug, c.id]),
+  )
+
+  for (const p of sampleProducts) {
+    const categoryId = categoriesBySlug.get(p.categorySlug)
+    if (!categoryId) {
+      console.warn(`Skipping ${p.name}: category ${p.categorySlug} not found`)
+      continue
+    }
+    const baseSlug = slugify(p.name, { lower: true, strict: true })
+    await prisma.product.upsert({
+      where: { slug: baseSlug },
+      update: {
+        name: p.name,
+        price: p.price,
+        stock: p.stock,
+        images: p.images,
+        isPublished: true,
+        categoryId,
+      },
+      create: {
+        name: p.name,
+        slug: baseSlug,
+        description: `Handmade polymer clay item: ${p.name}.`,
+        price: p.price,
+        stock: p.stock,
+        images: p.images,
+        isPublished: true,
+        categoryId,
+      },
+    })
+  }
+
+  console.log(`Seeded ${sampleProducts.length} products.`)
 }
 
 main()
