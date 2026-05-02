@@ -1,7 +1,7 @@
 <template>
-  <PlaceholderPage title="Shop" />
+  <ShopCatalog />
 </template>
 
 <script setup lang="ts">
-import { PlaceholderPage } from '@/shared'
+import { ShopCatalog } from '@/widgets/shop-catalog'
 </script>
