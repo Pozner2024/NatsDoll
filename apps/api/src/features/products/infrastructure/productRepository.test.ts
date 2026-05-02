@@ -15,7 +15,7 @@ describe('productRepository.listCategories', () => {
       { id: '1', slug: 'animals', name: 'Animals' },
       { id: '2', slug: 'sweet', name: 'Sweet' },
     ]
-    vi.mocked(prisma.category.findMany).mockResolvedValue(fake)
+    vi.mocked(prisma.category.findMany).mockResolvedValue(fake as never)
 
     const repo = makeProductRepository(prisma)
     const result = await repo.listCategories()
@@ -42,7 +42,7 @@ describe('productRepository.findMany', () => {
   it('filters by isPublished and deletedAt and applies pagination', async () => {
     const prisma = makePrismaMock()
     vi.mocked(prisma.product.findMany).mockResolvedValue([
-      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: ['img1'], stock: 1 },
+      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: ['img1'], stock: 1 } as never,
     ])
     vi.mocked(prisma.product.count).mockResolvedValue(1)
 
@@ -116,7 +116,7 @@ describe('productRepository.findMany', () => {
   it('returns null image when images array is empty', async () => {
     const prisma = makePrismaMock()
     vi.mocked(prisma.product.findMany).mockResolvedValue([
-      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: [], stock: 1 },
+      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: [], stock: 1 } as never,
     ])
     vi.mocked(prisma.product.count).mockResolvedValue(1)
 

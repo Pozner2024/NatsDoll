@@ -1,0 +1,4 @@
+export { makeProductRepository } from './infrastructure/productRepository'
+export { makeListProducts } from './application/listProducts'
+export { makeListCategories } from './application/listCategories'
+export { makeProductsRouter } from './presentation/productRoutes'

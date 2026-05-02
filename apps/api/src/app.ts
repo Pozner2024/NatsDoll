@@ -16,6 +16,12 @@ import {
 } from './features/newsletter'
 import { makeContactRepository, makeSubmit, makeContactRouter } from './features/contact'
 import {
+  makeProductRepository,
+  makeListProducts,
+  makeListCategories,
+  makeProductsRouter,
+} from './features/products'
+import {
   makeAuthRepository,
   makeRegister,
   makeLogin,
@@ -79,6 +85,12 @@ export function createApp() {
   const contactRepo = makeContactRepository(prisma)
   const submit = makeSubmit(contactRepo)
   app.route('/contact', makeContactRouter(submit))
+
+  // Products
+  const productRepo = makeProductRepository(prisma)
+  const listProducts = makeListProducts(productRepo)
+  const listCategories = makeListCategories(productRepo)
+  app.route('/', makeProductsRouter(listProducts, listCategories))
 
   // Auth
   const authRepo = makeAuthRepository(prisma)
