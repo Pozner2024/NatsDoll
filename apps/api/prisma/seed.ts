@@ -11,15 +11,15 @@ import slugify from 'slugify'
 const prisma = new PrismaClient()
 
 const categories = [
-  { name: 'Art Dolls', slug: 'art-dolls' },
-  { name: 'Birthday Gifts', slug: 'birthday-gifts' },
-  { name: 'Christmas Gifts', slug: 'christmas-gifts' },
-  { name: 'Valentines Day Gifts', slug: 'valentines-day-gifts' },
-  { name: 'Halloween Gifts', slug: 'halloween-gifts' },
-  { name: 'Graduation Gifts', slug: 'graduation-gifts' },
-  { name: 'Cake Toppers', slug: 'cake-toppers' },
-  { name: 'Dollhouse Miniature', slug: 'dollhouse-miniature' },
-  { name: 'Party favors BULK', slug: 'party-favors-bulk' },
+  { name: 'Art Dolls', slug: 'art-dolls', position: 10 },
+  { name: 'Birthday Gifts', slug: 'birthday-gifts', position: 20 },
+  { name: 'Christmas Gifts', slug: 'christmas-gifts', position: 30 },
+  { name: 'Valentines Day Gifts', slug: 'valentines-day-gifts', position: 40 },
+  { name: 'Halloween Gifts', slug: 'halloween-gifts', position: 50 },
+  { name: 'Graduation Gifts', slug: 'graduation-gifts', position: 60 },
+  { name: 'Cake Toppers', slug: 'cake-toppers', position: 70 },
+  { name: 'Dollhouse Miniature', slug: 'dollhouse-miniature', position: 80 },
+  { name: 'Party favors BULK', slug: 'party-favors-bulk', position: 90 },
 ]
 
 const BASE_URL =
@@ -92,7 +92,7 @@ async function main() {
   for (const category of categories) {
     await prisma.category.upsert({
       where: { slug: category.slug },
-      update: {},
+      update: { name: category.name, position: category.position },
       create: category,
     })
   }

@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchProducts, type Product, type ProductSortOrder } from '@/entities/product'
-import { useShopCatalogStore } from './shopCatalogStore'
+import { useCategoryStore } from '@/entities/category'
 
 export const PAGE_SIZE = 12
 const VALID_SORTS: ProductSortOrder[] = ['newest', 'price-asc', 'price-desc']
@@ -19,7 +19,7 @@ function parsePage(raw: unknown): number {
 
 export function useShopCatalog() {
   const route = useRoute()
-  const store = useShopCatalogStore()
+  const categoryStore = useCategoryStore()
 
   const category = computed(() => {
     const c = route.params.category
@@ -64,7 +64,11 @@ export function useShopCatalog() {
 
   watch([category, sort, page], () => { void load() }, { immediate: true })
 
-  void store.loadCategories()
+  void categoryStore.load()
+
+  async function retry() {
+    await Promise.all([load(), categoryStore.load()])
+  }
 
   return {
     category,
@@ -75,8 +79,8 @@ export function useShopCatalog() {
     totalPages,
     isLoading,
     error,
-    categories: computed(() => store.categories),
-    categoriesError: computed(() => store.categoriesError),
-    retry: load,
+    categories: computed(() => categoryStore.categories),
+    categoriesError: computed(() => categoryStore.error),
+    retry,
   }
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import router from '@/router'
-import { shopCategories } from '@/widgets/app-header'
+import { staticShopItems } from '@/widgets/app-header'
 
 const STATIC_ROUTES = ['/gallery', '/account', '/cart']
 
@@ -15,10 +15,15 @@ describe('router', () => {
     expect(match.matched.length).toBeGreaterThan(0)
   })
 
-  it('все пути shopCategories резолвятся роутером', () => {
-    for (const cat of shopCategories) {
-      const match = router.resolve(cat.to)
-      expect(match.matched.length, `нет маршрута для ${cat.to}`).toBeGreaterThan(0)
+  it('статичные пункты shop резолвятся роутером', () => {
+    for (const item of staticShopItems) {
+      const match = router.resolve(item.to)
+      expect(match.matched.length, `нет маршрута для ${item.to}`).toBeGreaterThan(0)
     }
+  })
+
+  it('параметрический /shop/:category резолвится для произвольного slug', () => {
+    const match = router.resolve('/shop/any-category-slug')
+    expect(match.matched.length).toBeGreaterThan(0)
   })
 })

@@ -34,10 +34,6 @@ defineProps<{
     pointer-events: none;
   }
 
-  @media (width >= 480px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   @include tablet {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;

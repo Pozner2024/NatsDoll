@@ -6,7 +6,7 @@
     <RouterLink
       class="category-pills__pill"
       :class="{ 'category-pills__pill--active': !activeSlug }"
-      :to="{ name: 'shop', params: { category: '' }, query: { sort: currentSort } }"
+      :to="{ name: 'shop', query: queryWithSort }"
     >
       All
     </RouterLink>
@@ -15,7 +15,7 @@
       :key="cat.id"
       class="category-pills__pill"
       :class="{ 'category-pills__pill--active': activeSlug === cat.slug }"
-      :to="{ name: 'shop', params: { category: cat.slug }, query: { sort: currentSort } }"
+      :to="{ name: 'shop', params: { category: cat.slug }, query: queryWithSort }"
     >
       {{ cat.name }}
     </RouterLink>
@@ -23,14 +23,19 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { Category } from '@/entities/category'
 
-defineProps<{
+const props = defineProps<{
   categories: Category[]
   activeSlug: string | undefined
   currentSort: string
 }>()
+
+const queryWithSort = computed(() =>
+  props.currentSort === 'newest' ? {} : { sort: props.currentSort },
+)
 </script>
 
 <style scoped lang="scss">
@@ -41,7 +46,14 @@ defineProps<{
   gap: 0.5rem;
   overflow-x: auto;
   padding: 0.25rem 0;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   &__pill {
     flex-shrink: 0;
@@ -71,6 +83,8 @@ defineProps<{
   @include tablet {
     flex-wrap: wrap;
     overflow-x: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 }
 </style>

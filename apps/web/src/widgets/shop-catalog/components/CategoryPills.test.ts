@@ -56,6 +56,14 @@ describe('CategoryPills', () => {
     expect(href).not.toContain('/shop/animals')
   })
 
+  it('"All" link drops sort=newest from URL when sort is default', () => {
+    const wrapper = mountPills('animals', 'newest')
+    const allLink = wrapper.findAll('a.category-pills__pill')[0]!
+    const href = allLink.attributes('href')!
+    expect(href).not.toContain('sort=')
+    expect(href).toContain('/shop')
+  })
+
   it('category link goes to /shop/:slug, preserves sort, drops page', () => {
     const wrapper = mountPills(undefined, 'price-asc')
     const animalsLink = wrapper.findAll('a.category-pills__pill')[1]!

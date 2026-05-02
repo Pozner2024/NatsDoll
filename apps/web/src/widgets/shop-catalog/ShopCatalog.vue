@@ -1,7 +1,9 @@
 <template>
   <section class="shop-catalog">
     <header class="shop-catalog__header">
-      <h1 class="shop-catalog__title">The shop</h1>
+      <h1 class="shop-catalog__title">
+        THE SHOP
+      </h1>
       <p
         v-if="categoryName"
         class="shop-catalog__crumb"
@@ -18,6 +20,12 @@
     <ShopCatalogSkeleton v-if="isFirstLoad" />
 
     <template v-else>
+      <ErrorBar
+        v-if="categoriesError"
+        message="Couldn't load categories."
+        @retry="retry"
+      />
+
       <CategoryPills
         :categories="categories"
         :active-slug="category"
@@ -71,7 +79,7 @@ const {
   category, sort, page,
   products, total, totalPages,
   isLoading, error,
-  categories,
+  categories, categoriesError,
   retry,
 } = useShopCatalog()
 
@@ -90,15 +98,20 @@ const showSortBar = computed(() => total.value > 0 && !error.value)
 .shop-catalog {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 4rem;
+  padding: 0 1rem 4rem;
 
   &__header {
+    width: 100%;
+    padding: 28px 20px 0;
     margin-bottom: 1.5rem;
+    text-align: right;
   }
 
   &__title {
-    font-family: var(--font-display);
-    font-size: var(--fs-section-heading);
+    font-family: var(--font-brand);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    line-height: 0.9;
     color: var(--color-text);
     margin-bottom: 0.5rem;
   }

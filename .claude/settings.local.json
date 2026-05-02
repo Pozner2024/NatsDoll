@@ -149,7 +149,20 @@
       "Bash(cat vitest.config.js)",
       "Bash(sort -t_ -k1 -n)",
       "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate dev --name add_collection_6 --skip-seed)",
-      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma db seed)"
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma db seed)",
+      "Bash(npx -w apps/api vitest run src/features/products/infrastructure/productRepository.test.ts)",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(findstr \":3000\\\\|:5173\")",
+      "Bash(netstat -ano -p tcp)",
+      "Bash(findstr \":3000\")",
+      "Bash(tasklist /FI \"PID eq 12728\" /FO CSV)",
+      "PowerShell(Get-CimInstance *)",
+      "Bash(findstr \":5432\")",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell($env:DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\"; & npx --prefix \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\" prisma migrate dev --name add_category_position --schema \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\prisma\\\\schema.prisma\" 2>&1 | Select-Object -Last 25)",
+      "PowerShell(Get-Process *)",
+      "PowerShell($env:DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\"; & npx --prefix \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\" prisma generate --schema \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\prisma\\\\schema.prisma\" 2>&1 | Select-Object -Last 8)",
+      "PowerShell($env:DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\"; Push-Location \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\"; & npx tsx prisma/seed.ts 2>&1 | Select-Object -Last 15; Pop-Location)"
     ]
   }
 }

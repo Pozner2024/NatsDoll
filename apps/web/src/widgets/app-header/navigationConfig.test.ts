@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { navItems, shopCategories } from './navigationConfig'
+import { navItems, staticShopItems } from './navigationConfig'
 
 describe('navItems', () => {
   it('каждый пункт имеет label и to', () => {
@@ -21,22 +21,22 @@ describe('navItems', () => {
   })
 })
 
-describe('shopCategories', () => {
-  it('каждая категория имеет label и to', () => {
-    for (const cat of shopCategories) {
-      expect(cat.label).toBeTruthy()
-      expect(cat.to).toBeTruthy()
+describe('staticShopItems', () => {
+  it('каждый пункт имеет label и to', () => {
+    for (const item of staticShopItems) {
+      expect(item.label).toBeTruthy()
+      expect(item.to).toBeTruthy()
     }
   })
 
   it('все пути начинаются с /shop', () => {
-    for (const cat of shopCategories) {
-      expect(cat.to).toMatch(/^\/shop/)
+    for (const item of staticShopItems) {
+      expect(item.to).toMatch(/^\/shop/)
     }
   })
 
   it('нет дублирующихся путей', () => {
-    const paths = shopCategories.map((c) => c.to)
+    const paths = staticShopItems.map((i) => i.to)
     expect(new Set(paths).size).toBe(paths.length)
   })
 })

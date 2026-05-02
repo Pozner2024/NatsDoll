@@ -43,7 +43,7 @@
           class="desktop-nav__submenu"
         >
           <RouterLink
-            v-for="cat in shopCategories"
+            v-for="cat in shopItems"
             :key="cat.to"
             :to="cat.to"
             class="desktop-nav__sublink"
@@ -167,18 +167,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { navItems, shopCategories, homeItem } from '../navigationConfig'
+import { navItems, staticShopItems, homeItem, type NavItem } from '../navigationConfig'
 import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
 import { useAuthStore } from '@/entities/user'
+import { useCategoryStore } from '@/entities/category'
 import { useClickOutside } from '@/shared'
 
 const { open: openContactModal } = useContactModal()
 const { open: openAuthModal } = useAuthModal()
 const authStore = useAuthStore()
+const categoryStore = useCategoryStore()
 const route = useRoute()
 const router = useRouter()
 const shopOpen = ref(false)
@@ -186,6 +188,13 @@ const profileOpen = ref(false)
 const isShopActive = computed(() => route.path.startsWith('/shop'))
 const dropdownRef = ref<HTMLElement | null>(null)
 const profileDropdownRef = ref<HTMLElement | null>(null)
+
+const shopItems = computed<NavItem[]>(() => [
+  ...staticShopItems,
+  ...categoryStore.categories.map((c) => ({ label: c.name, to: `/shop/${c.slug}` })),
+])
+
+onMounted(() => { void categoryStore.load() })
 
 function closeShop() {
   shopOpen.value = false

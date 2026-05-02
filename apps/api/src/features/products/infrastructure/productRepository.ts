@@ -49,7 +49,7 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
     },
     async listCategories(): Promise<CategoryListItem[]> {
       return prisma.category.findMany({
-        orderBy: { name: 'asc' },
+        orderBy: { position: 'asc' },
         select: { id: true, slug: true, name: true },
       })
     },

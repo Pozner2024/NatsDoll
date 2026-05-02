@@ -7,13 +7,12 @@ vi.mock('@/entities/product', async (orig) => {
   const actual = await orig<typeof import('@/entities/product')>()
   return { ...actual, fetchProducts: vi.fn() }
 })
-vi.mock('@/entities/category', async (orig) => {
-  const actual = await orig<typeof import('@/entities/category')>()
-  return { ...actual, fetchCategories: vi.fn() }
-})
+vi.mock('@/entities/category/categoryApi', () => ({
+  fetchCategories: vi.fn(),
+}))
 
 import { fetchProducts } from '@/entities/product'
-import { fetchCategories } from '@/entities/category'
+import { fetchCategories } from '@/entities/category/categoryApi'
 import ShopCatalog from './ShopCatalog.vue'
 
 const mockFetchProducts = vi.mocked(fetchProducts)
@@ -72,7 +71,7 @@ describe('ShopCatalog', () => {
   it('renders header "The shop" without breadcrumb on /shop', async () => {
     mockFetchProducts.mockResolvedValue(sample)
     const wrapper = await mountShop('/shop')
-    expect(wrapper.find('.shop-catalog__title').text()).toBe('The shop')
+    expect(wrapper.find('.shop-catalog__title').text()).toBe('THE SHOP')
     expect(wrapper.find('.shop-catalog__crumb').exists()).toBe(false)
   })
 

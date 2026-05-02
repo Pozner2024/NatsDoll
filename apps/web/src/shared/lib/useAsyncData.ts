@@ -6,6 +6,15 @@ export type AsyncDataState<T> = {
   hasError: Ref<boolean>
 }
 
+/**
+ * Универсальный Composable для загрузки асинхронных данных (например, с сервера).
+ * Автоматически управляет состояниями загрузки (isLoading) и ошибки (hasError).
+ * Данные запрашиваются автоматически при появлении компонента на экране (onMounted).
+ *
+ * @param fetcher - Асинхронная функция, которая идет в сеть за данными.
+ * @param initial - Стартовое значение-заглушка (пока данные еще скачиваются).
+ * @returns Объект с реактивными переменными: { data, isLoading, hasError }
+ */
 export function useAsyncData<T>(fetcher: () => Promise<T>, initial: T): AsyncDataState<T> {
   const data = ref(initial) as Ref<T>
   const isLoading = ref(true)

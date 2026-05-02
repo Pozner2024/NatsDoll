@@ -48,7 +48,7 @@
             class="burger-menu__submenu"
           >
             <RouterLink
-              v-for="cat in shopCategories"
+              v-for="cat in shopItems"
               :key="cat.to"
               :to="cat.to"
               role="menuitem"
@@ -142,17 +142,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
-import { navItems, shopCategories, homeItem } from "../navigationConfig";
+import { navItems, staticShopItems, homeItem, type NavItem } from "../navigationConfig";
 import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
 import { useAuthModal } from '@/features/auth-modal'
 import { useAuthStore } from '@/entities/user'
+import { useCategoryStore } from '@/entities/category'
 
 const { open: openContactModal } = useContactModal()
 const { open: openAuthModal } = useAuthModal()
 const authStore = useAuthStore()
+const categoryStore = useCategoryStore()
 
 const props = defineProps<{
   isOpen: boolean;
@@ -170,6 +172,13 @@ const navRef = ref<HTMLElement | null>(null);
 
 const isShopActive = computed(() => route.path.startsWith("/shop"));
 const isAdmin = computed(() => authStore.isLoggedIn && authStore.user?.role === 'ADMIN');
+
+const shopItems = computed<NavItem[]>(() => [
+  ...staticShopItems,
+  ...categoryStore.categories.map((c) => ({ label: c.name, to: `/shop/${c.slug}` })),
+])
+
+onMounted(() => { void categoryStore.load() })
 
 watch(
   () => props.isOpen,

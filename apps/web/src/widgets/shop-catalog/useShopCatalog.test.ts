@@ -7,7 +7,7 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 vi.mock('@/entities/product', () => ({
   fetchProducts: vi.fn(),
 }))
-vi.mock('@/entities/category', () => ({
+vi.mock('@/entities/category/categoryApi', () => ({
   fetchCategories: vi.fn().mockResolvedValue([]),
 }))
 

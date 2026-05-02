@@ -9,6 +9,11 @@ type ApiRequestInit = Omit<RequestInit, 'body'> & {
   accessToken?: string
 }
 
+/**
+ * Базовая обертка над встроенным `fetch` для работы с API нашего приложения.
+ * Автоматически подставляет префикс `/api`, обрабатывает JSON-тело запроса
+ * и добавляет токен авторизации (Bearer), если он был передан.
+ */
 export async function apiFetch(path: string, init: ApiRequestInit = {}): Promise<Response> {
   const { json, headers, accessToken, ...rest } = init
   const mergedHeaders: Record<string, string> = {
@@ -53,6 +58,13 @@ async function doRefresh(): Promise<string | null> {
   return body.accessToken
 }
 
+/**
+ * Главная функция для выполнения защищенных запросов (требующих авторизации).
+ * Обладает встроенным механизмом "перехвата" (interceptor):
+ * Если токен протух (ошибка 401), функция автоматически приостанавливает запрос,
+ * обращается к серверу за новым токеном (refresh), сохраняет его и незаметно повторяет 
+ * оригинальный запрос, так что пользователь не видит никакой ошибки.
+ */
 export async function authFetch(path: string, init: ApiRequestInit = {}): Promise<Response> {
   if (!authCallbacks) return apiFetch(path, init)
 

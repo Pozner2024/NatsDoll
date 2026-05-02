@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createPinia } from 'pinia'
+
+vi.mock('@/entities/category/categoryApi', () => ({
+  fetchCategories: vi.fn().mockResolvedValue([]),
+}))
+
 import AppHeader from './AppHeader.vue'
 import { BurgerMenu } from './components'
 

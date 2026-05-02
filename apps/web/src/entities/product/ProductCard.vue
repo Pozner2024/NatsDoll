@@ -26,20 +26,20 @@
         <p class="product-card__price">{{ formatPrice(product.price) }}</p>
       </div>
     </RouterLink>
-    <button
+    <AppButton
       type="button"
       class="product-card__btn"
       :disabled="product.stock === 0"
       @click="onAdd"
     >
       {{ product.stock === 0 ? 'Sold out' : 'Add to cart' }}
-    </button>
+    </AppButton>
   </article>
 </template>
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { formatPrice } from '@/shared'
+import { AppButton, formatPrice } from '@/shared'
 import type { Product } from './types'
 
 const props = defineProps<{ product: Product }>()
@@ -122,25 +122,13 @@ function onAdd() {
   }
 
   &__btn {
+    display: block;
     margin: 0 0.75rem 0.75rem;
-    padding: 0.6rem 1rem;
-    background: var(--color-accent);
-    color: var(--color-white);
-    border: none;
-    border-radius: 4px;
-    font-family: var(--font-display);
-    font-size: var(--fs-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    transition: background-color 0.2s ease;
-
-    &:hover:not(:disabled) {
-      background: var(--color-text-muted);
-    }
+    text-align: center;
 
     &:disabled {
-      background: var(--color-border);
-      color: var(--color-text-muted);
+      opacity: 0.5;
+      pointer-events: none;
     }
   }
 }
