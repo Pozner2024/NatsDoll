@@ -16,14 +16,13 @@
       @add-to-cart="onAddToCart"
     />
     <slot name="reviews" />
-    <MoreFromShop :products="moreProducts" />
+    <MoreFromShop v-if="!moreLoading && moreProducts.length > 0" :products="moreProducts" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAsyncData } from '@/shared'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
@@ -33,17 +32,38 @@ import type { ProductDetail, Product } from '@/entities/product'
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
-const { data: product, isLoading, hasError } = useAsyncData<ProductDetail | null>(
-  () => fetchProduct(slug.value),
-  null,
-)
+const product = ref<ProductDetail | null>(null)
+const isLoading = ref(true)
+const hasError = ref(false)
 
-const { data: moreProducts } = useAsyncData<Product[]>(
-  async () => {
-    const res = await fetchProducts({ sort: 'newest', page: 1, limit: 8 })
-    return res.items.filter((p) => p.slug !== slug.value).slice(0, 6)
+const moreProducts = ref<Product[]>([])
+const moreLoading = ref(false)
+
+watch(
+  slug,
+  async (newSlug) => {
+    isLoading.value = true
+    hasError.value = false
+    product.value = null
+    try {
+      product.value = await fetchProduct(newSlug)
+    } catch {
+      hasError.value = true
+    } finally {
+      isLoading.value = false
+    }
+
+    moreLoading.value = true
+    try {
+      const res = await fetchProducts({ sort: 'newest', page: 1, limit: 8 })
+      moreProducts.value = res.items.filter((p) => p.slug !== newSlug).slice(0, 6)
+    } catch {
+      moreProducts.value = []
+    } finally {
+      moreLoading.value = false
+    }
   },
-  [],
+  { immediate: true },
 )
 
 function onAddToCart() {
