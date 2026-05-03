@@ -22,3 +22,14 @@ export type ProductListParams = {
   page: number
   limit: number
 }
+
+export type ProductDetail = {
+  id: string
+  slug: string
+  name: string
+  description: string
+  price: number
+  images: string[]
+  stock: number
+  category: string
+}
