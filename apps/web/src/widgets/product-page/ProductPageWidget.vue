@@ -15,8 +15,7 @@
       :product="product"
       @add-to-cart="onAddToCart"
     />
-    <p class="product-page-widget__section-label">Reviews</p>
-    <ReviewsSlider />
+    <slot name="reviews" />
     <MoreFromShop :products="moreProducts" />
   </div>
 </template>
@@ -26,7 +25,6 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAsyncData } from '@/shared'
 import { fetchProduct, fetchProducts } from '@/entities/product'
-import { ReviewsSlider } from '@/widgets/reviews-slider'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -55,15 +53,6 @@ function onAddToCart() {
 
 <style scoped lang="scss">
 .product-page-widget {
-  &__section-label {
-    font-size: 0.7rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--color-accent);
-    opacity: 0.75;
-    padding: 1.25rem 1rem 0;
-  }
-
   &__skeleton {
     width: 100%;
     aspect-ratio: 1;
