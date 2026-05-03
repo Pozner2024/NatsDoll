@@ -58,6 +58,11 @@ const routes: RouteRecordRaw[] = [
     name: 'shop',
     component: () => import('@/pages/ShopPage.vue'),
   },
+  {
+    path: '/product/:slug',
+    name: 'product',
+    component: () => import('@/pages/ProductPage.vue'),
+  },
 ]
 
 const router = createRouter({
