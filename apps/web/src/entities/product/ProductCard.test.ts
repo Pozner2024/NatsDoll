@@ -13,7 +13,7 @@ const baseProduct: Product = {
   stock: 5,
 }
 
-function mountCard(product: Product) {
+function mountCard(product: Product, extraProps: Record<string, unknown> = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -22,7 +22,7 @@ function mountCard(product: Product) {
     ],
   })
   return mount(ProductCard, {
-    props: { product },
+    props: { product, ...extraProps },
     global: { plugins: [router] },
   })
 }
@@ -61,6 +61,16 @@ describe('ProductCard', () => {
     expect(btn.text()).toBe('Sold out')
     expect(btn.attributes('disabled')).toBeDefined()
     expect(wrapper.find('.product-card__badge').text()).toBe('Sold out')
+  })
+
+  it('hides button when hideButton prop is true', () => {
+    const wrapper = mountCard(baseProduct, { hideButton: true })
+    expect(wrapper.find('button.product-card__btn').exists()).toBe(false)
+  })
+
+  it('shows button by default when hideButton is not passed', () => {
+    const wrapper = mountCard(baseProduct)
+    expect(wrapper.find('button.product-card__btn').exists()).toBe(true)
   })
 
   it('button click calls console.log("add to cart", id) and does NOT trigger navigation', async () => {

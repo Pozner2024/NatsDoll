@@ -27,6 +27,7 @@
       </div>
     </RouterLink>
     <AppButton
+      v-if="!props.hideButton"
       type="button"
       class="product-card__btn"
       :disabled="product.stock === 0"
@@ -42,7 +43,7 @@ import { RouterLink } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
 import type { Product } from './types'
 
-const props = defineProps<{ product: Product }>()
+const props = defineProps<{ product: Product; hideButton?: boolean }>()
 
 function onAdd() {
   console.log('add to cart', props.product.id)
