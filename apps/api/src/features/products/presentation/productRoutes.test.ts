@@ -1,6 +1,18 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
 import { makeProductsRouter } from './productRoutes'
+import type { ProductDetail } from '../types'
+
+const sampleDetail: ProductDetail = {
+  id: 'p1',
+  slug: 'aurora-doll',
+  name: 'Aurora',
+  description: 'A beautiful art doll.',
+  price: 148,
+  images: ['img1.jpg'],
+  stock: 1,
+  category: 'Art Dolls',
+}
 
 const sampleResponse = {
   items: [{ id: 'p1', slug: 'p-1', name: 'P1', price: 10, image: 'img', stock: 1 }],
@@ -9,10 +21,14 @@ const sampleResponse = {
   totalPages: 1,
 }
 
-function makeApp(listProducts = vi.fn().mockResolvedValue(sampleResponse), listCategories = vi.fn().mockResolvedValue([])) {
+function makeApp(
+  listProducts = vi.fn().mockResolvedValue(sampleResponse),
+  listCategories = vi.fn().mockResolvedValue([]),
+  getProduct = vi.fn().mockResolvedValue(sampleDetail),
+) {
   const app = new Hono()
-  app.route('/', makeProductsRouter(listProducts, listCategories))
-  return { app, listProducts, listCategories }
+  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct))
+  return { app, listProducts, listCategories, getProduct }
 }
 
 describe('GET /products', () => {
@@ -80,5 +96,25 @@ describe('GET /categories', () => {
     const res = await app.request('/categories')
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual(fake)
+  })
+})
+
+describe('GET /products/:slug', () => {
+  it('returns 200 with product detail when found', async () => {
+    const { app, getProduct } = makeApp()
+    const res = await app.request('/products/aurora-doll')
+    expect(res.status).toBe(200)
+    expect(getProduct).toHaveBeenCalledWith('aurora-doll')
+    expect(await res.json()).toEqual(sampleDetail)
+  })
+
+  it('returns 404 when product not found', async () => {
+    const { app } = makeApp(
+      vi.fn().mockResolvedValue(sampleResponse),
+      vi.fn().mockResolvedValue([]),
+      vi.fn().mockResolvedValue(null),
+    )
+    const res = await app.request('/products/not-found')
+    expect(res.status).toBe(404)
   })
 })
