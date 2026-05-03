@@ -6,6 +6,7 @@ function makeRepo(): ProductRepository {
   return {
     findMany: vi.fn(),
     listCategories: vi.fn(),
+    findBySlug: vi.fn(),
   }
 }
 

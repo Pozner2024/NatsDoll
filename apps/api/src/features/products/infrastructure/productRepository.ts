@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder } from '../types'
+import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder, ProductDetail } from '../types'
 
 const PRODUCT_SELECT = {
   id: true,
@@ -52,6 +52,32 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
         orderBy: { position: 'asc' },
         select: { id: true, slug: true, name: true },
       })
+    },
+    async findBySlug(slug: string): Promise<ProductDetail | null> {
+      const row = await prisma.product.findFirst({
+        where: { slug, isPublished: true, deletedAt: null },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          description: true,
+          price: true,
+          images: true,
+          stock: true,
+          category: { select: { name: true } },
+        },
+      })
+      if (!row) return null
+      return {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        price: row.price.toNumber(),
+        images: row.images,
+        stock: row.stock,
+        category: row.category.name,
+      }
     },
   }
 }

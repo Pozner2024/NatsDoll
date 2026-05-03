@@ -29,7 +29,21 @@ export type CategoryListItem = {
   name: string
 }
 
+export type ProductDetail = {
+  id: string
+  slug: string
+  name: string
+  description: string
+  price: number
+  images: string[]
+  stock: number
+  category: string
+}
+
+export type GetProduct = (slug: string) => Promise<ProductDetail | null>
+
 export interface ProductRepository {
   findMany(params: ProductListParams): Promise<{ items: ProductListItem[]; total: number }>
   listCategories(): Promise<CategoryListItem[]>
+  findBySlug(slug: string): Promise<ProductDetail | null>
 }
