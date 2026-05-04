@@ -58,25 +58,22 @@ const queryWithSort = computed(() =>
   &__pill {
     flex-shrink: 0;
     padding: 0.45rem 1rem;
-    background: var(--color-border);
+    background: var(--color-white);
     color: var(--color-text);
     border-radius: 999px;
+    border: 2px solid var(--color-border);
     font-size: var(--fs-sm);
     text-decoration: none;
     white-space: nowrap;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.3s ease;
 
     &:hover {
-      background: rgb(var(--btn-gradient-mid) / 0.4);
+      background-color: rgb(var(--btn-gradient-mid) / 0.12);
     }
 
     &--active {
       background: var(--color-accent);
       color: var(--color-white);
-
-      &:hover {
-        background: var(--color-text-muted);
-      }
     }
   }
 
@@ -85,6 +82,16 @@ const queryWithSort = computed(() =>
     overflow-x: visible;
     mask-image: none;
     -webkit-mask-image: none;
+  }
+
+  @include desktop {
+    flex-wrap: nowrap;
+    justify-content: center;
+
+    &__pill {
+      padding: 0.35rem 0.75rem;
+      font-size: var(--fs-xs);
+    }
   }
 }
 </style>

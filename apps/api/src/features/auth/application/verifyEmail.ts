@@ -1,5 +1,6 @@
 // verifyEmail.ts`**: Завершает процесс регистрации, помечая email пользователя как подтвержденный
 // и выдавая первую пару токенов для входа 
+import { Prisma } from '@prisma/client'
 import type { AuthRepository } from '../infrastructure/authRepository'
 import { hashToken } from '../../../shared/lib'
 import { AppError } from '../../../shared/errors'
@@ -20,7 +21,14 @@ export function makeVerifyEmail(repo: AuthRepository) {
     const user = await repo.findById(verification.userId)
     if (!user) throw new AppError(400, 'Invalid or expired verification link')
 
-    await repo.finalizeEmailVerification(user.id, verification.id)
+    try {
+      await repo.finalizeEmailVerification(user.id, verification.id)
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+        throw new AppError(400, 'Invalid or expired verification link')
+      }
+      throw err
+    }
 
     return issueTokensForUser(repo, user)
   }

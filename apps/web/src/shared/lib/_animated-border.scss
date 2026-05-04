@@ -5,22 +5,40 @@
 }
 
 @mixin animated-border {
-  --btn-angle: 90deg;
+  border: 2px solid rgb(var(--btn-gradient-dark) / 0.4);
+  position: relative;
 
-  border: 2px solid;
-  border-image: conic-gradient(
-    from var(--btn-angle),
-    rgb(var(--btn-gradient-dark) / 0.4),
-    rgb(var(--btn-gradient-mid) / 1) 0.07turn,
-    rgb(var(--btn-gradient-light) / 1) 0.12turn,
-    rgb(var(--btn-gradient-mid) / 1) 0.17turn,
-    rgb(var(--btn-gradient-dark) / 0.4) 0.25turn
-  ) 1;
-  animation: animated-border-rotate 3000ms linear infinite forwards;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    pointer-events: none;
+    --btn-angle: 90deg;
+    border: 2px solid transparent;
+    border-image: conic-gradient(
+      from var(--btn-angle),
+      rgb(var(--btn-gradient-dark) / 0.4),
+      rgb(var(--btn-gradient-mid) / 1) 0.07turn,
+      rgb(var(--btn-gradient-light) / 1) 0.12turn,
+      rgb(var(--btn-gradient-mid) / 1) 0.17turn,
+      rgb(var(--btn-gradient-dark) / 0.4) 0.25turn
+    ) 1;
+    opacity: 0;
+    animation:
+      animated-border-rotate 3s linear infinite,
+      animated-border-fade 8s linear infinite;
+  }
 }
 
 @keyframes animated-border-rotate {
-  100% {
-    --btn-angle: 420deg;
-  }
+  to { --btn-angle: 450deg; }
+}
+
+@keyframes animated-border-fade {
+  0%   { opacity: 0; }
+  50%  { opacity: 0; }
+  53%  { opacity: 1; }
+  90%  { opacity: 1; }
+  96%  { opacity: 0; }
+  100% { opacity: 0; }
 }

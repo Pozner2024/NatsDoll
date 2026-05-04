@@ -39,28 +39,52 @@ const hasError = ref(false)
 const moreProducts = ref<Product[]>([])
 const moreLoading = ref(false)
 
+let requestId = 0
+
 watch(
   slug,
   async (newSlug) => {
+    const myId = ++requestId
+
     isLoading.value = true
     hasError.value = false
     product.value = null
+    moreLoading.value = true
+
+    let loaded: ProductDetail | null
     try {
-      product.value = await fetchProduct(newSlug)
+      loaded = await fetchProduct(newSlug)
     } catch {
+      if (myId !== requestId) return
       hasError.value = true
-    } finally {
       isLoading.value = false
+      moreLoading.value = false
+      return
     }
 
-    moreLoading.value = true
+    if (myId !== requestId) return
+    if (!loaded) {
+      hasError.value = true
+      isLoading.value = false
+      moreLoading.value = false
+      return
+    }
+    product.value = loaded
+    isLoading.value = false
+
     try {
-      const res = await fetchProducts({ sort: 'newest', page: 1, limit: 8 })
+      const res = await fetchProducts({
+        category: loaded.categorySlug,
+        sort: 'newest',
+        page: 1,
+        limit: 8,
+      })
+      if (myId !== requestId) return
       moreProducts.value = res.items.filter((p) => p.slug !== newSlug).slice(0, 6)
     } catch {
       moreProducts.value = []
     } finally {
-      moreLoading.value = false
+      if (myId === requestId) moreLoading.value = false
     }
   },
   { immediate: true },
@@ -72,6 +96,8 @@ function onAddToCart() {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints.module' as *;
+
 .product-page-widget {
   &__skeleton {
     width: 100%;
@@ -88,6 +114,23 @@ function onAddToCart() {
     text-align: center;
     color: var(--color-text-muted);
     font-size: 0.9rem;
+  }
+
+  @include tablet {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+
+    :deep(.reviews-slider),
+    :deep(.more-from-shop) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @include desktop {
+    grid-template-columns: 2fr 3fr;
+    max-width: 1100px;
+    margin: 0 auto;
   }
 }
 </style>

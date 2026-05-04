@@ -85,7 +85,8 @@ function buildPages(current: number, total: number): Item[] {
 const route = useRoute()
 
 function linkTo(page: number) {
-  const query: Record<string, string> = { sort: props.currentSort }
+  const query: Record<string, string> = {}
+  if (props.currentSort !== 'newest') query.sort = props.currentSort
   if (page > 1) query.page = String(page)
   return { name: 'shop', params: route.params, query }
 }

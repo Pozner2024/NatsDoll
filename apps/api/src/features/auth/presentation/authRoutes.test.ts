@@ -59,7 +59,7 @@ describe('GET /api/auth/google', () => {
 })
 
 describe('GET /api/auth/google/callback', () => {
-  const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+  const frontendUrl = 'http://localhost:5173'
 
   it('редиректит на /auth/callback и устанавливает refresh cookie при успехе', async () => {
     const { app } = makeApp()
@@ -127,7 +127,6 @@ describe('GET /api/auth/google/callback', () => {
     )
 
     const setCookieHeader = res.headers.get('set-cookie') ?? ''
-    // Hono удаляет куки через maxAge=0 или expires в прошлом
-    expect(setCookieHeader).toContain('oauth_state')
+    expect(setCookieHeader).toMatch(/oauth_state=;.*Max-Age=0/i)
   })
 })

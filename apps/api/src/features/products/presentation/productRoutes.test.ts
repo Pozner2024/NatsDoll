@@ -12,6 +12,7 @@ const sampleDetail: ProductDetail = {
   images: ['img1.jpg'],
   stock: 1,
   category: 'Art Dolls',
+  categorySlug: 'art-dolls',
 }
 
 const sampleResponse = {

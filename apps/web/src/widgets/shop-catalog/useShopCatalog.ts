@@ -7,9 +7,7 @@ export const PAGE_SIZE = 12
 const VALID_SORTS: ProductSortOrder[] = ['newest', 'price-asc', 'price-desc']
 
 function parseSort(raw: unknown): ProductSortOrder {
-  return typeof raw === 'string' && (VALID_SORTS as string[]).includes(raw)
-    ? (raw as ProductSortOrder)
-    : 'newest'
+  return VALID_SORTS.find((s) => s === raw) ?? 'newest'
 }
 
 function parsePage(raw: unknown): number {

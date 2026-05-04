@@ -32,4 +32,5 @@ export type ProductDetail = {
   images: string[]
   stock: number
   category: string
+  categorySlug: string
 }

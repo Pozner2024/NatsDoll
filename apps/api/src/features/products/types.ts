@@ -38,6 +38,7 @@ export type ProductDetail = {
   images: string[]
   stock: number
   category: string
+  categorySlug: string
 }
 
 export type GetProduct = (slug: string) => Promise<ProductDetail | null>

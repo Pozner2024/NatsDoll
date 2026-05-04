@@ -42,7 +42,7 @@
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 1rem;
 
     @include tablet { grid-template-columns: repeat(3, 1fr); }

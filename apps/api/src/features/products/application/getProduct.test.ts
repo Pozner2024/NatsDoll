@@ -11,6 +11,7 @@ const detail: ProductDetail = {
   images: ['img1.jpg', 'img2.jpg'],
   stock: 1,
   category: 'Art Dolls',
+  categorySlug: 'art-dolls',
 }
 
 function makeRepo(result: ProductDetail | null = detail) {

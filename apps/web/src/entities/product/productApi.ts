@@ -27,6 +27,7 @@ const ProductDetailSchema = z.object({
   images: z.array(z.string()),
   stock: z.number().int().min(0),
   category: z.string(),
+  categorySlug: z.string(),
 }) satisfies z.ZodType<ProductDetail>
 
 export async function fetchProduct(slug: string): Promise<ProductDetail | null> {

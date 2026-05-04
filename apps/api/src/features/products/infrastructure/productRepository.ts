@@ -64,10 +64,10 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
           price: true,
           images: true,
           stock: true,
-          category: { select: { name: true } },
+          category: { select: { name: true, slug: true } },
         },
       })
-      if (!row) return null
+      if (!row || !row.category) return null
       return {
         id: row.id,
         slug: row.slug,
@@ -77,6 +77,7 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
         images: row.images,
         stock: row.stock,
         category: row.category.name,
+        categorySlug: row.category.slug,
       }
     },
   }
