@@ -2,6 +2,11 @@
   <div class="product-info">
     <h1 class="product-info__name">{{ product.name }}</h1>
     <p class="product-info__price">{{ formatPrice(product.price) }}</p>
+    <div v-if="product.stock > 0" class="product-info__qty">
+      <button type="button" class="product-info__qty-btn" :disabled="qty <= 1" @click="qty--">−</button>
+      <span class="product-info__qty-val">{{ qty }}</span>
+      <button type="button" class="product-info__qty-btn" :disabled="qty >= product.stock" @click="qty++">+</button>
+    </div>
     <AppButton
       type="button"
       class="product-info__btn"
@@ -16,14 +21,18 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { AppButton, formatPrice } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
 
 defineProps<{ product: ProductDetail }>()
 const emit = defineEmits<{ 'add-to-cart': [] }>()
+const qty = ref(1)
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints.module' as *;
+
 .product-info {
   padding: 1rem 1rem 1.5rem;
 
@@ -42,6 +51,40 @@ const emit = defineEmits<{ 'add-to-cart': [] }>()
     margin-bottom: 0.875rem;
   }
 
+  &__qty {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.875rem;
+  }
+
+  &__qty-btn {
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid var(--color-border);
+    background: none;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--color-text);
+    transition: border-color 0.15s ease;
+
+    &:hover:not(:disabled) {
+      border-color: var(--color-accent);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+    }
+  }
+
+  &__qty-val {
+    font-size: var(--fs-base);
+    font-weight: 600;
+    min-width: 1.5rem;
+    text-align: center;
+  }
+
   &__btn {
     display: block;
     width: 100%;
@@ -51,6 +94,12 @@ const emit = defineEmits<{ 'add-to-cart': [] }>()
     &:disabled {
       opacity: 0.5;
       pointer-events: none;
+    }
+
+    @include desktop {
+      width: auto;
+      padding-left: 2rem;
+      padding-right: 2rem;
     }
   }
 

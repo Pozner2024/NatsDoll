@@ -1,7 +1,6 @@
 <template>
   <ProductPageWidget>
     <template #reviews>
-      <p class="product-page__reviews-label">Reviews</p>
       <ReviewsSlider />
     </template>
   </ProductPageWidget>

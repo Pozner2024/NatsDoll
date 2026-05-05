@@ -14,6 +14,7 @@ const categories = [
   { name: 'Art Dolls', slug: 'art-dolls', position: 10 },
   { name: 'Birthday Gifts', slug: 'birthday-gifts', position: 20 },
   { name: 'Christmas Gifts', slug: 'christmas-gifts', position: 30 },
+  { name: 'Motivational Gifts', slug: 'motivational-gifts', position: 35 },
   { name: 'Valentines Day Gifts', slug: 'valentines-day-gifts', position: 40 },
   { name: 'Halloween Gifts', slug: 'halloween-gifts', position: 50 },
   { name: 'Graduation Gifts', slug: 'graduation-gifts', position: 60 },

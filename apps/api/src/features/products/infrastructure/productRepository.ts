@@ -22,6 +22,7 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
       const where: Prisma.ProductWhereInput = {
         isPublished: true,
         deletedAt: null,
+        stock: { gt: 0 },
         ...(params.category ? { category: { slug: params.category } } : {}),
       }
 

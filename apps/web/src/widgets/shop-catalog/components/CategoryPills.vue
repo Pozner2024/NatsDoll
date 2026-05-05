@@ -85,12 +85,12 @@ const queryWithSort = computed(() =>
   }
 
   @include desktop {
-    flex-wrap: nowrap;
-    justify-content: center;
+    flex-wrap: wrap;
+    justify-content: flex-start;
 
     &__pill {
-      padding: 0.35rem 0.75rem;
-      font-size: var(--fs-xs);
+      padding: 0.3rem 0.65rem;
+      font-size: var(--fs-sm);
     }
   }
 }

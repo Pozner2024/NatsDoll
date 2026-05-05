@@ -41,6 +41,13 @@ const ariaLabel = computed(() =>
   font-style: italic;
   color: var(--color-text);
   text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: var(--color-bg);
+  }
 
   &__icon {
     width: 18px;

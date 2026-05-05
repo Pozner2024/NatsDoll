@@ -6,23 +6,35 @@
   </div>
 
   <div v-else-if="product" class="product-page-widget">
-    <ProductGallery
-      :images="product.images"
-      :name="product.name"
-      :stock="product.stock"
-    />
-    <ProductInfo
-      :product="product"
-      @add-to-cart="onAddToCart"
-    />
-    <slot name="reviews" />
+    <nav class="product-page-widget__breadcrumbs" aria-label="Breadcrumb">
+      <RouterLink class="product-page-widget__breadcrumb-link" to="/shop">The Shop</RouterLink>
+      <span class="product-page-widget__breadcrumb-sep" aria-hidden="true">/</span>
+      <RouterLink
+        class="product-page-widget__breadcrumb-link"
+        :to="`/shop/${product.categorySlug}`"
+      >{{ product.category }}</RouterLink>
+    </nav>
+    <div class="product-page-widget__main">
+      <ProductGallery
+        :images="product.images"
+        :name="product.name"
+        :stock="product.stock"
+      />
+      <ProductInfo
+        :product="product"
+        @add-to-cart="onAddToCart"
+      />
+    </div>
+    <div class="product-page-widget__reviews">
+      <slot name="reviews" />
+    </div>
     <MoreFromShop v-if="!moreLoading && moreProducts.length > 0" :products="moreProducts" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
@@ -99,6 +111,43 @@ function onAddToCart() {
 @use '@/assets/styles/breakpoints.module' as *;
 
 .product-page-widget {
+  padding-top: 1rem;
+  padding: 1rem 1rem 4rem;
+
+  @include tablet {
+    padding: 1.5rem 2rem 4rem;
+  }
+
+  @include desktop {
+    padding: 1.5rem 0 4rem;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  &__breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  &__breadcrumb-link {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+
+    &:hover {
+      color: var(--color-accent);
+    }
+  }
+
+  &__breadcrumb-sep {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    opacity: 0.5;
+  }
+
   &__skeleton {
     width: 100%;
     aspect-ratio: 1;
@@ -116,21 +165,18 @@ function onAddToCart() {
     font-size: 0.9rem;
   }
 
-  @include tablet {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-
-    :deep(.reviews-slider),
-    :deep(.more-from-shop) {
-      grid-column: 1 / -1;
+  &__main {
+    @include tablet {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
     }
-  }
 
-  @include desktop {
-    grid-template-columns: 2fr 3fr;
-    max-width: 1100px;
-    margin: 0 auto;
+    @include desktop {
+      grid-template-columns: 3fr 2fr;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
   }
 }
 </style>

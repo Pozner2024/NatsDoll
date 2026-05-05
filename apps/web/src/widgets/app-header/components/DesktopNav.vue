@@ -230,7 +230,7 @@ async function handleLogout() {
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.5rem;
 
   &__link {
     font-family: var(--font-display);
@@ -238,35 +238,29 @@ async function handleLogout() {
     color: var(--color-text);
     text-decoration: none;
     letter-spacing: 0.05em;
-    transition: color 0.2s ease;
     background: none;
     border: none;
-    padding: 0;
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
 
     &:hover {
-      color: var(--color-accent);
+      background-color: var(--color-bg);
     }
 
     &--active {
       font-style: italic;
       color: var(--color-accent);
+
+      &:hover {
+        background-color: rgb(139 94 82 / 0.1);
+      }
     }
 
     &--toggle {
       display: flex;
       align-items: center;
       gap: 0.25rem;
-    }
-
-    &--btn {
-      font-family: var(--font-display);
-      font-size: var(--fs-base);
-      color: var(--color-text);
-      letter-spacing: 0.05em;
-
-      &:hover {
-        color: var(--color-accent);
-      }
     }
   }
 
@@ -314,11 +308,11 @@ async function handleLogout() {
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
     text-decoration: none;
-    transition: color 0.2s ease;
+    transition: background-color 0.3s ease;
     white-space: nowrap;
 
     &:hover {
-      color: var(--color-accent);
+      background-color: var(--color-bg);
     }
 
     &--active {

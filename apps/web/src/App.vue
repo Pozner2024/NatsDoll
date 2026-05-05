@@ -3,7 +3,11 @@
   <div id="app">
     <AppHeader />
     <main>
-      <router-view />
+      <RouterView v-slot="{ Component }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" :key="$route.fullPath" />
+        </Transition>
+      </RouterView>
     </main>
     <AppFooter />
     <ContactModal />
@@ -22,3 +26,26 @@ import { useAuthStore } from '@/entities/user'
 const authStore = useAuthStore()
 onMounted(() => { authStore.initAuth() })
 </script>
+
+<style>
+main {
+  min-height: calc(100dvh - var(--header-height));
+}
+
+.page-enter-active {
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.page-leave-active {
+  transition: opacity 0.2s ease-in;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.page-leave-to {
+  opacity: 0;
+}
+</style>

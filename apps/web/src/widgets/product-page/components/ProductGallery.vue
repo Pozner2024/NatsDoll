@@ -78,9 +78,9 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
   }
 
   &__thumb {
-    flex: 1;
-    min-width: 0;
-    aspect-ratio: 1;
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
     border-radius: 4px;
     overflow: hidden;
     border: 1.5px solid transparent;

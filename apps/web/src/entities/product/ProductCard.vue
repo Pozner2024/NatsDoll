@@ -58,10 +58,15 @@ function onAdd() {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.2s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    border-color: rgb(var(--btn-gradient-mid) / 0.5);
+    box-shadow: 0 12px 28px -12px rgb(var(--btn-gradient-dark) / 0.25);
   }
 
   &__link {
