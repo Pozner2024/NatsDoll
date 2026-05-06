@@ -25,8 +25,8 @@ defineProps<{
 
 .products-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
   transition: opacity 0.2s ease;
 
   &--dimmed {

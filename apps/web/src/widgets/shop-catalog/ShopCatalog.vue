@@ -77,21 +77,42 @@ const showSortBar = computed(() => total.value > 0 && !error.value)
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints.module' as *;
+
 .shop-catalog {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1rem 4rem;
 
+  @include tablet {
+    padding: 0 2rem 5rem;
+  }
+
+  @include desktop {
+    padding: 0 2.5rem 6rem;
+  }
+
   &__header {
     width: 100%;
-    padding: 28px 20px 0;
-    margin-bottom: 1.5rem;
+    padding: 1.5rem 0.25rem 0;
+    margin-bottom: 1.25rem;
     text-align: right;
+
+    @include tablet {
+      padding: 2rem 0.5rem 0;
+      margin-bottom: 1.5rem;
+    }
+
+    @include desktop {
+      padding: 2.5rem 0.5rem 0;
+      margin-bottom: 2rem;
+    }
   }
 
   &__title {
     font-family: var(--font-brand);
-    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
     font-weight: 700;
     line-height: 0.9;
     color: var(--color-text);
@@ -104,7 +125,11 @@ const showSortBar = computed(() => total.value > 0 && !error.value)
     align-items: center;
     margin: 1rem 0;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.5rem;
+
+    @include tablet {
+      margin: 1.25rem 0;
+    }
   }
 
   &__total {

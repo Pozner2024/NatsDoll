@@ -42,16 +42,16 @@
 
   &__grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
 
     @include tablet { grid-template-columns: repeat(3, 1fr); }
     @include desktop { grid-template-columns: repeat(4, 1fr); }
   }
 
   &__card {
-    aspect-ratio: 0.8;
-    border-radius: 8px;
+    aspect-ratio: 4 / 5;
+    border-radius: 2px;
     background: var(--color-border);
     animation: pulse 1.5s ease-in-out infinite;
   }

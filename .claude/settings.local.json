@@ -166,7 +166,14 @@
       "Bash(xargs cat *)",
       "Bash(/c/Users/user/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh *)",
       "PowerShell(Invoke-RestMethod \"http://localhost:4000/api/products/mini-food-platter\" | ConvertTo-Json -Depth 3)",
-      "PowerShell(Invoke-RestMethod \"http://localhost:3000/products/mini-food-platter\" | ConvertTo-Json -Depth 3)"
+      "PowerShell(Invoke-RestMethod \"http://localhost:3000/products/mini-food-platter\" | ConvertTo-Json -Depth 3)",
+      "Bash(C:\\\\Users\\\\user\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.1.0\\\\scripts\\\\start-server.sh *)",
+      "Bash(C:/Users/user/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/scripts/start-server.sh *)",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "Bash(Start-Sleep -Seconds 8)",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "Bash(grep -E \"^tsc$\")",
+      "PowerShell(Head *)"
     ]
   }
 }

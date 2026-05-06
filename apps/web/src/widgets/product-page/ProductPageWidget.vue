@@ -178,5 +178,17 @@ function onAddToCart() {
       margin: 0 auto;
     }
   }
+
+  &__reviews {
+    margin: 0 -1rem;
+
+    @include tablet {
+      margin: 0 -2rem;
+    }
+
+    @include desktop {
+      margin: 0;
+    }
+  }
 }
 </style>

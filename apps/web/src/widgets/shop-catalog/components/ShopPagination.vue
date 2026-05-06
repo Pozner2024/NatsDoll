@@ -93,19 +93,25 @@ function linkTo(page: number) {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/breakpoints.module' as *;
+
 .shop-pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 2rem;
+  margin-top: 2.5rem;
   font-size: var(--fs-sm);
+
+  @include tablet {
+    margin-top: 3rem;
+  }
 
   &__page,
   &__prev,
   &__next {
-    min-width: 2rem;
-    height: 2rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -115,6 +121,11 @@ function linkTo(page: number) {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     background: var(--color-white);
+
+    @include tablet {
+      min-width: 2rem;
+      height: 2rem;
+    }
 
     &:hover {
       background: rgb(var(--btn-gradient-mid) / 0.2);
