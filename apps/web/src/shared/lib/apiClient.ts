@@ -71,7 +71,7 @@ export async function authFetch(path: string, init: ApiRequestInit = {}): Promis
   const token = authCallbacks.getAccessToken()
   const res = await apiFetch(path, { ...init, accessToken: token ?? undefined })
 
-  if (res.status !== 401 || !token) return res
+  if (res.status !== 401) return res
 
   if (!refreshPromise) {
     refreshPromise = doRefresh().catch(() => null).finally(() => { refreshPromise = null })

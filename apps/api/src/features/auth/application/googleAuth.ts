@@ -19,8 +19,7 @@ export function makeGoogleAuth(repo: AuthRepository, getGoogleProfile: GetGoogle
         // поэтому Google-юзер вытесняет его. Иначе атакующий, заранее зарегавший чужой email
         // с известным паролем, получил бы доступ к аккаунту жертвы после её Google-входа.
         if (!existing.emailVerified) {
-          await repo.deleteUser(existing.id)
-          user = await repo.createGoogleUser({
+          user = await repo.replaceUnverifiedWithGoogleUser(existing.id, {
             name: profile.name,
             email: profile.email,
             googleId: profile.googleId,

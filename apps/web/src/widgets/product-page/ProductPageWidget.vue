@@ -103,7 +103,6 @@ watch(
 )
 
 function onAddToCart() {
-  console.log('add to cart', product.value?.id)
 }
 </script>
 
@@ -111,7 +110,6 @@ function onAddToCart() {
 @use '@/assets/styles/breakpoints.module' as *;
 
 .product-page-widget {
-  padding-top: 1rem;
   padding: 1rem 1rem 4rem;
 
   @include tablet {

@@ -1,14 +1,16 @@
 import type { PrismaClient } from '@prisma/client'
+import { REFRESH_TOKEN_TTL_MS } from '../lib'
 
 export async function cleanupExpiredAuthRecords(prisma: PrismaClient): Promise<void> {
   const now = new Date()
+  const revokedBefore = new Date(now.getTime() - REFRESH_TOKEN_TTL_MS)
   try {
     const [tokens, verifications] = await Promise.all([
       prisma.refreshToken.deleteMany({
         where: {
           OR: [
             { expiresAt: { lt: now } },
-            { revokedAt: { not: null } },
+            { revokedAt: { lt: revokedBefore } },
           ],
         },
       }),

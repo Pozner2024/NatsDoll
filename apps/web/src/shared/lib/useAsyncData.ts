@@ -19,15 +19,26 @@ export function useAsyncData<T>(fetcher: () => Promise<T>, initial: T): AsyncDat
   const data = ref(initial) as Ref<T>
   const isLoading = ref(true)
   const hasError = ref(false)
+  let requestId = 0
 
   onMounted(async () => {
+    requestId++
+    const currentRequestId = requestId
+
     try {
-      data.value = await fetcher()
+      const result = await fetcher()
+      if (currentRequestId === requestId) {
+        data.value = result
+      }
     } catch (err) {
-      console.error('useAsyncData failed:', err instanceof Error ? err.message : String(err))
-      hasError.value = true
+      if (currentRequestId === requestId) {
+        console.error('useAsyncData failed:', err instanceof Error ? err.message : String(err))
+        hasError.value = true
+      }
     } finally {
-      isLoading.value = false
+      if (currentRequestId === requestId) {
+        isLoading.value = false
+      }
     }
   })
 

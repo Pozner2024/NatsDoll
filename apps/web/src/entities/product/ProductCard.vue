@@ -48,7 +48,6 @@ import type { Product } from './types'
 const props = defineProps<{ product: Product; hideButton?: boolean }>()
 
 function onAdd() {
-  console.log('add to cart', props.product.id)
 }
 </script>
 

@@ -69,6 +69,13 @@ export const useAuthStore = defineStore('auth', () => {
     return 'pending'
   }
 
+  async function verifyEmail(token: string): Promise<void> {
+    const res = await apiFetch('/auth/verify-email', { method: 'POST', json: { token } })
+    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Email verification failed'))
+    const body = authResponseSchema.parse(await res.json())
+    setAuth(body.accessToken, body.user)
+  }
+
   async function logout(): Promise<void> {
     try {
       await apiFetch('/auth/logout', { method: 'POST', accessToken: accessToken.value ?? undefined })
@@ -131,6 +138,7 @@ export const useAuthStore = defineStore('auth', () => {
     authReady: readonly(authReady),
     login,
     register,
+    verifyEmail,
     logout,
     clearState,
     initAuth,

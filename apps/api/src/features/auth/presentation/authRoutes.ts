@@ -63,6 +63,7 @@ const verifyEmailLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS
 const googleStartLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const refreshLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
+const logoutLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 
 type AuthUser = AuthTokensResult['user']
 
@@ -106,7 +107,7 @@ export function makeAuthRouter(
     return c.json({ accessToken: result.accessToken })
   })
 
-  router.post('/logout', async (c) => {
+  router.post('/logout', logoutLimiter.middleware, async (c) => {
     const rawToken = getCookie(c, COOKIE_NAME) ?? ''
     await logout(rawToken)
     deleteCookie(c, COOKIE_NAME, { path: '/' })

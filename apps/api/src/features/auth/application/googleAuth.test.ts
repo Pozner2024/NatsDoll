@@ -22,6 +22,7 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     findByGoogleId: vi.fn().mockResolvedValue(null),
     linkGoogleId: vi.fn().mockResolvedValue(mockUser),
     createGoogleUser: vi.fn().mockResolvedValue(mockUser),
+    replaceUnverifiedWithGoogleUser: vi.fn().mockResolvedValue(mockUser),
     saveRefreshToken: vi.fn().mockResolvedValue(undefined),
     pruneUserSessions: vi.fn().mockResolvedValue(undefined),
     findTokenByHash: vi.fn(),
@@ -98,8 +99,7 @@ describe('googleAuth', () => {
 
     const result = await googleAuth('auth-code')
 
-    expect(repo.deleteUser).toHaveBeenCalledWith('u1')
-    expect(repo.createGoogleUser).toHaveBeenCalledWith({
+    expect(repo.replaceUnverifiedWithGoogleUser).toHaveBeenCalledWith('u1', {
       name: 'Test User',
       email: 'test@example.com',
       googleId: 'g1',
