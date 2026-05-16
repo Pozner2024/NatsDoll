@@ -1,4 +1,4 @@
-import { ref, onMounted, type Ref } from 'vue'
+import { ref, onMounted, onScopeDispose, type Ref } from 'vue'
 
 export type AsyncDataState<T> = {
   data: Ref<T>
@@ -9,38 +9,35 @@ export type AsyncDataState<T> = {
 /**
  * Универсальный Composable для загрузки асинхронных данных (например, с сервера).
  * Автоматически управляет состояниями загрузки (isLoading) и ошибки (hasError).
- * Данные запрашиваются автоматически при появлении компонента на экране (onMounted).
+ * Данные запрашиваются один раз при монтировании компонента (onMounted) и
+ * отменяются через AbortSignal при его размонтировании.
  *
- * @param fetcher - Асинхронная функция, которая идет в сеть за данными.
+ * @param fetcher - Асинхронная функция, которая идет в сеть за данными. Получает AbortSignal.
  * @param initial - Стартовое значение-заглушка (пока данные еще скачиваются).
  * @returns Объект с реактивными переменными: { data, isLoading, hasError }
  */
-export function useAsyncData<T>(fetcher: () => Promise<T>, initial: T): AsyncDataState<T> {
+export function useAsyncData<T>(
+  fetcher: (signal: AbortSignal) => Promise<T>,
+  initial: T,
+): AsyncDataState<T> {
   const data = ref(initial) as Ref<T>
   const isLoading = ref(true)
   const hasError = ref(false)
-  let requestId = 0
+  const controller = new AbortController()
 
   onMounted(async () => {
-    requestId++
-    const currentRequestId = requestId
-
     try {
-      const result = await fetcher()
-      if (currentRequestId === requestId) {
-        data.value = result
-      }
+      data.value = await fetcher(controller.signal)
     } catch (err) {
-      if (currentRequestId === requestId) {
-        console.error('useAsyncData failed:', err instanceof Error ? err.message : String(err))
-        hasError.value = true
-      }
+      if (controller.signal.aborted) return
+      console.error('useAsyncData failed:', err instanceof Error ? err.message : String(err))
+      hasError.value = true
     } finally {
-      if (currentRequestId === requestId) {
-        isLoading.value = false
-      }
+      if (!controller.signal.aborted) isLoading.value = false
     }
   })
+
+  onScopeDispose(() => controller.abort())
 
   return { data, isLoading, hasError }
 }

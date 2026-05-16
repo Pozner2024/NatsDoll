@@ -40,11 +40,13 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     try {
       await emailService.sendVerificationEmail(user.email, verificationUrl)
     } catch (err) {
-      console.error('Failed to send verification email', { userId: user.id, err })
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('Failed to send verification email', { userId: user.id, message })
       try {
         await repo.deleteUser(user.id)
       } catch (deleteErr) {
-        console.error('Failed to cleanup user after email send failure', { userId: user.id, deleteErr })
+        const deleteMessage = deleteErr instanceof Error ? deleteErr.message : String(deleteErr)
+        console.error('Failed to cleanup user after email send failure', { userId: user.id, message: deleteMessage })
       }
       throw new AppError(500, 'Failed to send verification email. Please try again later.')
     }

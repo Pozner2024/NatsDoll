@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onScopeDispose } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchProducts, type Product, type ProductSortOrder } from '@/entities/product'
 import { useCategoryStore } from '@/entities/category'
@@ -13,6 +13,10 @@ function parseSort(raw: unknown): ProductSortOrder {
 function parsePage(raw: unknown): number {
   const n = typeof raw === 'string' ? Number.parseInt(raw, 10) : NaN
   return Number.isFinite(n) && n >= 1 ? n : 1
+}
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError'
 }
 
 export function useShopCatalog() {
@@ -32,10 +36,14 @@ export function useShopCatalog() {
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
-  let requestId = 0
+  let currentController: AbortController | null = null
 
   async function load() {
-    const myId = ++requestId
+    currentController?.abort()
+    const controller = new AbortController()
+    currentController = controller
+    const { signal } = controller
+
     isLoading.value = true
     error.value = null
     try {
@@ -44,19 +52,19 @@ export function useShopCatalog() {
         sort: sort.value,
         page: page.value,
         limit: PAGE_SIZE,
-      })
-      if (myId !== requestId) return
+      }, signal)
+      if (signal.aborted) return
       products.value = res.items
       total.value = res.total
       totalPages.value = res.totalPages
     } catch (e) {
-      if (myId !== requestId) return
+      if (signal.aborted || isAbortError(e)) return
       error.value = e instanceof Error ? e : new Error(String(e))
       products.value = []
       total.value = 0
       totalPages.value = 0
     } finally {
-      if (myId === requestId) isLoading.value = false
+      if (!signal.aborted) isLoading.value = false
     }
   }
 
@@ -64,9 +72,16 @@ export function useShopCatalog() {
 
   void categoryStore.load()
 
+  onScopeDispose(() => currentController?.abort())
+
   async function retry() {
     await Promise.all([load(), categoryStore.load()])
   }
+
+  const activeCategoryName = computed(() => {
+    if (!category.value) return null
+    return categoryStore.categories.find((c) => c.slug === category.value)?.name ?? null
+  })
 
   return {
     category,
@@ -79,6 +94,7 @@ export function useShopCatalog() {
     error,
     categories: computed(() => categoryStore.categories),
     categoriesError: computed(() => categoryStore.error),
+    activeCategoryName,
     retry,
   }
 }

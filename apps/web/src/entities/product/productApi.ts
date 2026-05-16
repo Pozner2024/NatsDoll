@@ -30,22 +30,22 @@ const ProductDetailSchema = z.object({
   categorySlug: z.string(),
 }) satisfies z.ZodType<ProductDetail>
 
-export async function fetchProduct(slug: string): Promise<ProductDetail | null> {
-  const res = await apiFetch(`/products/${encodeURIComponent(slug)}`)
+export async function fetchProduct(slug: string, signal?: AbortSignal): Promise<ProductDetail | null> {
+  const res = await apiFetch(`/products/${encodeURIComponent(slug)}`, { signal })
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data: unknown = await res.json()
   return ProductDetailSchema.parse(data)
 }
 
-export async function fetchProducts(params: ProductListParams): Promise<ProductListResponse> {
+export async function fetchProducts(params: ProductListParams, signal?: AbortSignal): Promise<ProductListResponse> {
   const search = new URLSearchParams()
   if (params.category) search.set('category', params.category)
   search.set('sort', params.sort)
   search.set('page', String(params.page))
   search.set('limit', String(params.limit))
 
-  const res = await apiFetch(`/products?${search.toString()}`)
+  const res = await apiFetch(`/products?${search.toString()}`, { signal })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data: unknown = await res.json()
   return ProductListResponseSchema.parse(data)

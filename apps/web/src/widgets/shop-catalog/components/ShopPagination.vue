@@ -138,7 +138,7 @@ function linkTo(page: number) {
     border-color: var(--color-accent);
 
     &:hover {
-      background: var(--color-accent);
+      background: var(--color-accent-hover);
     }
   }
 

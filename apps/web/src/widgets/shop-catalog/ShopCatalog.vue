@@ -4,6 +4,15 @@
       <h1 class="shop-catalog__title">
         THE SHOP
       </h1>
+      <nav
+        v-if="category"
+        class="shop-catalog__crumb"
+        aria-label="Breadcrumb"
+      >
+        <RouterLink to="/shop" class="shop-catalog__crumb-link">The shop</RouterLink>
+        <span class="shop-catalog__crumb-sep" aria-hidden="true">/</span>
+        <span class="shop-catalog__crumb-current">{{ activeCategoryName ?? category }}</span>
+      </nav>
     </header>
 
     <ShopCatalogSkeleton v-if="isFirstLoad" />
@@ -54,6 +63,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useShopCatalog } from './useShopCatalog'
 import CategoryPills from './components/CategoryPills.vue'
 import SortControl from './components/SortControl.vue'
@@ -68,6 +78,7 @@ const {
   products, total, totalPages,
   isLoading, error,
   categories, categoriesError,
+  activeCategoryName,
   retry,
 } = useShopCatalog()
 
@@ -117,6 +128,34 @@ const showSortBar = computed(() => total.value > 0 && !error.value)
     line-height: 0.9;
     color: var(--color-text);
     margin-bottom: 0.5rem;
+  }
+
+  &__crumb {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+  }
+
+  &__crumb-link {
+    color: var(--color-text-muted);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-accent-hover);
+    }
+  }
+
+  &__crumb-sep {
+    opacity: 0.5;
+  }
+
+  &__crumb-current {
+    color: var(--color-text);
   }
 
   &__bar {

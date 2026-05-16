@@ -56,7 +56,7 @@ describe('useShopCatalog', () => {
       sort: 'newest',
       page: 1,
       limit: 12,
-    })
+    }, expect.any(AbortSignal))
   })
 
   it('reads category from route params', async () => {
@@ -67,7 +67,7 @@ describe('useShopCatalog', () => {
       sort: 'newest',
       page: 1,
       limit: 12,
-    })
+    }, expect.any(AbortSignal))
   })
 
   it('reads sort and page from query', async () => {
@@ -78,19 +78,25 @@ describe('useShopCatalog', () => {
       sort: 'price-asc',
       page: 2,
       limit: 12,
-    })
+    }, expect.any(AbortSignal))
   })
 
   it('falls back to defaults for invalid sort', async () => {
     await mountComposable('/shop?sort=garbage')
 
-    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ sort: 'newest' }))
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ sort: 'newest' }),
+      expect.any(AbortSignal),
+    )
   })
 
   it('falls back to page=1 for invalid page', async () => {
     await mountComposable('/shop?page=abc')
 
-    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }))
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1 }),
+      expect.any(AbortSignal),
+    )
   })
 
   it('exposes products, total, totalPages, isLoading, error after fetch', async () => {
@@ -120,7 +126,10 @@ describe('useShopCatalog', () => {
     await flushPromises()
 
     expect(mockFetch).toHaveBeenCalledTimes(2)
-    expect(mockFetch).toHaveBeenLastCalledWith(expect.objectContaining({ category: 'animals' }))
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      expect.objectContaining({ category: 'animals' }),
+      expect.any(AbortSignal),
+    )
   })
 
   it('race condition: keeps result of latest call when two fetches overlap', async () => {

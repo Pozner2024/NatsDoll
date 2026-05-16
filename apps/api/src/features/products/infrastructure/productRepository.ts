@@ -68,7 +68,11 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
           category: { select: { name: true, slug: true } },
         },
       })
-      if (!row || !row.category) return null
+      if (!row) return null
+      if (!row.category) {
+        console.warn('Product has no category', { id: row.id, slug: row.slug })
+        return null
+      }
       return {
         id: row.id,
         slug: row.slug,

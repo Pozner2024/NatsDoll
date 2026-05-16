@@ -245,7 +245,7 @@ async function handleLogout() {
     transition: background-color 0.3s ease;
 
     &:hover {
-      background-color: var(--color-bg);
+      background-color: var(--color-border);
     }
 
     &--active {
@@ -253,7 +253,7 @@ async function handleLogout() {
       color: var(--color-accent);
 
       &:hover {
-        background-color: rgb(139 94 82 / 0.1);
+        background-color: var(--color-border);
       }
     }
 
@@ -312,7 +312,7 @@ async function handleLogout() {
     white-space: nowrap;
 
     &:hover {
-      background-color: var(--color-bg);
+      background-color: var(--color-border);
     }
 
     &--active {

@@ -34,6 +34,11 @@ defineProps<{
     pointer-events: none;
   }
 
+  @include phablet {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+
   @include tablet {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;

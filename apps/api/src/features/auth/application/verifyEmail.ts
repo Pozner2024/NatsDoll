@@ -1,4 +1,4 @@
-// verifyEmail.ts`**: Завершает процесс регистрации, помечая email пользователя как подтвержденный
+// verifyEmail.ts: Завершает процесс регистрации, помечая email пользователя как подтвержденный
 // и выдавая первую пару токенов для входа 
 import { Prisma } from '@prisma/client'
 import type { AuthRepository } from '../infrastructure/authRepository'

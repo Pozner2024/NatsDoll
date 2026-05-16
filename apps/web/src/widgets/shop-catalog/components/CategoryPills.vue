@@ -68,12 +68,12 @@ const queryWithSort = computed(() =>
     transition: background-color 0.3s ease;
 
     &:hover {
-      background-color: rgb(var(--btn-gradient-mid) / 0.12);
+      background-color: var(--color-border);
     }
 
     &--active {
-      background: var(--color-accent);
-      color: var(--color-white);
+      background: var(--color-border);
+      color: var(--color-text);
     }
   }
 

@@ -132,7 +132,7 @@ function onAdd() {
     flex-direction: column;
     flex: 1;
 
-    @include tablet {
+    @include phablet {
       padding: 0.75rem 0.1rem 0;
     }
   }
@@ -162,7 +162,7 @@ function onAdd() {
     -webkit-box-orient: vertical;
     overflow: hidden;
 
-    @include tablet {
+    @include phablet {
       font-size: var(--fs-md);
       -webkit-line-clamp: 1;
     }
@@ -183,15 +183,20 @@ function onAdd() {
   }
 
   &__btn {
+    --btn-font-size: var(--fs-xs);
     display: block;
     width: 100%;
     text-align: center;
     margin-top: auto;
-    font-size: var(--fs-xs);
     padding: 0.4rem 0.5rem;
+    white-space: nowrap;
 
     @include tablet {
-      font-size: var(--fs-sm);
+      --btn-font-size: var(--fs-sm);
+      padding: 0.6rem 1rem;
+    }
+
+    @include desktop {
       padding: 0.6rem 2rem;
     }
 

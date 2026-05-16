@@ -45,6 +45,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
 
+    @include phablet { grid-template-columns: repeat(3, 1fr); }
     @include tablet { grid-template-columns: repeat(3, 1fr); }
     @include desktop { grid-template-columns: repeat(4, 1fr); }
   }

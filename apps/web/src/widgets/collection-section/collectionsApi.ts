@@ -18,8 +18,8 @@ const CollectionsSchema = z.array(CollectionSchema)
 export type CollectionItem = z.infer<typeof CollectionItemSchema>
 export type Collection = z.infer<typeof CollectionSchema>
 
-export async function fetchCollections(): Promise<Collection[]> {
-  const res = await apiFetch('/gallery/collections')
+export async function fetchCollections(signal?: AbortSignal): Promise<Collection[]> {
+  const res = await apiFetch('/gallery/collections', { signal })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data: unknown = await res.json()
   return CollectionsSchema.parse(data)

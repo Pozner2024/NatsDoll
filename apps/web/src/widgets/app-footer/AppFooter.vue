@@ -213,7 +213,7 @@ const socialLinks = [
     text-decoration: none;
 
     &:hover {
-      color: var(--color-accent);
+      color: var(--color-accent-hover);
     }
 
     &--btn {
@@ -225,7 +225,7 @@ const socialLinks = [
       text-align: left;
 
       &:hover {
-        color: var(--color-accent);
+        color: var(--color-accent-hover);
       }
     }
   }

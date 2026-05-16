@@ -147,7 +147,7 @@ const columns = [FAQ_ITEMS.slice(0, half), FAQ_ITEMS.slice(half)]
     transition: color 0.2s ease;
 
     &:hover {
-      color: var(--color-accent);
+      color: var(--color-accent-hover);
     }
 
     &:focus-visible {

@@ -14,7 +14,7 @@ import type { AuthTokensResult } from '../application/issueTokens'
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100),
-  email: z.string().email(),
+  email: z.string().email().max(254),
   password: z.string()
     .min(8)
     .max(128)
@@ -29,7 +29,7 @@ const verifyEmailSchema = z.object({
 })
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().max(254),
   password: z.string().min(1),
 })
 

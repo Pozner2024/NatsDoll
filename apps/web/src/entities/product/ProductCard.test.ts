@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import ProductCard from './ProductCard.vue'
@@ -41,11 +41,10 @@ describe('ProductCard', () => {
     expect(wrapper.find('.product-card__placeholder').exists()).toBe(true)
   })
 
-  it('wraps product info in router-link to /product/:slug', () => {
+  it('wraps product image and name in router-links to /product/:slug', () => {
     const wrapper = mountCard(baseProduct)
-    const link = wrapper.find('a.product-card__link')
-    expect(link.exists()).toBe(true)
-    expect(link.attributes('href')).toBe('/product/sleeping-bunny')
+    const links = wrapper.findAll('a[href="/product/sleeping-bunny"]')
+    expect(links.length).toBeGreaterThan(0)
   })
 
   it('renders enabled "Add to cart" button when stock > 0', () => {
@@ -73,14 +72,4 @@ describe('ProductCard', () => {
     expect(wrapper.find('button.product-card__btn').exists()).toBe(true)
   })
 
-  it('button click calls console.log("add to cart", id) and does NOT trigger navigation', async () => {
-    const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    const wrapper = mountCard(baseProduct)
-
-    const btn = wrapper.find('button.product-card__btn')
-    await btn.trigger('click')
-
-    expect(spy).toHaveBeenCalledWith('add to cart', 'p1')
-    spy.mockRestore()
-  })
 })

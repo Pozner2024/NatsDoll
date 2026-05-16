@@ -176,6 +176,18 @@ const paragraphs = computed(() =>
   }
 
   &__btn {
+    --btn-font-size: var(--fs-sm);
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    padding: 0.6rem 0.75rem;
+
+    @include desktop {
+      --btn-font-size: var(--fs-base);
+      flex: 0 1 auto;
+      padding: 0.6rem 2rem;
+    }
+
     &:disabled {
       opacity: 0.5;
       pointer-events: none;

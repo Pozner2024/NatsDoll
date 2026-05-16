@@ -42,10 +42,10 @@ main {
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(14px);
-}
+  transform: translateY(14px);     
+} 
 
 .page-leave-to {
   opacity: 0;
-}
+}   
 </style>

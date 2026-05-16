@@ -173,7 +173,15 @@
       "Bash(Start-Sleep -Seconds 8)",
       "mcp__plugin_playwright_playwright__browser_console_messages",
       "Bash(grep -E \"^tsc$\")",
-      "PowerShell(Head *)"
+      "PowerShell(Head *)",
+      "Bash(grep -n \"console\\\\\\\\.error\\\\|console\\\\\\\\.log\" src/features/auth/application/register.ts src/features/auth/presentation/authRoutes.ts src/app.ts)",
+      "Bash(grep -rn \"unknown\\\\|\\\\\\\\?\" src/features --include=\"*.ts\")",
+      "Bash(grep -E \"console\\\\\\\\.log|console\\\\\\\\.error\")",
+      "Bash(npm -w apps/web run test -- run --reporter=basic)",
+      "Skill(superpowers:systematic-debugging)",
+      "Bash(findstr \":5173 :3000 :4173 :8080\")",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Test-Path *)"
     ]
   }
 }

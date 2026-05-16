@@ -21,8 +21,8 @@ const GalleryHomeSchema = z.object({
 export type GalleryItem = z.infer<typeof GalleryItemSchema>
 export type HomeGallery = z.infer<typeof GalleryHomeSchema>
 
-export async function fetchHomeGallery(): Promise<HomeGallery> {
-  const res = await apiFetch('/gallery/home')
+export async function fetchHomeGallery(signal?: AbortSignal): Promise<HomeGallery> {
+  const res = await apiFetch('/gallery/home', { signal })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data: unknown = await res.json()
   return GalleryHomeSchema.parse(data)

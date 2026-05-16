@@ -253,16 +253,15 @@ async function handleLogout() {
     text-decoration: none;
     transition:
       color 0.2s ease,
-      transform 0.2s ease;
-    transform-origin: left center;
+      background-color 0.3s ease;
 
     &:last-child {
       border-bottom: none;
     }
 
     &:hover {
-      color: var(--color-accent);
-      transform: scale(1.02);
+      color: var(--color-accent-hover);
+      background-color: var(--color-border);
     }
 
     &:focus-visible {
@@ -281,6 +280,10 @@ async function handleLogout() {
       border: none;
       border-bottom: 1px solid var(--color-border);
       text-align: left;
+
+      &:hover {
+        background-color: var(--color-border);
+      }
     }
 
     &--toggle {
@@ -292,10 +295,9 @@ async function handleLogout() {
       align-items: center;
       justify-content: space-between;
       padding-right: 1.125rem;
-      transform: none;
 
       &:hover {
-        transform: none;
+        background-color: var(--color-border);
       }
     }
 
@@ -339,16 +341,15 @@ async function handleLogout() {
     border-bottom: 1px solid var(--color-border);
     transition:
       color 0.2s ease,
-      transform 0.2s ease;
-    transform-origin: left center;
+      background-color 0.3s ease;
 
     &:last-child {
       border-bottom: none;
     }
 
     &:hover {
-      color: var(--color-accent);
-      transform: scale(1.02);
+      color: var(--color-accent-hover);
+      background-color: var(--color-border);
     }
 
     &:focus-visible {

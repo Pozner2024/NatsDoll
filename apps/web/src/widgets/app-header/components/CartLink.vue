@@ -46,7 +46,7 @@ const ariaLabel = computed(() =>
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: var(--color-bg);
+    background-color: var(--color-border);
   }
 
   &__icon {
