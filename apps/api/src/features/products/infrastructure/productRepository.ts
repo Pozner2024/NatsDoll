@@ -65,7 +65,8 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
           price: true,
           images: true,
           stock: true,
-          category: { select: { name: true, slug: true } },
+          messageOptions: true,
+          category: { select: { name: true, slug: true, hasMessage: true } },
         },
       })
       if (!row) return null
@@ -83,6 +84,8 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
         stock: row.stock,
         category: row.category.name,
         categorySlug: row.category.slug,
+        hasMessage: row.category.hasMessage,
+        messageOptions: row.messageOptions,
       }
     },
   }

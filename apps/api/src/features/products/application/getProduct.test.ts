@@ -12,6 +12,8 @@ const detail: ProductDetail = {
   stock: 1,
   category: 'Art Dolls',
   categorySlug: 'art-dolls',
+  hasMessage: false,
+  messageOptions: [],
 }
 
 function makeRepo(result: ProductDetail | null = detail) {

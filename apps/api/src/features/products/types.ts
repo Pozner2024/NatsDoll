@@ -39,6 +39,8 @@ export type ProductDetail = {
   stock: number
   category: string
   categorySlug: string
+  hasMessage: boolean
+  messageOptions: string[]
 }
 
 export type GetProduct = (slug: string) => Promise<ProductDetail | null>

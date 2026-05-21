@@ -13,6 +13,8 @@ const sampleDetail: ProductDetail = {
   stock: 1,
   category: 'Art Dolls',
   categorySlug: 'art-dolls',
+  hasMessage: false,
+  messageOptions: [],
 }
 
 const sampleResponse = {

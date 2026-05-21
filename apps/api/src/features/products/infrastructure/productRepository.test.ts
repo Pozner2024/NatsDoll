@@ -3,7 +3,7 @@ import { makeProductRepository } from './productRepository'
 
 function makePrismaMock() {
   return {
-    product: { findMany: vi.fn(), count: vi.fn() },
+    product: { findMany: vi.fn(), count: vi.fn(), findFirst: vi.fn() },
     category: { findMany: vi.fn() },
   } as unknown as Parameters<typeof makeProductRepository>[0]
 }
@@ -124,5 +124,106 @@ describe('productRepository.findMany', () => {
     const result = await repo.findMany({ sort: 'newest', page: 1, limit: 12 })
 
     expect(result.items[0]!.image).toBeNull()
+  })
+})
+
+describe('productRepository.findBySlug', () => {
+  it('returns product detail with hasMessage=false and empty messageOptions by default', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({
+      id: 'p1',
+      slug: 'cat-figurine',
+      name: 'Cat Figurine',
+      description: 'A handmade cat',
+      price: { toNumber: () => 25 } as never,
+      images: ['img1.jpg'],
+      stock: 3,
+      messageOptions: [],
+      category: { name: 'Animals', slug: 'animals', hasMessage: false },
+    } as never)
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findBySlug('cat-figurine')
+
+    const calledWith = vi.mocked(prisma.product.findFirst).mock.calls[0]![0]!
+    expect(calledWith.select).toMatchObject({
+      messageOptions: true,
+      category: { select: { name: true, slug: true, hasMessage: true } },
+    })
+    expect(result).toEqual({
+      id: 'p1',
+      slug: 'cat-figurine',
+      name: 'Cat Figurine',
+      description: 'A handmade cat',
+      price: 25,
+      images: ['img1.jpg'],
+      stock: 3,
+      category: 'Animals',
+      categorySlug: 'animals',
+      hasMessage: false,
+      messageOptions: [],
+    })
+  })
+
+  it('returns product detail with hasMessage=true and messageOptions when category enables messages', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({
+      id: 'p2',
+      slug: 'birthday-cake',
+      name: 'Birthday Cake',
+      description: 'Sweet handmade cake',
+      price: { toNumber: () => 40 } as never,
+      images: ['cake.jpg'],
+      stock: 5,
+      messageOptions: ['Happy birthday!', 'With love'],
+      category: { name: 'Sweet', slug: 'sweet', hasMessage: true },
+    } as never)
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findBySlug('birthday-cake')
+
+    expect(result).toEqual({
+      id: 'p2',
+      slug: 'birthday-cake',
+      name: 'Birthday Cake',
+      description: 'Sweet handmade cake',
+      price: 40,
+      images: ['cake.jpg'],
+      stock: 5,
+      category: 'Sweet',
+      categorySlug: 'sweet',
+      hasMessage: true,
+      messageOptions: ['Happy birthday!', 'With love'],
+    })
+  })
+
+  it('returns null when product not found', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null)
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findBySlug('missing')
+
+    expect(result).toBeNull()
+  })
+
+  it('returns null when product has no category', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({
+      id: 'p3',
+      slug: 'orphan',
+      name: 'Orphan',
+      description: 'No category',
+      price: { toNumber: () => 10 } as never,
+      images: [],
+      stock: 1,
+      messageOptions: [],
+      category: null,
+    } as never)
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findBySlug('orphan')
+
+    expect(result).toBeNull()
   })
 })
