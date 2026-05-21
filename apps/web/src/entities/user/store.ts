@@ -12,6 +12,7 @@ import { ref, computed, readonly } from 'vue'
 import { z } from 'zod'
 import type { User } from './types'
 import { apiFetch, apiErrorMessage } from '@/shared'
+import { useCartStore } from '@/entities/cart'
 
 const userSchema = z.object({
   id: z.string(),
@@ -48,12 +49,14 @@ export const useAuthStore = defineStore('auth', () => {
   function setAuth(token: string, nextUser: User) {
     accessToken.value = token
     user.value = nextUser
+    void useCartStore().load(true)
   }
 
   function clearState(): void {
     accessToken.value = null
     user.value = null
     initPromise = null
+    useCartStore().reset()
   }
 
   async function login(data: { email: string; password: string }): Promise<void> {

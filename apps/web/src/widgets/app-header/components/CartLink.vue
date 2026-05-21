@@ -17,16 +17,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-// TODO: заменить ref(0) на useCartStore().count когда store будет готов
+import { computed } from 'vue'
 import CartIcon from './CartIcon.vue'
+import { useCartStore } from '@/entities/cart'
 
 const emit = defineEmits<{
   navigate: []
 }>()
 
-// TODO: заменить на useCartStore().count
-const cartCount = ref(0)
+const cartStore = useCartStore()
+const cartCount = computed(() => cartStore.itemCount)
 
 const ariaLabel = computed(() =>
   `Cart${cartCount.value > 0 ? `, ${cartCount.value} items` : ''}`

@@ -80,7 +80,10 @@ describe('useAuthStore', () => {
       const p2 = store.initAuth() // должен вернуть тот же promise
       await Promise.all([p1, p2])
       // /me вызывается только один раз, так как initPromise уже занят
-      expect(fetchMock).toHaveBeenCalledTimes(1)
+      const meCalls = fetchMock.mock.calls.filter(
+        ([url]) => typeof url === 'string' && url.includes('/auth/me'),
+      )
+      expect(meCalls).toHaveLength(1)
     })
   })
 })
