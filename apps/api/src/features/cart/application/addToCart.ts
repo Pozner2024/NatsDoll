@@ -1,7 +1,5 @@
-import { AppError, type AppErrorStatus } from '../../../shared/errors'
+import { AppError } from '../../../shared/errors'
 import type { CartRepository, AddToCart, AddToCartParams, CartView } from '../types'
-
-const STATUS_GONE = 410 as unknown as AppErrorStatus
 
 const MAX_MESSAGE_LENGTH = 100
 
@@ -15,7 +13,7 @@ export function makeAddToCart(repo: CartRepository): AddToCart {
 
     const product = await repo.findProductForCart(productId)
     if (!product) throw new AppError(404, 'Product not found')
-    if (!product.isAvailable) throw new AppError(STATUS_GONE, 'Product is no longer available')
+    if (!product.isAvailable) throw new AppError(410, 'Product is no longer available')
 
     if (product.hasMessage) {
       if (message === null) throw new AppError(400, 'Message is required for this product')
