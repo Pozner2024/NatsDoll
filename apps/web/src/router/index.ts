@@ -45,6 +45,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/checkout',
+    name: 'checkout',
+    component: () => import('@/pages/CheckoutPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/orders/:id',
+    name: 'order-confirmation',
+    component: () => import('@/pages/OrderConfirmationPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/auth/callback',
     name: 'auth-callback',
     component: () => import('@/pages/AuthCallbackPage.vue'),

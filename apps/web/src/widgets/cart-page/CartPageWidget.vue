@@ -32,8 +32,13 @@
           <span>Total</span>
           <span>{{ formatPrice(totalAmount) }}</span>
         </p>
-        <AppButton type="button" class="cart-page__checkout" disabled>
-          Checkout (coming soon)
+        <AppButton
+          type="button"
+          class="cart-page__checkout"
+          :disabled="itemCount === 0"
+          @click="router.push({ name: 'checkout' })"
+        >
+          Checkout
         </AppButton>
       </aside>
     </div>
@@ -42,12 +47,13 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
 import CartLineItem from './components/CartLineItem.vue'
 
+const router = useRouter()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
 
