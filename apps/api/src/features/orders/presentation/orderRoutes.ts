@@ -27,7 +27,7 @@ export function makeOrderRouter(
     const { userId } = c.get('auth')
     const { shippingAddress } = c.req.valid('json')
     const order = await createOrder(userId, shippingAddress)
-    return c.json(order)
+    return c.json(order, 201)
   })
 
   router.get('/orders', async (c) => {

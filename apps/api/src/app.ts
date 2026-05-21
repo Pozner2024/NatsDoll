@@ -137,6 +137,7 @@ export function createApp() {
   const createOrder = makeCreateOrder(orderRepo)
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
+  app.use('/orders', requireAuth)
   app.use('/orders/*', requireAuth)
   app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder))
 

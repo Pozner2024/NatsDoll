@@ -35,7 +35,7 @@ describe('POST /orders', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shippingAddress: mockAddress }),
     })
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(201)
     const body = await res.json() as typeof mockOrderDetail
     expect(body.id).toBe('order-1')
     expect(createOrder).toHaveBeenCalledWith('u1', mockAddress)
