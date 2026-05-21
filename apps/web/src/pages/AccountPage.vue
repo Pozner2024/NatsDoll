@@ -1,7 +1,7 @@
 <template>
-  <PlaceholderPage title="My account" />
+  <AccountPage />
 </template>
 
 <script setup lang="ts">
-import { PlaceholderPage } from '@/shared'
+import { AccountPage } from '@/widgets/account-page'
 </script>

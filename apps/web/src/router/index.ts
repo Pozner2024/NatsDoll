@@ -22,21 +22,45 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/account',
-    name: 'account',
     component: () => import('@/pages/AccountPage.vue'),
     meta: { requiresAuth: true },
-  },
-  {
-    path: '/account/purchases',
-    name: 'account-purchases',
-    component: () => import('@/pages/AccountPage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/account/messages',
-    name: 'account-messages',
-    component: () => import('@/pages/AccountPage.vue'),
-    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'account',
+        component: () => import('@/widgets/account-page/components/AccountDashboard.vue'),
+      },
+      {
+        path: 'profile',
+        name: 'account-profile',
+        component: () => import('@/widgets/account-page/components/AccountProfile.vue'),
+      },
+      {
+        path: 'purchases',
+        name: 'account-purchases',
+        component: () => import('@/widgets/account-page/components/AccountPurchases.vue'),
+      },
+      {
+        path: 'favorites',
+        name: 'account-favorites',
+        component: () => import('@/widgets/account-page/components/AccountFavorites.vue'),
+      },
+      {
+        path: 'addresses',
+        name: 'account-addresses',
+        component: () => import('@/widgets/account-page/components/AccountAddresses.vue'),
+      },
+      {
+        path: 'reviews',
+        name: 'account-reviews',
+        component: () => import('@/widgets/account-page/components/AccountReviews.vue'),
+      },
+      {
+        path: 'messages',
+        name: 'account-messages',
+        component: () => import('@/widgets/account-page/components/AccountMessages.vue'),
+      },
+    ],
   },
   {
     path: '/cart',

@@ -30,7 +30,9 @@ onMounted(async () => {
 
   try {
     await authStore.verifyEmail(token)
-    router.replace('/')
+    const redirect = sessionStorage.getItem('auth_redirect')
+    sessionStorage.removeItem('auth_redirect')
+    router.replace(redirect || '/')
   } catch {
     failed.value = true
   }

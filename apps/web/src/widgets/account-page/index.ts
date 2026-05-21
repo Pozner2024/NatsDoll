@@ -1,0 +1,8 @@
+export { default as AccountPage } from './AccountPage.vue'
+export { default as AccountDashboard } from './components/AccountDashboard.vue'
+export { default as AccountProfile } from './components/AccountProfile.vue'
+export { default as AccountPurchases } from './components/AccountPurchases.vue'
+export { default as AccountFavorites } from './components/AccountFavorites.vue'
+export { default as AccountAddresses } from './components/AccountAddresses.vue'
+export { default as AccountReviews } from './components/AccountReviews.vue'
+export { default as AccountMessages } from './components/AccountMessages.vue'

@@ -329,6 +329,8 @@ async function handleRegister() {
   submitError.value = ''
   try {
     await authStore.register({ name: registerForm.name, email: registerForm.email, password: registerForm.password })
+    const { pathname, search, hash } = window.location
+    sessionStorage.setItem('auth_redirect', pathname + search + hash)
     showVerifyPending()
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'

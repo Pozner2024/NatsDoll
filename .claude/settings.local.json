@@ -183,7 +183,19 @@
       "PowerShell(Get-ChildItem *)",
       "PowerShell(Test-Path *)",
       "mcp__plugin_playwright_playwright__browser_close",
-      "Skill(superpowers:brainstorming)"
+      "Skill(superpowers:brainstorming)",
+      "Bash(powershell *)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate dev --name add_message_personalization)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate dev --name add_message_personalization --create-only)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url \"postgresql://user:password@localhost:5432/natsdoll_shadow_tmp\" --script)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate deploy)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma generate)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate status)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma db execute --url \"postgresql://user:password@localhost:5432/natsdoll\" --stdin)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(psql *)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma migrate resolve --rolled-back 20260521120000_add_message_to_order_item)",
+      "PowerShell(Get-ChildItem \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\web\\\\src\\\\pages\\\\\" | ForEach-Object { $_.Name })"
     ]
   }
 }
