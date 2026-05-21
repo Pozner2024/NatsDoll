@@ -35,6 +35,15 @@ import {
   makeVerifyEmail,
   makeEmailService,
 } from './features/auth'
+import {
+  makeCartRepository,
+  makeAddToCart,
+  makeGetCart,
+  makeUpdateQuantity,
+  makeRemoveFromCart,
+  makeCartRouter,
+} from './features/cart'
+import { requireAuth } from './shared/middleware'
 
 export function createApp() {
   const app = new Hono()
@@ -48,7 +57,7 @@ export function createApp() {
   app.use('*', cors({
     origin: frontendOrigin,
     credentials: true,
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   }))
 
@@ -106,6 +115,15 @@ export function createApp() {
   const googleAuth = makeGoogleAuth(authRepo, getGoogleProfile)
   const verifyEmail = makeVerifyEmail(authRepo)
   app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe, googleAuth, verifyEmail))
+
+  // Cart
+  const cartRepo = makeCartRepository(prisma)
+  const addToCart = makeAddToCart(cartRepo)
+  const getCart = makeGetCart(cartRepo)
+  const updateQuantity = makeUpdateQuantity(cartRepo)
+  const removeFromCart = makeRemoveFromCart(cartRepo)
+  app.use('/cart/*', requireAuth)
+  app.route('/cart', makeCartRouter(addToCart, getCart, updateQuantity, removeFromCart))
 
   return app
 }
