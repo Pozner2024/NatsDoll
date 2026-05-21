@@ -43,6 +43,13 @@ import {
   makeRemoveFromCart,
   makeCartRouter,
 } from './features/cart'
+import {
+  makeOrderRepository,
+  makeCreateOrder,
+  makeGetMyOrders,
+  makeGetOrder,
+  makeOrderRouter,
+} from './features/orders'
 import { requireAuth } from './shared/middleware'
 
 export function createApp() {
@@ -124,6 +131,14 @@ export function createApp() {
   const removeFromCart = makeRemoveFromCart(cartRepo)
   app.use('/cart/*', requireAuth)
   app.route('/cart', makeCartRouter(addToCart, getCart, updateQuantity, removeFromCart))
+
+  // Orders
+  const orderRepo = makeOrderRepository(prisma)
+  const createOrder = makeCreateOrder(orderRepo)
+  const getMyOrders = makeGetMyOrders(orderRepo)
+  const getOrder = makeGetOrder(orderRepo)
+  app.use('/orders/*', requireAuth)
+  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder))
 
   return app
 }
