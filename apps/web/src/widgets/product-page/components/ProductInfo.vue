@@ -5,6 +5,13 @@
       <p class="product-info__price">{{ formatPrice(product.price) }}</p>
     </div>
 
+    <MessageSelector
+      v-if="product.hasMessage"
+      :options="product.messageOptions"
+      :error="messageError"
+      @change="onMessageChange"
+    />
+
     <div class="product-info__action">
       <div v-if="product.stock > 0" class="product-info__qty">
         <button type="button" class="product-info__qty-btn" :disabled="qty <= 1" @click="qty--">−</button>
@@ -15,10 +22,10 @@
       <AppButton
         type="button"
         class="product-info__btn"
-        :disabled="product.stock === 0"
-        @click="emit('add-to-cart')"
+        :disabled="product.stock === 0 || isAdding"
+        @click="onAddToCart"
       >
-        {{ product.stock === 0 ? 'Sold out' : 'Add to cart' }}
+        {{ buttonLabel }}
       </AppButton>
     </div>
 
@@ -64,17 +71,46 @@
 import { ref, computed } from 'vue'
 import { AppButton, formatPrice } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
+import MessageSelector from './MessageSelector.vue'
 
 const props = defineProps<{ product: ProductDetail }>()
-const emit = defineEmits<{ 'add-to-cart': [] }>()
+const emit = defineEmits<{ 'add-to-cart': [payload: { quantity: number; message: string | null }] }>()
+
 const qty = ref(1)
+const message = ref<string | null>(null)
+const messageError = ref<string | undefined>(undefined)
+const isAdding = ref(false)
 
 const paragraphs = computed(() =>
   props.product.description
     .split(/\n\n+/)
-    .map(p => p.trim())
+    .map((p) => p.trim())
     .filter(Boolean),
 )
+
+const buttonLabel = computed(() => {
+  if (props.product.stock === 0) return 'Sold out'
+  if (isAdding.value) return 'Adding…'
+  return 'Add to cart'
+})
+
+function onMessageChange(value: string | null): void {
+  message.value = value
+  messageError.value = undefined
+}
+
+function onAddToCart(): void {
+  if (props.product.hasMessage) {
+    if (message.value === null || message.value.length === 0) {
+      messageError.value = 'Please choose a message or type your own'
+      return
+    }
+  }
+  isAdding.value = true
+  emit('add-to-cart', { quantity: qty.value, message: props.product.hasMessage ? message.value : null })
+}
+
+defineExpose({ resetAdding: () => { isAdding.value = false } })
 </script>
 
 <style scoped lang="scss">

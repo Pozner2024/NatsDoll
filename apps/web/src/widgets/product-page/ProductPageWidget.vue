@@ -21,6 +21,7 @@
         :stock="product.stock"
       />
       <ProductInfo
+        ref="productInfoRef"
         :product="product"
         @add-to-cart="onAddToCart"
       />
@@ -34,8 +35,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onScopeDispose } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { fetchProduct, fetchProducts } from '@/entities/product'
+import { useCartStore } from '@/entities/cart'
+import { useAuthStore } from '@/entities/user'
+import { useAuthModal } from '@/features/auth-modal'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -53,6 +57,12 @@ const hasError = ref(false)
 
 const moreProducts = ref<Product[]>([])
 const moreLoading = ref(false)
+
+const router = useRouter()
+const cartStore = useCartStore()
+const authStore = useAuthStore()
+const authModal = useAuthModal()
+const productInfoRef = ref<{ resetAdding: () => void } | null>(null)
 
 let currentController: AbortController | null = null
 
@@ -117,7 +127,25 @@ watch(
 
 onScopeDispose(() => currentController?.abort())
 
-function onAddToCart() {
+async function onAddToCart(payload: { quantity: number; message: string | null }): Promise<void> {
+  try {
+    if (!authStore.isLoggedIn) {
+      authModal.open()
+      productInfoRef.value?.resetAdding()
+      return
+    }
+    if (!product.value) return
+    await cartStore.add({
+      productId: product.value.id,
+      quantity: payload.quantity,
+      message: payload.message,
+    })
+    await router.push({ name: 'cart' })
+  } catch (e) {
+    console.error('Failed to add to cart', e)
+  } finally {
+    productInfoRef.value?.resetAdding()
+  }
 }
 </script>
 
