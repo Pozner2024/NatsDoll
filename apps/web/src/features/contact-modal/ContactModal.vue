@@ -124,9 +124,9 @@ function resetForm() {
 }
 
 function validate(): boolean {
-  errors.name = form.name.trim() ? '' : 'Name is required'
+  errors.name = form.name.trim() ? '' : 'Please enter your name'
   errors.email = validateEmail(form.email)
-  errors.message = form.message.trim() ? '' : 'Message is required'
+  errors.message = form.message.trim() ? '' : 'Please enter your message'
   return !errors.name && !errors.email && !errors.message
 }
 

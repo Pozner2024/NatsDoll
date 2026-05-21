@@ -24,7 +24,7 @@ import { GALLERY_GRID_SIZE } from './galleryApi'
   grid-template-rows: repeat(15, 1fr);
   width: 100%;
   height: calc(100dvh - var(--header-height));
-  gap: 2px;
+  gap: 1px;
   grid-template-areas:
     "p1 p1 p1 p2 p2 p2 p3 p3 p3"
     "p1 p1 p1 p2 p2 p2 p3 p3 p3"

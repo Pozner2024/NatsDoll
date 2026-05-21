@@ -114,7 +114,7 @@ node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=b
 - **`refresh_token` cookie — `sameSite='Strict'`** (CSRF). **`oauth_state` cookie — `sameSite='Lax'`** (Strict ломает Google-callback redirect).
 - **Verify-email — POST с JSON-body**, не GET с query-string (токен иначе попадает в `access.log` nginx и History браузера).
 - **Refresh-rotation strict без grace-period**: два параллельных refresh с одного cookie → reuse-detection → удаление всех сессий пользователя. By design.
-- **Password — `min(8)` + блок-лист топ-100** (`apps/api/src/shared/lib/passwordBlocklist.ts`). Сообщение об отказе: `This password is too common, please choose a stronger one`.
+- **Password — `min(4)` + блок-лист топ-100** (`apps/api/src/shared/lib/passwordBlocklist.ts`). Сообщение об отказе: `This password is too common, please choose a stronger one`.
 - **Rate limiter — in-memory `Map`**. Production-compose ограничен одной репликой `api`. **Не запускать `--scale api>1`** — лимиты обойдут.
 - **`HMAC_SECRET` отдельно от `JWT_SECRET`** (см. `.env.example`). Fallback на JWT_SECRET сохранён, но в продакшене — два разных секрета.
 

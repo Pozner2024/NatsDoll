@@ -113,7 +113,7 @@ describe('useNewsletterSubscribe — клиентская валидация', (
     await handleSubmit()
 
     expect(state.value).toBe('error')
-    expect(errorMessage.value).toBe('Invalid email format')
+    expect(errorMessage.value).toBe('Please enter a real email address and check for typos')
     expect(subscribeToNewsletter).not.toHaveBeenCalled()
   })
 })

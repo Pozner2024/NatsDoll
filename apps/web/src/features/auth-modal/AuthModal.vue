@@ -293,17 +293,17 @@ function resetForms() {
 
 function validateLogin(): boolean {
   loginErrors.email = validateEmail(loginForm.email)
-  loginErrors.password = loginForm.password ? '' : 'Password is required'
+  loginErrors.password = loginForm.password ? '' : 'Please enter your password'
   return !loginErrors.email && !loginErrors.password
 }
 
 function validateRegister(): boolean {
-  registerErrors.name = registerForm.name.trim() ? '' : 'Name is required'
+  registerErrors.name = registerForm.name.trim() ? '' : 'Please enter your name'
   registerErrors.email = validateEmail(registerForm.email)
   registerErrors.password = !registerForm.password
-    ? 'Password is required'
-    : registerForm.password.length < 8
-      ? 'Password must be at least 8 characters'
+    ? 'Please enter your password'
+    : registerForm.password.length < 4
+      ? 'Password must be at least 4 characters'
       : ''
   return !registerErrors.name && !registerErrors.email && !registerErrors.password
 }

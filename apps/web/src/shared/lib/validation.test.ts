@@ -24,16 +24,16 @@ describe('emailSchema', () => {
     if (!result.success) expect(result.error.issues[0]?.message).toBe('Please enter your email')
   })
 
-  it('отклоняет невалидный формат с сообщением "Invalid email format"', () => {
+  it('отклоняет невалидный формат с сообщением о проверке адреса', () => {
     const result = emailSchema.safeParse('not-an-email')
     expect(result.success).toBe(false)
-    if (!result.success) expect(result.error.issues[0]?.message).toBe('Invalid email format')
+    if (!result.success) expect(result.error.issues[0]?.message).toBe('Please enter a real email address and check for typos')
   })
 
   it('отклоняет email без домена', () => {
     const result = emailSchema.safeParse('nat@')
     expect(result.success).toBe(false)
-    if (!result.success) expect(result.error.issues[0]?.message).toBe('Invalid email format')
+    if (!result.success) expect(result.error.issues[0]?.message).toBe('Please enter a real email address and check for typos')
   })
 })
 
@@ -46,7 +46,7 @@ describe('validateEmail', () => {
     expect(validateEmail('')).toBe('Please enter your email')
   })
 
-  it('возвращает "Invalid email format" для невалидного email', () => {
-    expect(validateEmail('abc')).toBe('Invalid email format')
+  it('возвращает сообщение о проверке адреса для невалидного email', () => {
+    expect(validateEmail('abc')).toBe('Please enter a real email address and check for typos')
   })
 })

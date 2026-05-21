@@ -12,7 +12,7 @@ export function useNewsletterSubscribe() {
   async function handleSubmit() {
     const parsed = emailSchema.safeParse(email.value)
     if (!parsed.success) {
-      errorMessage.value = parsed.error.issues[0]?.message ?? 'Invalid email'
+      errorMessage.value = parsed.error.issues[0]?.message ?? 'Please enter a real email address and check for typos'
       state.value = 'error'
       return
     }

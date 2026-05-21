@@ -22,7 +22,7 @@ export function makeLogin(repo: AuthRepository) {
     const isValid = await verify(hashToVerify, data.password)
 
     if (!user || !user.passwordHash || !isValid) {
-      throw new AppError(401, 'Invalid credentials')
+      throw new AppError(401, "We couldn't sign you in. Check your email and password.")
     }
 
     if (!user.emailVerified) throw new AppError(403, 'Please verify your email before signing in')

@@ -181,7 +181,9 @@
       "Skill(superpowers:systematic-debugging)",
       "Bash(findstr \":5173 :3000 :4173 :8080\")",
       "PowerShell(Get-ChildItem *)",
-      "PowerShell(Test-Path *)"
+      "PowerShell(Test-Path *)",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Skill(superpowers:brainstorming)"
     ]
   }
 }

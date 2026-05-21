@@ -84,7 +84,7 @@ describe('login', () => {
     vi.mocked(mockRepo.findByEmail).mockResolvedValue({ ...mockUser, passwordHash: null })
     const login = makeLogin(mockRepo)
     await expect(login({ email: 'nat@test.com', password: 'pass' }))
-      .rejects.toMatchObject({ statusCode: 401, message: 'Invalid credentials' })
+      .rejects.toMatchObject({ statusCode: 401, message: "We couldn't sign you in. Check your email and password." })
   })
 
   it('вызывает verify с dummy hash для Google-only аккаунта (защита от timing attack)', async () => {

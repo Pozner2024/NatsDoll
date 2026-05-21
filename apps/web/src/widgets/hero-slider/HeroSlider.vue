@@ -125,15 +125,38 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
     padding: calc(2.5rem - $overlay-vertical-nudge) 2.5rem 0;
     gap: 1rem;
     z-index: var(--z-slider-overlay);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 110% 70% at top right,
+        rgb(0 0 0 / 0.7) 0%,
+        rgb(0 0 0 / 0.5) 30%,
+        rgb(0 0 0 / 0.25) 60%,
+        rgb(0 0 0 / 0) 100%
+      );
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @include desktop {
+      &::before {
+        background: radial-gradient(
+          ellipse 75% 60% at top right,
+          rgb(0 0 0 / 0.65) 0%,
+          rgb(0 0 0 / 0.45) 40%,
+          rgb(0 0 0 / 0.2) 70%,
+          rgb(0 0 0 / 0) 100%
+        );
+      }
+    }
   }
 
   &__cta {
     margin-top: calc($overlay-vertical-nudge / -2);
-    --color-text: var(--color-text);
-
-    @include tablet {
-      --color-text: var(--color-white);
-    }
+    --color-text: var(--color-white);
   }
 
   &__text {

@@ -107,7 +107,7 @@ onUnmounted(() => {
   grid-template-rows: repeat(15, 1fr);
   width: 100%;
   height: calc(100dvh - var(--header-height));
-  gap: 2px;
+  gap: 1px;
   grid-template-areas:
     "p1 p1 p1 p1 p2 p2 p3 p3 p3"
     "p1 p1 p1 p1 p2 p2 p3 p3 p3"
@@ -175,6 +175,21 @@ onUnmounted(() => {
       transform: none;
       align-items: flex-start;
       --color-text: var(--color-white);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: -10rem -14rem -10rem -10rem;
+        background: radial-gradient(
+          ellipse 280px 120px at center 45%,
+          rgb(0 0 0 / 0.7) 0%,
+          rgb(0 0 0 / 0.45) 40%,
+          rgb(0 0 0 / 0.2) 70%,
+          rgb(0 0 0 / 0) 100%
+        );
+        pointer-events: none;
+        z-index: -1;
+      }
     }
   }
 
@@ -218,6 +233,11 @@ onUnmounted(() => {
       overflow: hidden;
       position: relative;
     }
+  }
+
+  &__cell--3 &__img {
+    transform: scale(1.2);
+    transform-origin: 50% 75%;
   }
 }
 </style>
