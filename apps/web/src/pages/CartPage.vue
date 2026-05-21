@@ -1,7 +1,7 @@
 <template>
-  <PlaceholderPage title="Cart" />
+  <CartPageWidget />
 </template>
 
 <script setup lang="ts">
-import { PlaceholderPage } from '@/shared'
+import { CartPageWidget } from '@/widgets/cart-page'
 </script>

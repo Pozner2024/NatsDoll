@@ -42,6 +42,7 @@ const routes: RouteRecordRaw[] = [
     path: '/cart',
     name: 'cart',
     component: () => import('@/pages/CartPage.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/auth/callback',
