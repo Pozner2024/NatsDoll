@@ -13,3 +13,4 @@ export {
 export type { AccessTokenPayload } from './tokens'
 export { FRONTEND_URL } from './config'
 export { COMMON_PASSWORDS } from './passwordBlocklist'
+export { s3, S3_BUCKET, S3_ENDPOINT, uploadToS3 } from './s3Client'
