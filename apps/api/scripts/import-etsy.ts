@@ -1,3 +1,5 @@
+import slugify from 'slugify'
+
 type CategoryRule = readonly [slug: string, keywords: readonly string[]]
 
 const CATEGORY_RULES: readonly CategoryRule[] = [
@@ -22,4 +24,19 @@ export function detectCategorySlug(title: string, tags: string): string {
     }
   }
   return FALLBACK_CATEGORY
+}
+
+export function makeUniqueSlug(title: string, taken: Set<string>): string {
+  const base = slugify(title, { lower: true, strict: true })
+  if (!taken.has(base)) {
+    taken.add(base)
+    return base
+  }
+  let n = 2
+  while (taken.has(`${base}-${n}`)) {
+    n++
+  }
+  const slug = `${base}-${n}`
+  taken.add(slug)
+  return slug
 }
