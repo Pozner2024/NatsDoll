@@ -15,17 +15,21 @@ type LoginData = { email: string; password: string }
 const DUMMY_HASH =
   '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHR2YWx1ZQ$K0mGBc4bA4+zBYK6Jn2LQI2B8wD0tRpV4GQ5yqB3E8A'
 
+// Единый 401 на все три ветки: нет user, неверный пароль, email не верифицирован.
+// Не выдаёт, существует ли email в системе (user enumeration). Verify-flow напоминание —
+// в самом сообщении ошибки и в письме верификации, отправленном при register().
+const INVALID_LOGIN_MESSAGE =
+  "We couldn't sign you in. Check your email and password — and if you just registered, follow the verification link in your inbox."
+
 export function makeLogin(repo: AuthRepository) {
   return async function login(data: LoginData): Promise<AuthTokensResult> {
     const user = await repo.findByEmail(data.email)
     const hashToVerify = user?.passwordHash ?? DUMMY_HASH
     const isValid = await verify(hashToVerify, data.password)
 
-    if (!user || !user.passwordHash || !isValid) {
-      throw new AppError(401, "We couldn't sign you in. Check your email and password.")
+    if (!user || !user.passwordHash || !isValid || !user.emailVerified) {
+      throw new AppError(401, INVALID_LOGIN_MESSAGE)
     }
-
-    if (!user.emailVerified) throw new AppError(403, 'Please verify your email before signing in')
 
     return issueTokensForUser(repo, user)
   }

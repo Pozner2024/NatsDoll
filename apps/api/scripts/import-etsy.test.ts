@@ -41,8 +41,11 @@ describe('detectCategorySlug', () => {
     expect(detectCategorySlug('Random unknown item', 'misc')).toBe('art-dolls')
   })
 
-  it('учитывает поле TAGS вместе с TITLE', () => {
-    expect(detectCategorySlug('Cute figurine', 'christmas, holiday')).toBe('christmas-gifts')
+  it('product-type правила используют TAGS (occasion-правила — только TITLE)', () => {
+    // dollhouse из тега — матчится (product-type rule)
+    expect(detectCategorySlug('Cute miniature set', 'dollhouse, 1:12')).toBe('dollhouse-miniature')
+    // christmas только из тега — не матчится (occasion rule, title-only)
+    expect(detectCategorySlug('Cute figurine', 'christmas, holiday')).toBe('art-dolls')
   })
 
   it('case-insensitive', () => {

@@ -178,7 +178,7 @@ const navItems = [
     }
 
     &:hover {
-      background: rgb(var(--btn-gradient-light) / 0.5);
+      background-color: var(--color-border);
       color: var(--color-text);
     }
 

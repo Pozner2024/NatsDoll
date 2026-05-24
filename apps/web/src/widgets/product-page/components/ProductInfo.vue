@@ -220,9 +220,13 @@ defineExpose({ resetAdding: () => { isAdding.value = false } })
     white-space: nowrap;
     padding: 0.6rem 0.75rem;
 
+    @include tablet {
+      flex: 0 1 auto;
+      padding: 0.6rem 1.5rem;
+    }
+
     @include desktop {
       --btn-font-size: var(--fs-base);
-      flex: 0 1 auto;
       padding: 0.6rem 2rem;
     }
 

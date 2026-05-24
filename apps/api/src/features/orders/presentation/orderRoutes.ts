@@ -4,12 +4,12 @@ import { zValidator } from '@hono/zod-validator'
 import type { CreateOrder, GetMyOrders, GetOrder } from '../types'
 
 const shippingAddressSchema = z.object({
-  fullName: z.string().min(1),
-  line1: z.string().min(1),
-  line2: z.string().optional(),
-  city: z.string().min(1),
-  country: z.string().min(1),
-  postalCode: z.string().min(1),
+  fullName: z.string().min(1).max(200),
+  line1: z.string().min(1).max(200),
+  line2: z.string().max(200).optional(),
+  city: z.string().min(1).max(100),
+  country: z.string().min(1).max(100),
+  postalCode: z.string().min(1).max(20),
 })
 
 const createOrderBodySchema = z.object({

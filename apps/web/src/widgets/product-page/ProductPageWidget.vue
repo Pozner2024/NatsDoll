@@ -19,6 +19,7 @@
         :images="product.images"
         :name="product.name"
         :stock="product.stock"
+        :product="productForFavorite"
       />
       <ProductInfo
         ref="productInfoRef"
@@ -57,6 +58,19 @@ const hasError = ref(false)
 
 const moreProducts = ref<Product[]>([])
 const moreLoading = ref(false)
+
+const productForFavorite = computed<Product | undefined>(() => {
+  const p = product.value
+  if (!p) return undefined
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    price: p.price,
+    image: p.images[0] ?? null,
+    stock: p.stock,
+  }
+})
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -164,8 +178,8 @@ async function onAddToCart(payload: { quantity: number; message: string | null }
   }
 
   @include desktop {
-    padding: 1.5rem 0 4rem;
-    max-width: 1280px;
+    padding: 1.5rem 2rem 4rem;
+    max-width: 1400px;
     margin: 0 auto;
   }
 
@@ -211,22 +225,10 @@ async function onAddToCart(payload: { quantity: number; message: string | null }
   }
 
   &__main {
-    @include phablet {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: start;
-    }
-
-    @include tablet {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: start;
-    }
-
     @include desktop {
-      grid-template-columns: 3fr 2fr;
-      max-width: 1100px;
-      margin: 0 auto;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
     }
   }
 

@@ -1,21 +1,25 @@
 <template>
   <article class="product-card">
-    <RouterLink :to="`/product/${product.slug}`" class="product-card__image-wrap">
-      <div class="product-card__image" :class="{ 'product-card__image--dimmed': product.stock === 0 }">
-        <img
-          v-if="product.image"
-          :src="product.image"
-          :alt="product.name"
-          class="product-card__img"
-        >
-        <div v-else class="product-card__placeholder" aria-hidden="true" />
-        <span v-if="product.stock === 0" class="product-card__badge">Sold out</span>
+    <div class="product-card__image-wrap">
+      <RouterLink :to="`/product/${product.slug}`" class="product-card__image-link">
+        <div class="product-card__image" :class="{ 'product-card__image--dimmed': product.stock === 0 }">
+          <img
+            v-if="product.image"
+            :src="product.image"
+            :alt="product.name"
+            class="product-card__img"
+          >
+          <div v-else class="product-card__placeholder" aria-hidden="true" />
+          <span v-if="product.stock === 0" class="product-card__badge">Sold out</span>
+        </div>
+        <div class="product-card__corner product-card__corner--tl" aria-hidden="true" />
+        <div class="product-card__corner product-card__corner--bl" aria-hidden="true" />
+        <div class="product-card__corner product-card__corner--br" aria-hidden="true" />
+      </RouterLink>
+      <div v-if="$slots.overlay" class="product-card__overlay">
+        <slot name="overlay" />
       </div>
-      <div class="product-card__corner product-card__corner--tl" aria-hidden="true" />
-      <div class="product-card__corner product-card__corner--tr" aria-hidden="true" />
-      <div class="product-card__corner product-card__corner--bl" aria-hidden="true" />
-      <div class="product-card__corner product-card__corner--br" aria-hidden="true" />
-    </RouterLink>
+    </div>
 
     <div class="product-card__body">
       <div class="product-card__top-row">
@@ -65,13 +69,23 @@ function onAdd() {
 
   &__image-wrap {
     position: relative;
-    display: block;
     border-radius: 2px;
     overflow: hidden;
   }
 
+  &__image-link {
+    display: block;
+  }
+
+  &__overlay {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 2;
+  }
+
   &__image {
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 3 / 2;
     background: rgb(var(--btn-gradient-light) / 1);
 
     &--dimmed {
@@ -121,7 +135,6 @@ function onAdd() {
     pointer-events: none;
 
     &--tl { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
-    &--tr { top: 8px; right: 8px; border-width: 1px 1px 0 0; }
     &--bl { bottom: 8px; left: 8px; border-width: 0 0 1px 1px; }
     &--br { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
   }

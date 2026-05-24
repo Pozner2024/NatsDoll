@@ -11,6 +11,11 @@
           :src="img"
           :alt="`${name} ${i + 1}`"
         >
+        <FavoriteToggle
+          v-if="product"
+          :product="product"
+          class="product-gallery__favorite"
+        />
       </div>
       <span v-if="stock === 0" class="product-gallery__badge">Sold out</span>
       <div class="product-gallery__dots">
@@ -46,6 +51,33 @@
           :src="activeImage"
           :alt="name"
         >
+        <template v-if="images.length > 1">
+          <button
+            type="button"
+            class="product-gallery__arrow product-gallery__arrow--prev"
+            aria-label="Предыдущее фото"
+            @click="activeIndex = (activeIndex - 1 + images.length) % images.length"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="product-gallery__arrow product-gallery__arrow--next"
+            aria-label="Следующее фото"
+            @click="activeIndex = (activeIndex + 1) % images.length"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </template>
+        <FavoriteToggle
+          v-if="product"
+          :product="product"
+          class="product-gallery__favorite"
+        />
         <span v-if="stock === 0" class="product-gallery__badge">Sold out</span>
       </div>
     </div>
@@ -55,11 +87,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useSlider } from '@/shared'
+import { FavoriteToggle } from '@/features/favorites-toggle'
+import type { Product } from '@/entities/product'
 
 const props = defineProps<{
   images: string[]
   name: string
   stock?: number
+  product?: Product
 }>()
 
 const imageCount = computed(() => props.images.length)
@@ -73,6 +108,19 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
 @use '@/assets/styles/breakpoints.module' as *;
 
 .product-gallery {
+  max-width: 640px;
+  margin: 0 auto;
+
+  @include tablet {
+    max-width: 774px;
+    margin: 0 auto;
+  }
+
+  @include desktop {
+    max-width: 774px;
+    margin: 0;
+  }
+
   &__slider {
     position: relative;
 
@@ -84,7 +132,7 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
   &__track {
     position: relative;
     width: 100%;
-    aspect-ratio: 1;
+    aspect-ratio: 3 / 2;
     background: rgb(var(--btn-gradient-light) / 0.4);
     overflow: hidden;
   }
@@ -129,22 +177,28 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
 
     @include tablet {
       display: flex;
+      flex-direction: column;
       gap: 8px;
     }
   }
 
   &__thumbs {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
-    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   &__thumb {
-    width: 96px;
-    height: 96px;
+    width: 72px;
+    height: 48px;
     flex-shrink: 0;
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
     border: 1.5px solid transparent;
     background: none;
@@ -165,8 +219,7 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
 
   &__main {
     position: relative;
-    flex: 1;
-    aspect-ratio: 1;
+    aspect-ratio: 3 / 2;
     background: rgb(var(--btn-gradient-light) / 0.4);
     overflow: hidden;
   }
@@ -189,6 +242,43 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
     letter-spacing: 0.08em;
     padding: 0.25rem 0.5rem;
     border-radius: 3px;
+  }
+
+  &__arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgb(255 255 255 / 0.75);
+    backdrop-filter: blur(4px);
+    color: var(--color-text);
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.15s ease;
+
+    &--prev { left: 0.6rem; }
+    &--next { right: 0.6rem; }
+
+    &:hover {
+      background: rgb(255 255 255 / 0.95);
+    }
+  }
+
+  &__main:hover &__arrow {
+    opacity: 1;
+  }
+
+  &__favorite {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 2;
   }
 }
 </style>

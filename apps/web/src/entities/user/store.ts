@@ -13,6 +13,7 @@ import { z } from 'zod'
 import type { User } from './types'
 import { apiFetch, apiErrorMessage } from '@/shared'
 import { useCartStore } from '@/entities/cart'
+import { useFavoritesStore } from '@/entities/favorites'
 
 const userSchema = z.object({
   id: z.string(),
@@ -50,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = token
     user.value = nextUser
     void useCartStore().load(true)
+    void useFavoritesStore().load(true)
   }
 
   function clearState(): void {
@@ -57,6 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     initPromise = null
     useCartStore().reset()
+    useFavoritesStore().reset()
   }
 
   async function login(data: { email: string; password: string }): Promise<void> {

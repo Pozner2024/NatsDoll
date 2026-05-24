@@ -50,6 +50,13 @@ import {
   makeGetOrder,
   makeOrderRouter,
 } from './features/orders'
+import {
+  makeFavoritesRepository,
+  makeAddFavorite,
+  makeRemoveFavorite,
+  makeListFavorites,
+  makeFavoritesRouter,
+} from './features/favorites'
 import { requireAuth } from './shared/middleware'
 
 export function createApp() {
@@ -83,8 +90,13 @@ export function createApp() {
     return c.json({ error: 'Internal server error' }, 500)
   })
 
-  app.get('/health', (c) => {
-    return c.json({ status: 'ok' })
+  app.get('/health', async (c) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      return c.json({ status: 'ok' })
+    } catch {
+      return c.json({ status: 'error', error: 'database unavailable' }, 503)
+    }
   })
 
   // Gallery
@@ -140,6 +152,15 @@ export function createApp() {
   app.use('/orders', requireAuth)
   app.use('/orders/*', requireAuth)
   app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder))
+
+  // Favorites
+  const favoritesRepo = makeFavoritesRepository(prisma)
+  const addFavorite = makeAddFavorite(favoritesRepo)
+  const removeFavorite = makeRemoveFavorite(favoritesRepo)
+  const listFavorites = makeListFavorites(favoritesRepo)
+  app.use('/favorites', requireAuth)
+  app.use('/favorites/*', requireAuth)
+  app.route('/favorites', makeFavoritesRouter(addFavorite, removeFavorite, listFavorites))
 
   return app
 }

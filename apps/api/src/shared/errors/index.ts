@@ -1,4 +1,4 @@
-export type AppErrorStatus = 400 | 401 | 403 | 404 | 409 | 410 | 422 | 500
+export type AppErrorStatus = 400 | 401 | 403 | 404 | 409 | 410 | 422 | 500 | 503 | 504
 
 export class AppError extends Error {
   constructor(

@@ -7,12 +7,17 @@
       v-for="product in products"
       :key="product.id"
       :product="product"
-    />
+    >
+      <template #overlay>
+        <FavoriteToggle :product="product" />
+      </template>
+    </ProductCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ProductCard, type Product } from '@/entities/product'
+import { FavoriteToggle } from '@/features/favorites-toggle'
 
 defineProps<{
   products: Product[]

@@ -26,9 +26,14 @@ function getJwtSecret(): Uint8Array {
 }
 
 function getHmacSecret(): string {
-  const secret = process.env.HMAC_SECRET ?? process.env.JWT_SECRET
-  if (!secret) throw new Error('HMAC_SECRET or JWT_SECRET must be set')
-  return secret
+  const hmac = process.env.HMAC_SECRET
+  if (hmac) return hmac
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('HMAC_SECRET is required in production (separate from JWT_SECRET for defense-in-depth)')
+  }
+  const jwt = process.env.JWT_SECRET
+  if (!jwt) throw new Error('HMAC_SECRET or JWT_SECRET must be set')
+  return jwt
 }
 
 export async function signAccessToken(payload: AccessTokenPayload): Promise<string> {

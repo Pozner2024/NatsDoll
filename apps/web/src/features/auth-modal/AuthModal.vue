@@ -65,14 +65,24 @@
             class="auth-modal__label"
             for="auth-password"
           >Password</label>
-          <input
-            id="auth-password"
-            v-model="loginForm.password"
-            class="auth-modal__input"
-            :class="{ 'auth-modal__input--error': loginErrors.password }"
-            type="password"
-            autocomplete="current-password"
-          >
+          <div class="auth-modal__password">
+            <input
+              id="auth-password"
+              v-model="loginForm.password"
+              class="auth-modal__input auth-modal__input--password"
+              :class="{ 'auth-modal__input--error': loginErrors.password }"
+              :type="showLoginPassword ? 'text' : 'password'"
+              autocomplete="current-password"
+            >
+            <button
+              type="button"
+              class="auth-modal__password-toggle"
+              :aria-label="showLoginPassword ? 'Hide password' : 'Show password'"
+              @click="showLoginPassword = !showLoginPassword"
+            >
+              <IconEye :closed="!showLoginPassword" class="auth-modal__password-icon" />
+            </button>
+          </div>
           <span
             v-if="loginErrors.password"
             class="auth-modal__error"
@@ -162,14 +172,24 @@
             class="auth-modal__label"
             for="auth-reg-password"
           >Password</label>
-          <input
-            id="auth-reg-password"
-            v-model="registerForm.password"
-            class="auth-modal__input"
-            :class="{ 'auth-modal__input--error': registerErrors.password }"
-            type="password"
-            autocomplete="new-password"
-          >
+          <div class="auth-modal__password">
+            <input
+              id="auth-reg-password"
+              v-model="registerForm.password"
+              class="auth-modal__input auth-modal__input--password"
+              :class="{ 'auth-modal__input--error': registerErrors.password }"
+              :type="showRegisterPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+            >
+            <button
+              type="button"
+              class="auth-modal__password-toggle"
+              :aria-label="showRegisterPassword ? 'Hide password' : 'Show password'"
+              @click="showRegisterPassword = !showRegisterPassword"
+            >
+              <IconEye :closed="!showRegisterPassword" class="auth-modal__password-icon" />
+            </button>
+          </div>
           <span
             v-if="registerErrors.password"
             class="auth-modal__error"
@@ -249,7 +269,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthModal } from './useAuthModal'
 import { useAuthStore } from '@/entities/user'
-import { BaseModal, validateEmail } from '@/shared'
+import { BaseModal, IconEye, validateEmail } from '@/shared'
 
 const authModal = useAuthModal()
 const { isOpen, mode } = storeToRefs(authModal)
@@ -259,6 +279,8 @@ const router = useRouter()
 
 const isLoading = ref(false)
 const submitError = ref('')
+const showLoginPassword = ref(false)
+const showRegisterPassword = ref(false)
 
 const loginForm = reactive({ email: '', password: '' })
 const loginErrors = reactive({ email: '', password: '' })
@@ -289,6 +311,8 @@ function resetForms() {
   registerErrors.password = ''
   submitError.value = ''
   isLoading.value = false
+  showLoginPassword.value = false
+  showRegisterPassword.value = false
 }
 
 function validateLogin(): boolean {
@@ -438,6 +462,39 @@ function handleGoogle() {
     &--error {
       border-color: var(--color-error);
     }
+
+    &--password {
+      padding-right: 2.5rem;
+    }
+  }
+
+  &__password {
+    position: relative;
+    display: flex;
+  }
+
+  &__password-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    transition: color 0.15s;
+
+    &:hover {
+      color: var(--color-text);
+    }
+  }
+
+  &__password-icon {
+    width: 18px;
+    height: 18px;
   }
 
   &__error {

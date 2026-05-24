@@ -8,7 +8,11 @@
         :product="product"
         :hide-button="true"
         class="more-from-shop__card"
-      />
+      >
+        <template #overlay>
+          <FavoriteToggle :product="product" />
+        </template>
+      </ProductCard>
     </div>
   </section>
 </template>
@@ -16,6 +20,7 @@
 <script setup lang="ts">
 import { ProductCard } from '@/entities/product'
 import type { Product } from '@/entities/product'
+import { FavoriteToggle } from '@/features/favorites-toggle'
 
 defineProps<{ products: Product[] }>()
 </script>

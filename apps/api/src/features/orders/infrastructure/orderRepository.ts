@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { AppError } from '../../../shared/errors'
 import type { OrderRepository, CartItemForCheckout, OrderDetail, OrderSummary, ShippingAddress, OrderItemView } from '../types'
 
 export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
@@ -51,6 +52,24 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
       const cartItemIds = items.map((i) => i.id)
 
       const order = await prisma.$transaction(async (tx) => {
+        // Атомарный CAS-decrement: WHERE stock>=quantity AND product доступен.
+        // Условие в WHERE гарантирует, что параллельный checkout не уведёт stock в минус
+        // и не пропустит уже снятый с публикации товар.
+        for (const item of items) {
+          const { count } = await tx.product.updateMany({
+            where: {
+              id: item.productId,
+              isPublished: true,
+              deletedAt: null,
+              stock: { gte: item.quantity },
+            },
+            data: { stock: { decrement: item.quantity } },
+          })
+          if (count === 0) {
+            throw new AppError(409, `"${item.productName}" is no longer available or out of stock`)
+          }
+        }
+
         const created = await tx.order.create({
           data: {
             userId,
@@ -83,13 +102,6 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
             },
           },
         })
-
-        for (const item of items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { decrement: item.quantity } },
-          })
-        }
 
         await tx.cartItem.deleteMany({ where: { id: { in: cartItemIds } } })
 

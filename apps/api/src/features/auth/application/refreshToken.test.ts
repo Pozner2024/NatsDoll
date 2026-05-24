@@ -52,6 +52,7 @@ const mockRepo: AuthRepository = {
   findByGoogleId: vi.fn().mockResolvedValue(null),
   linkGoogleId: vi.fn().mockResolvedValue(null),
   createGoogleUser: vi.fn().mockResolvedValue(null),
+  replaceUnverifiedWithGoogleUser: vi.fn().mockResolvedValue(null),
   createEmailVerification: vi.fn(),
   findEmailVerification: vi.fn(),
   deleteEmailVerification: vi.fn(),

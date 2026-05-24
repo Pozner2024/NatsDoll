@@ -2,8 +2,7 @@
   <section class="account-profile">
     <div class="account-profile__header">
       <h2 class="account-profile__title">Profile</h2>
-      <button v-if="!editing" class="account-profile__edit-btn" @click="editing = true">Edit</button>
-      <button v-else class="account-profile__edit-btn account-profile__edit-btn--cancel" @click="cancelEdit">Cancel</button>
+      <button v-if="editing" class="account-profile__edit-btn account-profile__edit-btn--cancel" @click="cancelEdit">Cancel</button>
     </div>
 
     <div v-if="!editing" class="account-profile__view">
@@ -19,6 +18,7 @@
         <span class="account-profile__row-label">Password</span>
         <span class="account-profile__row-value account-profile__row-value--muted">••••••••</span>
       </div>
+      <button class="account-profile__edit-btn account-profile__edit-btn--below" @click="editing = true">Edit</button>
     </div>
 
     <form v-else class="account-profile__form" @submit.prevent="save">
@@ -46,16 +46,52 @@
 
       <div class="account-profile__field">
         <label class="account-profile__label">New password</label>
-        <input
-          v-model="password"
-          class="account-profile__input"
-          type="password"
-          placeholder="Leave blank to keep current"
-          autocomplete="new-password"
-        />
+        <div class="account-profile__password">
+          <input
+            v-model="password"
+            class="account-profile__input account-profile__input--password"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="Leave blank to keep current"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="account-profile__password-toggle"
+            :aria-label="showPassword ? 'Hide password' : 'Show password'"
+            @click="showPassword = !showPassword"
+          >
+            <IconEye :closed="!showPassword" class="account-profile__password-icon" />
+          </button>
+        </div>
       </div>
 
-      <AppButton type="submit" class="account-profile__submit">
+      <div class="account-profile__field">
+        <label class="account-profile__label">Confirm new password</label>
+        <div class="account-profile__password">
+          <input
+            v-model="passwordConfirm"
+            class="account-profile__input account-profile__input--password"
+            :type="showPasswordConfirm ? 'text' : 'password'"
+            placeholder="Repeat new password"
+            autocomplete="new-password"
+            :disabled="!password"
+          />
+          <button
+            type="button"
+            class="account-profile__password-toggle"
+            :aria-label="showPasswordConfirm ? 'Hide password' : 'Show password'"
+            :disabled="!password"
+            @click="showPasswordConfirm = !showPasswordConfirm"
+          >
+            <IconEye :closed="!showPasswordConfirm" class="account-profile__password-icon" />
+          </button>
+        </div>
+        <p v-if="passwordMismatch" class="account-profile__hint account-profile__hint--error">
+          Passwords do not match
+        </p>
+      </div>
+
+      <AppButton type="submit" class="account-profile__submit" :disabled="passwordMismatch">
         Save changes
       </AppButton>
     </form>
@@ -64,7 +100,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { AppButton } from '@/shared'
+import { AppButton, IconEye } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 
 const authStore = useAuthStore()
@@ -73,14 +109,25 @@ const user = computed(() => authStore.user)
 const editing = ref(false)
 const name = ref(user.value?.name ?? '')
 const password = ref('')
+const passwordConfirm = ref('')
+const showPassword = ref(false)
+const showPasswordConfirm = ref(false)
+
+const passwordMismatch = computed(
+  () => password.value.length > 0 && passwordConfirm.value.length > 0 && password.value !== passwordConfirm.value,
+)
 
 function cancelEdit() {
   name.value = user.value?.name ?? ''
   password.value = ''
+  passwordConfirm.value = ''
+  showPassword.value = false
+  showPasswordConfirm.value = false
   editing.value = false
 }
 
 function save() {
+  if (password.value && password.value !== passwordConfirm.value) return
   editing.value = false
 }
 </script>
@@ -110,6 +157,11 @@ function save() {
 
     &--cancel {
       color: var(--color-text-muted);
+    }
+
+    &--below {
+      align-self: flex-start;
+      margin-top: 1rem;
     }
   }
 
@@ -193,11 +245,53 @@ function save() {
       background: rgb(var(--btn-gradient-light) / 0.4);
       color: var(--color-text-muted);
     }
+
+    &--password {
+      width: 100%;
+      padding-right: 2.75rem;
+    }
+  }
+
+  &__password {
+    position: relative;
+    display: flex;
+  }
+
+  &__password-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    transition: color 0.15s;
+
+    &:hover:not(:disabled) {
+      color: var(--color-text);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+    }
+  }
+
+  &__password-icon {
+    width: 20px;
+    height: 20px;
   }
 
   &__hint {
     font-size: 0.78rem;
     color: var(--color-text-muted);
+
+    &--error {
+      color: var(--color-error);
+    }
   }
 
   &__submit {

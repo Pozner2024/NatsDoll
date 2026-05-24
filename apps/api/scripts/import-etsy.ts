@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { parse } from 'csv-parse/sync'
 import slugify from 'slugify'
 import pLimit from 'p-limit'
+import sharp from 'sharp'
 import { Prisma } from '@prisma/client'
 import { uploadToS3 } from '../src/shared/lib/s3Client'
 import { prisma } from '../src/shared/infrastructure'
@@ -32,17 +33,24 @@ export interface EtsyRow {
 
 type CategoryRule = readonly [slug: string, keywords: readonly string[]]
 
-const CATEGORY_RULES: readonly CategoryRule[] = [
-  ['cake-toppers',         ['cake topper', 'cake-topper']],
-  ['dollhouse-miniature',  ['dollhouse', 'miniature', '1:12', '1/12']],
-  ['party-favors-bulk',    ['bulk', 'party favor', 'pack of']],
-  ['halloween-gifts',      ['halloween', 'pumpkin', 'spooky']],
-  ['christmas-gifts',      ['christmas', 'xmas', 'santa']],
-  ['valentines-day-gifts', ['valentine', 'romantic']],
-  ['graduation-gifts',     ['graduation', 'class of', 'graduate']],
+// Матчатся по title+tags (тип товара — однозначный сигнал)
+const PRODUCT_TYPE_RULES: readonly CategoryRule[] = [
+  ['cake-toppers',        ['cake topper', 'cake-topper', 'wedding topper']],
+  ['dollhouse-miniature', ['dollhouse', '1:12', '1/12', '1/6', 'barbie food', 'doll food']],
+  ['party-favors-bulk',   ['bulk wedding', 'wedding favors for guests', 'bulk gift', 'pack of',
+                            'place card holder', 'card holders', 'table number holder',
+                            'escort card', 'seating table', 'wedding card holder', 'wedding favors']],
+  ['halloween-gifts',     ['halloween', 'pumpkin', 'spooky']],
+]
+
+// Матчатся только по title (теги-спам типа «christmas_gift» на всё подряд — исключаем)
+const OCCASION_RULES: readonly CategoryRule[] = [
+  ['christmas-gifts',      ['christmas', 'xmas', 'santa', 'new year', 'advent']],
+  ['valentines-day-gifts', ['valentine', 'anniversary']],
+  ['graduation-gifts',     ['graduation', 'class of', 'graduate', 'teacher appreciation', 'end of school']],
   ['birthday-gifts',       ['birthday']],
-  ['motivational-gifts',   ['motivational', 'inspirational']],
-] as const
+  ['motivational-gifts',   ['motivational', 'inspirational', 'glow in the dark']],
+]
 
 const FALLBACK_CATEGORY = 'art-dolls'
 
@@ -59,11 +67,13 @@ const MAX_RETRIES = 3
 const RETRY_DELAYS_MS = [2000, 5000]
 
 export function detectCategorySlug(title: string, tags: string): string {
-  const haystack = `${title} ${tags}`.toLowerCase()
-  for (const [slug, keywords] of CATEGORY_RULES) {
-    if (keywords.some((kw) => haystack.includes(kw))) {
-      return slug
-    }
+  const titleAndTags = `${title} ${tags}`.toLowerCase()
+  const titleOnly = title.toLowerCase()
+  for (const [slug, keywords] of PRODUCT_TYPE_RULES) {
+    if (keywords.some((kw) => titleAndTags.includes(kw))) return slug
+  }
+  for (const [slug, keywords] of OCCASION_RULES) {
+    if (keywords.some((kw) => titleOnly.includes(kw))) return slug
   }
   return FALLBACK_CATEGORY
 }
@@ -107,10 +117,18 @@ export function parseMessageOptions(row: EtsyRow): string[] {
   } else {
     return []
   }
+  const seen = new Set<string>()
   return raw
     .split(',')
     .map((v) => decodeHtmlEntities(v.trim()))
-    .filter((v) => v.length > 0 && v.toLowerCase() !== SKIP_MESSAGE_VALUE)
+    .filter((v) => {
+      if (v.length === 0) return false
+      if (v.toLowerCase() === SKIP_MESSAGE_VALUE) return false
+      const key = v.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
 }
 
 export function parseCsv(path: string): EtsyRow[] {
@@ -165,9 +183,13 @@ export async function uploadProductImages(
     urls.map((etsyUrl, i) =>
       limit(async () => {
         try {
-          const buffer = await downloadImage(etsyUrl)
-          const key = `natsdoll/${categorySlug}/${productSlug}/${i + 1}.jpg`
-          const publicUrl = await uploadToS3(key, buffer, 'image/jpeg')
+          const raw = await downloadImage(etsyUrl)
+          const compressed = await sharp(raw)
+            .resize(1200, 800, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toBuffer()
+          const key = `items/${categorySlug}/${productSlug}/${i + 1}.webp`
+          const publicUrl = await uploadToS3(key, compressed, 'image/webp')
           uploaded.push({ index: i, url: publicUrl })
         } catch (err) {
           console.warn(`  [WARN] image ${i + 1} (${etsyUrl}) failed: ${err instanceof Error ? err.message : err}`)

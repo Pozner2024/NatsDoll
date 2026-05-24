@@ -1,0 +1,5 @@
+export { makeFavoritesRepository } from './infrastructure/favoritesRepository'
+export { makeAddFavorite } from './application/addFavorite'
+export { makeRemoveFavorite } from './application/removeFavorite'
+export { makeListFavorites } from './application/listFavorites'
+export { makeFavoritesRouter } from './presentation/favoritesRoutes'

@@ -43,6 +43,7 @@ const mockRepo: AuthRepository = {
   findByGoogleId: vi.fn().mockResolvedValue(null),
   linkGoogleId: vi.fn().mockResolvedValue(null),
   createGoogleUser: vi.fn().mockResolvedValue(null),
+  replaceUnverifiedWithGoogleUser: vi.fn().mockResolvedValue(null),
   createEmailVerification: vi.fn(),
   findEmailVerification: vi.fn(),
   deleteEmailVerification: vi.fn(),
@@ -84,7 +85,7 @@ describe('login', () => {
     vi.mocked(mockRepo.findByEmail).mockResolvedValue({ ...mockUser, passwordHash: null })
     const login = makeLogin(mockRepo)
     await expect(login({ email: 'nat@test.com', password: 'pass' }))
-      .rejects.toMatchObject({ statusCode: 401, message: "We couldn't sign you in. Check your email and password." })
+      .rejects.toMatchObject({ statusCode: 401 })
   })
 
   it('вызывает verify с dummy hash для Google-only аккаунта (защита от timing attack)', async () => {
@@ -98,13 +99,13 @@ describe('login', () => {
     expect(hash).toMatch(/^\$argon2id\$/)
   })
 
-  it('выбрасывает 403 если email не подтверждён', async () => {
+  it('выбрасывает 401 если email не подтверждён (без leak — тот же ответ, что и неверный пароль)', async () => {
     const { verify } = await import('@node-rs/argon2')
     vi.mocked(mockRepo.findByEmail).mockResolvedValue({ ...mockUser, emailVerified: false })
     vi.mocked(verify).mockResolvedValue(true)
     const login = makeLogin(mockRepo)
     await expect(login({ email: 'nat@test.com', password: 'password123' }))
-      .rejects.toMatchObject({ statusCode: 403, message: 'Please verify your email before signing in' })
+      .rejects.toMatchObject({ statusCode: 401 })
   })
 
   it('возвращает токены при правильных данных', async () => {
