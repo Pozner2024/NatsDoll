@@ -210,3 +210,63 @@ export async function importProduct(row: EtsyRow, ctx: ImportContext): Promise<v
 
   console.log(`[OK] ${productSlug}`)
 }
+
+async function loadCategories(): Promise<Map<string, string>> {
+  const cats = await prisma.category.findMany({ select: { id: true, slug: true } })
+  return new Map(cats.map((c) => [c.slug, c.id]))
+}
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2)
+  const dryRun = args.includes('--dry-run')
+  const csvPath = args.find((a) => !a.startsWith('--'))
+
+  if (!csvPath) {
+    console.error('Usage: tsx scripts/import-etsy.ts <csv-path> [--dry-run]')
+    process.exit(1)
+  }
+
+  console.log(`Parsing CSV: ${csvPath}`)
+  const rows = parseCsv(csvPath)
+  console.log(`Found ${rows.length} rows`)
+
+  console.log('Loading categories from DB...')
+  const categoriesBySlug = await loadCategories()
+  if (categoriesBySlug.size === 0) {
+    throw new Error('No categories in DB. Run `prisma db seed` first.')
+  }
+  console.log(`Loaded ${categoriesBySlug.size} categories`)
+
+  if (dryRun) {
+    console.log('=== DRY RUN — no DB writes, no S3 uploads ===')
+  }
+
+  const ctx: ImportContext = {
+    categoriesBySlug,
+    usedSlugs: new Set(),
+    dryRun,
+  }
+
+  const stats = { imported: 0, errors: 0 }
+  for (const row of rows) {
+    try {
+      await importProduct(row, ctx)
+      stats.imported++
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`[ERR] ${row.TITLE}: ${msg}`)
+      stats.errors++
+    }
+  }
+
+  console.log(`\nDone. imported=${stats.imported}, errors=${stats.errors}`)
+}
+
+if (process.argv[1]?.replace(/\\/g, '/').endsWith('scripts/import-etsy.ts')) {
+  main()
+    .catch((err) => {
+      console.error(err)
+      process.exit(1)
+    })
+    .finally(() => prisma.$disconnect())
+}
