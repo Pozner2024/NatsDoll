@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 import { parse } from 'csv-parse/sync'
 import slugify from 'slugify'
 import pLimit from 'p-limit'
+import { Prisma } from '@prisma/client'
 import { uploadToS3 } from '../src/shared/lib/s3Client'
+import { prisma } from '../src/shared/infrastructure'
 
 export interface EtsyRow {
   TITLE: string
@@ -139,4 +141,72 @@ export async function uploadProductImages(
   )
 
   return uploaded.sort((a, b) => a.index - b.index).map((u) => u.url)
+}
+
+function collectImageUrls(row: EtsyRow): string[] {
+  const keys = ['IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4', 'IMAGE5', 'IMAGE6', 'IMAGE7', 'IMAGE8', 'IMAGE9', 'IMAGE10'] as const
+  return keys
+    .map((k) => row[k])
+    .filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
+}
+
+export interface ImportContext {
+  categoriesBySlug: Map<string, string>
+  usedSlugs: Set<string>
+  dryRun: boolean
+}
+
+export async function importProduct(row: EtsyRow, ctx: ImportContext): Promise<void> {
+  const title = row.TITLE?.trim()
+  const priceRaw = row.PRICE?.trim()
+  if (!title || !priceRaw) {
+    console.log(`[SKIP] empty title or price`)
+    return
+  }
+
+  const categorySlug = detectCategorySlug(title, row.TAGS ?? '')
+  const categoryId = ctx.categoriesBySlug.get(categorySlug)
+  if (!categoryId) {
+    throw new Error(`Category not found in DB: ${categorySlug}`)
+  }
+
+  const productSlug = makeUniqueSlug(title, ctx.usedSlugs)
+  const imageUrls = collectImageUrls(row)
+  const stock = Number.parseInt(row.QUANTITY ?? '0', 10) || 0
+  const price = new Prisma.Decimal(priceRaw)
+
+  if (ctx.dryRun) {
+    console.log(`[DRY] ${productSlug} → ${categorySlug} (price=${priceRaw}, stock=${stock}, images=${imageUrls.length})`)
+    return
+  }
+
+  console.log(`[..] ${productSlug} → ${categorySlug} (uploading ${imageUrls.length} images)`)
+  const uploadedUrls = await uploadProductImages(imageUrls, categorySlug, productSlug)
+
+  await prisma.product.upsert({
+    where: { slug: productSlug },
+    update: {
+      name: title,
+      description: row.DESCRIPTION ?? '',
+      price,
+      stock,
+      images: uploadedUrls,
+      messageOptions: [],
+      isPublished: true,
+      categoryId,
+    },
+    create: {
+      name: title,
+      slug: productSlug,
+      description: row.DESCRIPTION ?? '',
+      price,
+      stock,
+      images: uploadedUrls,
+      messageOptions: [],
+      isPublished: true,
+      categoryId,
+    },
+  })
+
+  console.log(`[OK] ${productSlug}`)
 }
