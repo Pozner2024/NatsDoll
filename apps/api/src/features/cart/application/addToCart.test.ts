@@ -121,6 +121,25 @@ describe('addToCart', () => {
       .rejects.toMatchObject({ statusCode: 400 })
   })
 
+  it('treats empty-string message as null for products without messageOptions', async () => {
+    vi.mocked(repo.findProductForCart).mockResolvedValue({
+      id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: true,
+    })
+    vi.mocked(repo.findCartItem).mockResolvedValue(null)
+    const addToCart = makeAddToCart(repo)
+    await addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: '' })
+    expect(repo.createCartItem).toHaveBeenCalledWith('cart-1', 'p1', 1, null)
+  })
+
+  it('treats empty-string message as null and 400s when messageOptions require a message', async () => {
+    vi.mocked(repo.findProductForCart).mockResolvedValue({
+      id: 'p1', price: 10, stock: 5, messageOptions: ['Hi'], isAvailable: true,
+    })
+    const addToCart = makeAddToCart(repo)
+    await expect(addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: '' }))
+      .rejects.toMatchObject({ statusCode: 400 })
+  })
+
   it('successfully adds product with messageOptions when a preset message is provided', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
       id: 'p1', price: 10, stock: 5, messageOptions: ['Happy Birthday', 'With love'], isAvailable: true,

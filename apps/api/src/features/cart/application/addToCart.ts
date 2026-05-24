@@ -5,7 +5,8 @@ const MAX_MESSAGE_LENGTH = 100
 
 export function makeAddToCart(repo: CartRepository): AddToCart {
   return async function addToCart(params: AddToCartParams): Promise<CartView> {
-    const { userId, productId, quantity, message } = params
+    const { userId, productId, quantity } = params
+    const message = params.message?.length ? params.message : null
 
     if (quantity < 1) {
       throw new AppError(400, 'Quantity must be at least 1')
@@ -17,7 +18,6 @@ export function makeAddToCart(repo: CartRepository): AddToCart {
 
     if (product.messageOptions.length > 0) {
       if (message === null) throw new AppError(400, 'Message is required for this product')
-      if (message.length === 0) throw new AppError(400, 'Message cannot be empty')
       if (message.length > MAX_MESSAGE_LENGTH) {
         throw new AppError(400, `Message must be at most ${MAX_MESSAGE_LENGTH} characters`)
       }
