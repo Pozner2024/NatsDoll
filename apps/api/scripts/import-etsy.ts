@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { parse } from 'csv-parse/sync'
 import slugify from 'slugify'
+import pLimit from 'p-limit'
+import { uploadToS3 } from '../src/shared/lib/s3Client'
 
 export interface EtsyRow {
   TITLE: string
@@ -36,6 +38,18 @@ const CATEGORY_RULES: readonly CategoryRule[] = [
 
 const FALLBACK_CATEGORY = 'art-dolls'
 
+const FETCH_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+const FETCH_HEADERS = {
+  'User-Agent': FETCH_USER_AGENT,
+  Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
+}
+
+const IMAGE_CONCURRENCY = 5
+const MAX_RETRIES = 3
+const RETRY_DELAYS_MS = [2000, 5000, 10000]
+
 export function detectCategorySlug(title: string, tags: string): string {
   const haystack = `${title} ${tags}`.toLowerCase()
   for (const [slug, keywords] of CATEGORY_RULES) {
@@ -70,4 +84,59 @@ export function parseCsv(path: string): EtsyRow[] {
     relax_column_count: true,
   })
   return rows
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function downloadImage(url: string): Promise<Buffer> {
+  let lastErr: unknown = null
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, { headers: FETCH_HEADERS })
+      if (res.status === 404) {
+        throw new Error(`HTTP 404 (no retry)`)
+      }
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
+      }
+      return Buffer.from(await res.arrayBuffer())
+    } catch (err) {
+      lastErr = err
+      if (err instanceof Error && err.message.includes('404')) {
+        throw err
+      }
+      if (attempt < MAX_RETRIES - 1) {
+        await sleep(RETRY_DELAYS_MS[attempt])
+      }
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('downloadImage failed')
+}
+
+export async function uploadProductImages(
+  urls: string[],
+  categorySlug: string,
+  productSlug: string,
+): Promise<string[]> {
+  const limit = pLimit(IMAGE_CONCURRENCY)
+  const uploaded: Array<{ index: number; url: string }> = []
+
+  await Promise.all(
+    urls.map((etsyUrl, i) =>
+      limit(async () => {
+        try {
+          const buffer = await downloadImage(etsyUrl)
+          const key = `natsdoll/${categorySlug}/${productSlug}/${i + 1}.jpg`
+          const publicUrl = await uploadToS3(key, buffer, 'image/jpeg')
+          uploaded.push({ index: i, url: publicUrl })
+        } catch (err) {
+          console.warn(`  [WARN] image ${i + 1} (${etsyUrl}) failed: ${err instanceof Error ? err.message : err}`)
+        }
+      }),
+    ),
+  )
+
+  return uploaded.sort((a, b) => a.index - b.index).map((u) => u.url)
 }
