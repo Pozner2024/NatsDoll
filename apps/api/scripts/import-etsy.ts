@@ -22,6 +22,12 @@ export interface EtsyRow {
   IMAGE8: string
   IMAGE9: string
   IMAGE10: string
+  'VARIATION 1 TYPE': string
+  'VARIATION 1 NAME': string
+  'VARIATION 1 VALUES': string
+  'VARIATION 2 TYPE': string
+  'VARIATION 2 NAME': string
+  'VARIATION 2 VALUES': string
 }
 
 type CategoryRule = readonly [slug: string, keywords: readonly string[]]
@@ -75,6 +81,36 @@ export function makeUniqueSlug(title: string, taken: Set<string>): string {
   const slug = `${base}-${n}`
   taken.add(slug)
   return slug
+}
+
+const MESSAGE_VARIATION_NAMES = new Set(['message', 'mesage'])
+const SKIP_MESSAGE_VALUE = 'your own text'
+
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
+export function parseMessageOptions(row: EtsyRow): string[] {
+  const v1Name = (row['VARIATION 1 NAME'] ?? '').trim().toLowerCase()
+  const v2Name = (row['VARIATION 2 NAME'] ?? '').trim().toLowerCase()
+  let raw = ''
+  if (MESSAGE_VARIATION_NAMES.has(v1Name)) {
+    raw = row['VARIATION 1 VALUES'] ?? ''
+  } else if (MESSAGE_VARIATION_NAMES.has(v2Name)) {
+    raw = row['VARIATION 2 VALUES'] ?? ''
+  } else {
+    return []
+  }
+  return raw
+    .split(',')
+    .map((v) => decodeHtmlEntities(v.trim()))
+    .filter((v) => v.length > 0 && v.toLowerCase() !== SKIP_MESSAGE_VALUE)
 }
 
 export function parseCsv(path: string): EtsyRow[] {
@@ -174,9 +210,10 @@ export async function importProduct(row: EtsyRow, ctx: ImportContext): Promise<v
   const imageUrls = collectImageUrls(row)
   const stock = Number.parseInt(row.QUANTITY ?? '0', 10) || 0
   const price = new Prisma.Decimal(priceRaw)
+  const messageOptions = parseMessageOptions(row)
 
   if (ctx.dryRun) {
-    console.log(`[DRY] ${productSlug} → ${categorySlug} (price=${priceRaw}, stock=${stock}, images=${imageUrls.length})`)
+    console.log(`[DRY] ${productSlug} → ${categorySlug} (price=${priceRaw}, stock=${stock}, images=${imageUrls.length}, msgOpts=${messageOptions.length})`)
     return
   }
 
@@ -191,7 +228,7 @@ export async function importProduct(row: EtsyRow, ctx: ImportContext): Promise<v
       price,
       stock,
       images: uploadedUrls,
-      messageOptions: [],
+      messageOptions,
       isPublished: true,
       categoryId,
     },
@@ -202,7 +239,7 @@ export async function importProduct(row: EtsyRow, ctx: ImportContext): Promise<v
       price,
       stock,
       images: uploadedUrls,
-      messageOptions: [],
+      messageOptions,
       isPublished: true,
       categoryId,
     },
