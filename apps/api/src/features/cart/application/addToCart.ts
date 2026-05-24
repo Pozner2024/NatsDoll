@@ -15,7 +15,7 @@ export function makeAddToCart(repo: CartRepository): AddToCart {
     if (!product) throw new AppError(404, 'Product not found')
     if (!product.isAvailable) throw new AppError(410, 'Product is no longer available')
 
-    if (product.hasMessage) {
+    if (product.messageOptions.length > 0) {
       if (message === null) throw new AppError(400, 'Message is required for this product')
       if (message.length === 0) throw new AppError(400, 'Message cannot be empty')
       if (message.length > MAX_MESSAGE_LENGTH) {

@@ -32,6 +32,7 @@ model User {
   reviews            Review[]
   refreshTokens      RefreshToken[]
   emailVerifications EmailVerification[]
+  favorites          Favorite[]
 }
 
 model EmailVerification {
@@ -71,7 +72,6 @@ model Category {
   name       String
   slug       String    @unique
   position   Int       @default(0)
-  hasMessage Boolean   @default(false)
   updatedAt  DateTime  @updatedAt
   products   Product[]
 
@@ -97,6 +97,7 @@ model Product {
   cartItems   CartItem[]
   orderItems  OrderItem[]
   reviews     Review[]
+  favorites   Favorite[]
 
   @@index([categoryId])
   @@index([isPublished, deletedAt])
@@ -170,6 +171,20 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+// ─── Favorites ────────────────────────────────────────
+
+model Favorite {
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+  @@index([userId])
 }
 
 // ─── Gallery ──────────────────────────────────────────

@@ -28,7 +28,6 @@ const ProductDetailSchema = z.object({
   stock: z.number().int().min(0),
   category: z.string(),
   categorySlug: z.string(),
-  hasMessage: z.boolean(),
   messageOptions: z.array(z.string()),
 }) satisfies z.ZodType<ProductDetail>
 

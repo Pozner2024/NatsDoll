@@ -6,6 +6,7 @@
  */
 
 import { PrismaClient, GallerySection } from '@prisma/client'
+import { hash } from '@node-rs/argon2'
 import slugify from 'slugify'
 
 const prisma = new PrismaClient()
@@ -22,6 +23,14 @@ const categories = [
   { name: 'Dollhouse Miniature', slug: 'dollhouse-miniature', position: 80 },
   { name: 'Party favors BULK', slug: 'party-favors-bulk', position: 90 },
 ]
+
+const messageOptionsByCategory: Record<string, string[]> = {
+  'birthday-gifts': ['Happy Birthday', 'Many happy returns', 'With love'],
+  'christmas-gifts': ['Merry Christmas', 'Happy Holidays', 'Season\'s Greetings'],
+  'valentines-day-gifts': ['Be my Valentine', 'With all my love', 'You are my heart'],
+  'graduation-gifts': ['Congrats, Graduate!', 'Class of 2026', 'Proud of you'],
+  'cake-toppers': ['Happy Birthday', 'Congrats', 'With love'],
+}
 
 const BASE_URL =
   process.env.YANDEX_STORAGE_URL ??
@@ -87,7 +96,29 @@ const sampleProducts = [
   { name: 'Mini food platter', categorySlug: 'dollhouse-miniature', price: 16.5, stock: 5, images: ['https://placehold.co/400x400/f5e8d6/8a6f4a?text=Platter'] },
 ]
 
+async function seedAdmin() {
+  const email = process.env.ADMIN_EMAIL
+  const password = process.env.ADMIN_PASSWORD
+  const name = process.env.ADMIN_NAME ?? 'Admin'
+
+  if (!email || !password) {
+    console.log('Skipping admin seed: ADMIN_EMAIL or ADMIN_PASSWORD is not set.')
+    return
+  }
+
+  const passwordHash = await hash(password)
+  await prisma.user.upsert({
+    where: { email },
+    update: { role: 'ADMIN', emailVerified: true },
+    create: { email, name, passwordHash, role: 'ADMIN', emailVerified: true },
+  })
+  console.log(`Seeded admin user: ${email}`)
+}
+
 async function main() {
+  console.log('Seeding admin...')
+  await seedAdmin()
+
   console.log('Seeding categories...')
 
   for (const category of categories) {
@@ -125,6 +156,7 @@ async function main() {
       continue
     }
     const baseSlug = slugify(p.name, { lower: true, strict: true })
+    const messageOptions = messageOptionsByCategory[p.categorySlug] ?? []
     await prisma.product.upsert({
       where: { slug: baseSlug },
       update: {
@@ -132,6 +164,7 @@ async function main() {
         price: p.price,
         stock: p.stock,
         images: p.images,
+        messageOptions,
         isPublished: true,
         categoryId,
       },
@@ -142,6 +175,7 @@ async function main() {
         price: p.price,
         stock: p.stock,
         images: p.images,
+        messageOptions,
         isPublished: true,
         categoryId,
       },

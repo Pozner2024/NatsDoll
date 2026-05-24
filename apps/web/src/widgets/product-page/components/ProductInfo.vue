@@ -6,7 +6,7 @@
     </div>
 
     <MessageSelector
-      v-if="product.hasMessage"
+      v-if="hasMessageOptions"
       :options="product.messageOptions"
       :error="messageError"
       @change="onMessageChange"
@@ -94,20 +94,22 @@ const buttonLabel = computed(() => {
   return 'Add to cart'
 })
 
+const hasMessageOptions = computed(() => props.product.messageOptions.length > 0)
+
 function onMessageChange(value: string | null): void {
   message.value = value
   messageError.value = undefined
 }
 
 function onAddToCart(): void {
-  if (props.product.hasMessage) {
+  if (hasMessageOptions.value) {
     if (message.value === null || message.value.length === 0) {
       messageError.value = 'Please choose a message or type your own'
       return
     }
   }
   isAdding.value = true
-  emit('add-to-cart', { quantity: qty.value, message: props.product.hasMessage ? message.value : null })
+  emit('add-to-cart', { quantity: qty.value, message: hasMessageOptions.value ? message.value : null })
 }
 
 defineExpose({ resetAdding: () => { isAdding.value = false } })

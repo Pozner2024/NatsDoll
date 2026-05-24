@@ -48,7 +48,7 @@ describe('updateQuantity', () => {
   it('throws 409 when quantity exceeds stock', async () => {
     vi.mocked(repo.findCartItemById).mockResolvedValue({ id: 'ci-1', cartId: 'cart-1', productId: 'p1' })
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 2, hasMessage: false, messageOptions: [], isAvailable: true,
+      id: 'p1', price: 10, stock: 2, messageOptions: [], isAvailable: true,
     })
     const updateQuantity = makeUpdateQuantity(repo)
     await expect(updateQuantity({ userId: 'u1', itemId: 'ci-1', quantity: 5 }))
@@ -58,7 +58,7 @@ describe('updateQuantity', () => {
   it('updates and returns cart view', async () => {
     vi.mocked(repo.findCartItemById).mockResolvedValue({ id: 'ci-1', cartId: 'cart-1', productId: 'p1' })
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 10, hasMessage: false, messageOptions: [], isAvailable: true,
+      id: 'p1', price: 10, stock: 10, messageOptions: [], isAvailable: true,
     })
     const updateQuantity = makeUpdateQuantity(repo)
     await updateQuantity({ userId: 'u1', itemId: 'ci-1', quantity: 3 })

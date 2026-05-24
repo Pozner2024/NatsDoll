@@ -128,7 +128,7 @@ describe('productRepository.findMany', () => {
 })
 
 describe('productRepository.findBySlug', () => {
-  it('returns product detail with hasMessage=false and empty messageOptions by default', async () => {
+  it('returns product detail with empty messageOptions by default', async () => {
     const prisma = makePrismaMock()
     vi.mocked(prisma.product.findFirst).mockResolvedValue({
       id: 'p1',
@@ -139,7 +139,7 @@ describe('productRepository.findBySlug', () => {
       images: ['img1.jpg'],
       stock: 3,
       messageOptions: [],
-      category: { name: 'Animals', slug: 'animals', hasMessage: false },
+      category: { name: 'Animals', slug: 'animals' },
     } as never)
 
     const repo = makeProductRepository(prisma)
@@ -148,7 +148,7 @@ describe('productRepository.findBySlug', () => {
     const calledWith = vi.mocked(prisma.product.findFirst).mock.calls[0]![0]!
     expect(calledWith.select).toMatchObject({
       messageOptions: true,
-      category: { select: { name: true, slug: true, hasMessage: true } },
+      category: { select: { name: true, slug: true } },
     })
     expect(result).toEqual({
       id: 'p1',
@@ -160,12 +160,11 @@ describe('productRepository.findBySlug', () => {
       stock: 3,
       category: 'Animals',
       categorySlug: 'animals',
-      hasMessage: false,
       messageOptions: [],
     })
   })
 
-  it('returns product detail with hasMessage=true and messageOptions when category enables messages', async () => {
+  it('returns product detail with messageOptions when product has them', async () => {
     const prisma = makePrismaMock()
     vi.mocked(prisma.product.findFirst).mockResolvedValue({
       id: 'p2',
@@ -176,7 +175,7 @@ describe('productRepository.findBySlug', () => {
       images: ['cake.jpg'],
       stock: 5,
       messageOptions: ['Happy birthday!', 'With love'],
-      category: { name: 'Sweet', slug: 'sweet', hasMessage: true },
+      category: { name: 'Sweet', slug: 'sweet' },
     } as never)
 
     const repo = makeProductRepository(prisma)
@@ -192,7 +191,6 @@ describe('productRepository.findBySlug', () => {
       stock: 5,
       category: 'Sweet',
       categorySlug: 'sweet',
-      hasMessage: true,
       messageOptions: ['Happy birthday!', 'With love'],
     })
   })

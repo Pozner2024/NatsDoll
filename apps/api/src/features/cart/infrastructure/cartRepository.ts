@@ -26,15 +26,13 @@ export function makeCartRepository(prisma: PrismaClient): CartRepository {
           isPublished: true,
           deletedAt: true,
           messageOptions: true,
-          category: { select: { hasMessage: true } },
         },
       })
-      if (!row || !row.category) return null
+      if (!row) return null
       return {
         id: row.id,
         price: row.price.toNumber(),
         stock: row.stock,
-        hasMessage: row.category.hasMessage,
         messageOptions: row.messageOptions,
         isAvailable: row.isPublished && row.deletedAt === null,
       }

@@ -33,6 +33,5 @@ export type ProductDetail = {
   stock: number
   category: string
   categorySlug: string
-  hasMessage: boolean
   messageOptions: string[]
 }

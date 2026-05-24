@@ -33,7 +33,7 @@ describe('addToCart', () => {
 
   it('throws 410 when product unavailable (unpublished or soft-deleted)', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 5, hasMessage: false, messageOptions: [], isAvailable: false,
+      id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: false,
     })
     const addToCart = makeAddToCart(repo)
     await expect(addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: null }))
@@ -42,7 +42,7 @@ describe('addToCart', () => {
 
   it('throws 409 when quantity exceeds stock', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 2, hasMessage: false, messageOptions: [], isAvailable: true,
+      id: 'p1', price: 10, stock: 2, messageOptions: [], isAvailable: true,
     })
     vi.mocked(repo.findCartItem).mockResolvedValue(null)
     const addToCart = makeAddToCart(repo)
@@ -50,18 +50,18 @@ describe('addToCart', () => {
       .rejects.toMatchObject({ statusCode: 409 })
   })
 
-  it('throws 400 when category requires message but message is missing', async () => {
+  it('throws 400 when product has messageOptions but message is missing', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 5, hasMessage: true, messageOptions: ['Hi'], isAvailable: true,
+      id: 'p1', price: 10, stock: 5, messageOptions: ['Hi'], isAvailable: true,
     })
     const addToCart = makeAddToCart(repo)
     await expect(addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: null }))
       .rejects.toMatchObject({ statusCode: 400 })
   })
 
-  it('throws 400 when message provided for category without hasMessage', async () => {
+  it('throws 400 when message provided for product without messageOptions', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 5, hasMessage: false, messageOptions: [], isAvailable: true,
+      id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: true,
     })
     const addToCart = makeAddToCart(repo)
     await expect(addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: 'hi' }))
@@ -70,7 +70,7 @@ describe('addToCart', () => {
 
   it('creates new cart item when none exists', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 5, hasMessage: false, messageOptions: [], isAvailable: true,
+      id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: true,
     })
     vi.mocked(repo.findCartItem).mockResolvedValue(null)
     const addToCart = makeAddToCart(repo)
@@ -81,7 +81,7 @@ describe('addToCart', () => {
 
   it('increments quantity when item with same productId+message exists', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 5, hasMessage: true, messageOptions: ['Hi'], isAvailable: true,
+      id: 'p1', price: 10, stock: 5, messageOptions: ['Hi'], isAvailable: true,
     })
     vi.mocked(repo.findCartItem).mockResolvedValue({ id: 'ci-1', quantity: 1 })
     const addToCart = makeAddToCart(repo)
@@ -92,7 +92,7 @@ describe('addToCart', () => {
 
   it('returns the refreshed cart view', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 5, hasMessage: false, messageOptions: [], isAvailable: true,
+      id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: true,
     })
     vi.mocked(repo.findCartItem).mockResolvedValue(null)
     vi.mocked(repo.getCartView).mockResolvedValue({
@@ -108,7 +108,7 @@ describe('addToCart', () => {
 
   it('throws 400 when message length exceeds 100', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
-      id: 'p1', price: 10, stock: 5, hasMessage: true, messageOptions: [], isAvailable: true,
+      id: 'p1', price: 10, stock: 5, messageOptions: ['Hi'], isAvailable: true,
     })
     const addToCart = makeAddToCart(repo)
     await expect(addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: 'x'.repeat(101) }))
