@@ -120,4 +120,15 @@ describe('addToCart', () => {
     await expect(addToCart({ userId: 'u1', productId: 'p1', quantity: 0, message: null }))
       .rejects.toMatchObject({ statusCode: 400 })
   })
+
+  it('successfully adds product with messageOptions when a preset message is provided', async () => {
+    vi.mocked(repo.findProductForCart).mockResolvedValue({
+      id: 'p1', price: 10, stock: 5, messageOptions: ['Happy Birthday', 'With love'], isAvailable: true,
+    })
+    vi.mocked(repo.findCartItem).mockResolvedValue(null)
+    const addToCart = makeAddToCart(repo)
+    const result = await addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: 'Happy Birthday' })
+    expect(repo.createCartItem).toHaveBeenCalledWith('cart-1', 'p1', 1, 'Happy Birthday')
+    expect(result).toBeDefined()
+  })
 })

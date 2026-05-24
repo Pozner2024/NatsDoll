@@ -162,4 +162,12 @@ describe('parseMessageOptions', () => {
     })
     expect(parseMessageOptions(row)).toEqual(['Hi', 'Bye'])
   })
+
+  it.skip('known limitation: Etsy CSV не экранирует запятые внутри значений', () => {
+    const row = makeRow({
+      'VARIATION 1 NAME': 'message',
+      'VARIATION 1 VALUES': 'OH, CRAB! I love you,Don&#39;t be crabby',
+    })
+    expect(parseMessageOptions(row)).toEqual(['OH, CRAB! I love you', "Don't be crabby"])
+  })
 })

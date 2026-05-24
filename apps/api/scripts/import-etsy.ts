@@ -56,7 +56,7 @@ const FETCH_HEADERS = {
 
 const IMAGE_CONCURRENCY = 5
 const MAX_RETRIES = 3
-const RETRY_DELAYS_MS = [2000, 5000, 10000]
+const RETRY_DELAYS_MS = [2000, 5000]
 
 export function detectCategorySlug(title: string, tags: string): string {
   const haystack = `${title} ${tags}`.toLowerCase()
@@ -142,7 +142,7 @@ export async function downloadImage(url: string): Promise<Buffer> {
       return Buffer.from(await res.arrayBuffer())
     } catch (err) {
       lastErr = err
-      if (err instanceof Error && err.message.includes('404')) {
+      if (err instanceof Error && err.message.includes('(no retry)')) {
         throw err
       }
       if (attempt < MAX_RETRIES - 1) {
@@ -274,13 +274,23 @@ async function main(): Promise<void> {
   }
   console.log(`Loaded ${categoriesBySlug.size} categories`)
 
+  const csvBaseSlugs = new Set(
+    rows
+      .map((r) => r.TITLE?.trim() ?? '')
+      .filter((t) => t.length > 0)
+      .map((t) => slugify(t, { lower: true, strict: true })),
+  )
+  const existingProducts = await prisma.product.findMany({ select: { slug: true } })
+  const usedSlugs = new Set(existingProducts.filter((p) => !csvBaseSlugs.has(p.slug)).map((p) => p.slug))
+  console.log(`Pre-loaded ${usedSlugs.size} non-CSV product slugs (rows that re-import to their canonical slug stay idempotent; collisions with seed/manual products get a -N suffix)`)
+
   if (dryRun) {
     console.log('=== DRY RUN — no DB writes, no S3 uploads ===')
   }
 
   const ctx: ImportContext = {
     categoriesBySlug,
-    usedSlugs: new Set(),
+    usedSlugs,
     dryRun,
   }
 
