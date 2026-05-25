@@ -56,7 +56,14 @@ services:
       args:
         VITE_API_URL: /api
     ports:
-      - "8081:8080"
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - api
     restart: unless-stopped
@@ -75,3 +82,5 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
