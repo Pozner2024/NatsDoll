@@ -281,6 +281,7 @@ defineExpose({ resetAdding: () => { isAdding.value = false } })
     font-size: 0.88rem;
     line-height: 1.75;
     color: var(--color-text-muted);
+    text-align: justify;
 
     @include desktop {
       font-size: var(--fs-md);

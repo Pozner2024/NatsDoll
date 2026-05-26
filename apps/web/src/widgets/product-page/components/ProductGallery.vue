@@ -2,7 +2,11 @@
   <div class="product-gallery">
     <!-- Mobile: slider -->
     <div class="product-gallery__slider">
-      <div class="product-gallery__track">
+      <div
+        class="product-gallery__track"
+        @touchstart.passive="onTouchStart"
+        @touchend.passive="onTouchEnd"
+      >
         <img
           v-for="(img, i) in images"
           :key="i"
@@ -97,8 +101,23 @@ const props = defineProps<{
   product?: Product
 }>()
 
+const SWIPE_THRESHOLD_PX = 40
+
 const imageCount = computed(() => props.images.length)
-const { currentIndex, goTo } = useSlider(imageCount, 0)
+const { currentIndex, goTo, next, prev } = useSlider(imageCount, 0)
+
+const touchStartX = ref(0)
+
+function onTouchStart(e: TouchEvent) {
+  touchStartX.value = e.changedTouches[0].clientX
+}
+
+function onTouchEnd(e: TouchEvent) {
+  const delta = touchStartX.value - e.changedTouches[0].clientX
+  if (Math.abs(delta) < SWIPE_THRESHOLD_PX) return
+  if (delta > 0) next()
+  else prev()
+}
 
 const activeIndex = ref(0)
 const activeImage = computed(() => props.images[activeIndex.value] ?? '')
@@ -119,6 +138,9 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
   @include desktop {
     max-width: 774px;
     margin: 0;
+    position: sticky;
+    top: calc(var(--header-height) + 1.5rem);
+    align-self: start;
   }
 
   &__slider {

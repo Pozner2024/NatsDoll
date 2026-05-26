@@ -222,7 +222,21 @@
       "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" node --max-old-space-size=4096 D:/Natalia/NatsDoll/node_modules/prisma/build/index.js migrate status)",
       "Bash(DATABASE_URL=postgresql://user:password@localhost:5432/natsdoll npx tsx -e ' *)",
       "Bash(YANDEX_S3_ENDPOINT=http://x YANDEX_S3_BUCKET=x YANDEX_S3_ACCESS_KEY=x YANDEX_S3_SECRET_KEY=x node --max-old-space-size=4096 ../../node_modules/vitest/vitest.mjs run --reporter=basic src/features/auth)",
-      "Bash(YANDEX_S3_ENDPOINT=http://x YANDEX_S3_BUCKET=x YANDEX_S3_ACCESS_KEY=x YANDEX_S3_SECRET_KEY=x node --max-old-space-size=4096 ../../node_modules/vitest/vitest.mjs run --reporter=basic)"
+      "Bash(YANDEX_S3_ENDPOINT=http://x YANDEX_S3_BUCKET=x YANDEX_S3_ACCESS_KEY=x YANDEX_S3_SECRET_KEY=x node --max-old-space-size=4096 ../../node_modules/vitest/vitest.mjs run --reporter=basic)",
+      "WebFetch(domain:fornex.com)",
+      "PowerShell(Resolve-DnsName *)",
+      "Bash(docker --version)",
+      "Bash(docker run *)",
+      "PowerShell(docker compose exec *)",
+      "Bash(grep -nE '^\\\\\\\\\\(un\\)?restrict' natsdoll-dump.sql)",
+      "Bash(sed -i '/^\\\\\\\\restrict /d; /^\\\\\\\\unrestrict /d' natsdoll-dump.sql)",
+      "Bash(awk '{print $5}')",
+      "PowerShell(nslookup *)",
+      "Bash(nslookup natsdoll.com 8.8.8.8)",
+      "Bash(nslookup www.natsdoll.com 8.8.8.8)",
+      "PowerShell(docker run *)",
+      "Bash(gh --version)",
+      "Bash(gh secret *)"
     ]
   }
 }
