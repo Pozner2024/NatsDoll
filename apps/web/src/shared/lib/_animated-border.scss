@@ -14,15 +14,20 @@
     inset: -2px;
     pointer-events: none;
     --btn-angle: 90deg;
-    border: 2px solid transparent;
-    border-image: conic-gradient(
+    padding: 2px;
+    background: conic-gradient(
       from var(--btn-angle),
       rgb(var(--btn-gradient-dark) / 0.4),
       rgb(var(--btn-gradient-mid) / 1) 0.07turn,
       rgb(var(--btn-gradient-light) / 1) 0.12turn,
       rgb(var(--btn-gradient-mid) / 1) 0.17turn,
       rgb(var(--btn-gradient-dark) / 0.4) 0.25turn
-    ) 1;
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
     opacity: 0;
     animation:
       animated-border-rotate 3s linear infinite,
