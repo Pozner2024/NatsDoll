@@ -1,3 +1,10 @@
+# Редирект www → апекс. В боевом режиме WWW_ADDRESS=www.natsdoll.com — Caddy
+# выпишет на www отдельный сертификат и 308-редиректит на апекс. На этапе «по IP»
+# дефолт http://localhost:2080 делает блок инертным (без ACME, наружу не проброшен).
+{$WWW_ADDRESS:http://localhost:2080} {
+	redir https://{$SITE_ADDRESS::80}{uri} 308
+}
+
 {$SITE_ADDRESS::80} {
 	encode gzip zstd
 
