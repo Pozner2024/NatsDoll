@@ -1,0 +1,32 @@
+# Редирект www → апекс. В боевом режиме WWW_ADDRESS=www.natsdoll.com — Caddy
+# выпишет на www отдельный сертификат и 308-редиректит на апекс. На этапе «по IP»
+# дефолт http://localhost:2080 делает блок инертным (без ACME, наружу не проброшен).
+{$WWW_ADDRESS:http://localhost:2080} {
+	redir https://{$SITE_ADDRESS::80}{uri} 308
+}
+
+{$SITE_ADDRESS::80} {
+	encode gzip zstd
+
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://storage.yandexcloud.net; connect-src 'self'; script-src 'self'; frame-ancestors 'none';"
+	}
+
+	handle_path /api/* {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		root * /srv
+		@assets path *.js *.css *.woff *.woff2 *.png *.jpg *.jpeg *.svg *.ico
+		header @assets Cache-Control "public, immutable, max-age=31536000"
+		header /index.html Cache-Control "no-cache, no-store, must-revalidate"
+		try_files {path} /index.html
+		file_server
+	}
+}
