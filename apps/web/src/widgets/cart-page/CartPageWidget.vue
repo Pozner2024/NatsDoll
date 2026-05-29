@@ -1,17 +1,42 @@
 <template>
   <section class="cart-page">
-    <h1 class="cart-page__title">Your cart</h1>
+    <h1 class="cart-page__title">
+      Your cart
+    </h1>
 
-    <div v-if="loading" class="cart-page__loading">Loading…</div>
-
-    <div v-else-if="error" class="cart-page__error">{{ error }}</div>
-
-    <div v-else-if="items.length === 0" class="cart-page__empty">
-      <p class="cart-page__empty-text">Your cart is empty.</p>
-      <RouterLink to="/shop" class="cart-page__empty-link">Browse the shop</RouterLink>
+    <div
+      v-if="loading"
+      class="cart-page__loading"
+    >
+      Loading…
     </div>
 
-    <div v-else class="cart-page__layout">
+    <div
+      v-else-if="error"
+      class="cart-page__error"
+    >
+      {{ error }}
+    </div>
+
+    <div
+      v-else-if="items.length === 0"
+      class="cart-page__empty"
+    >
+      <p class="cart-page__empty-text">
+        Your cart is empty.
+      </p>
+      <RouterLink
+        to="/shop"
+        class="cart-page__empty-link"
+      >
+        Browse the shop
+      </RouterLink>
+    </div>
+
+    <div
+      v-else
+      class="cart-page__layout"
+    >
       <ul class="cart-page__items">
         <CartLineItem
           v-for="item in items"
@@ -23,7 +48,9 @@
       </ul>
 
       <aside class="cart-page__summary">
-        <h2 class="cart-page__summary-title">Summary</h2>
+        <h2 class="cart-page__summary-title">
+          Summary
+        </h2>
         <p class="cart-page__summary-row">
           <span>Items</span>
           <span>{{ itemCount }}</span>

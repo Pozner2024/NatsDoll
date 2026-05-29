@@ -1,8 +1,12 @@
 <template>
   <div class="product-info">
     <div class="product-info__header">
-      <h1 class="product-info__name">{{ product.name }}</h1>
-      <p class="product-info__price">{{ formatPrice(product.price) }}</p>
+      <h1 class="product-info__name">
+        {{ product.name }}
+      </h1>
+      <p class="product-info__price">
+        {{ formatPrice(product.price) }}
+      </p>
     </div>
 
     <MessageSelector
@@ -13,10 +17,27 @@
     />
 
     <div class="product-info__action">
-      <div v-if="product.stock > 0" class="product-info__qty">
-        <button type="button" class="product-info__qty-btn" :disabled="qty <= 1" @click="qty--">−</button>
+      <div
+        v-if="product.stock > 0"
+        class="product-info__qty"
+      >
+        <button
+          type="button"
+          class="product-info__qty-btn"
+          :disabled="qty <= 1"
+          @click="qty--"
+        >
+          −
+        </button>
         <span class="product-info__qty-val">{{ qty }}</span>
-        <button type="button" class="product-info__qty-btn" :disabled="qty >= product.stock" @click="qty++">+</button>
+        <button
+          type="button"
+          class="product-info__qty-btn"
+          :disabled="qty >= product.stock"
+          @click="qty++"
+        >
+          +
+        </button>
       </div>
 
       <AppButton
@@ -31,25 +52,67 @@
 
     <ul class="product-info__meta">
       <li class="product-info__meta-item">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+          <circle
+            cx="12"
+            cy="10"
+            r="3"
+          />
         </svg>
         Dispatched from Poland
       </li>
       <li class="product-info__meta-item">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <polyline points="1 4 1 10 7 10"/>
-          <path d="M3.51 15a9 9 0 1 0 .49-3.96"/>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <polyline points="1 4 1 10 7 10" />
+          <path d="M3.51 15a9 9 0 1 0 .49-3.96" />
         </svg>
         Returns &amp; exchanges accepted
       </li>
       <li class="product-info__meta-item">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <rect x="1" y="3" width="15" height="13" rx="1"/>
-          <path d="M16 8h4l3 5v3h-7V8z"/>
-          <circle cx="5.5" cy="18.5" r="1.5"/>
-          <circle cx="18.5" cy="18.5" r="1.5"/>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <rect
+            x="1"
+            y="3"
+            width="15"
+            height="13"
+            rx="1"
+          />
+          <path d="M16 8h4l3 5v3h-7V8z" />
+          <circle
+            cx="5.5"
+            cy="18.5"
+            r="1.5"
+          />
+          <circle
+            cx="18.5"
+            cy="18.5"
+            r="1.5"
+          />
         </svg>
         Delivery cost €12
       </li>
@@ -62,7 +125,9 @@
         v-for="(paragraph, i) in paragraphs"
         :key="i"
         class="product-info__desc-p"
-      >{{ paragraph }}</p>
+      >
+        {{ paragraph }}
+      </p>
     </div>
   </div>
 </template>

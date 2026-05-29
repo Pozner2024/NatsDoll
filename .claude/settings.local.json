@@ -236,7 +236,26 @@
       "Bash(nslookup www.natsdoll.com 8.8.8.8)",
       "PowerShell(docker run *)",
       "Bash(gh --version)",
-      "Bash(gh secret *)"
+      "Bash(gh secret *)",
+      "PowerShell(node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic ProductGallery)",
+      "PowerShell(node --max-old-space-size=4096 ./node_modules/vue-tsc/bin/vue-tsc.js --noEmit -p apps/web/tsconfig.json 2>&1 | Select-Object -First 40)",
+      "PowerShell(node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic --no-cache ProductGallery 2>&1 | Select-Object -Last 30)",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\web\\\\src\\\\widgets\\\\product-page\\\\components\\\\ProductGallery.vue\"\\); $text = [System.Text.Encoding]::UTF8.GetString\\($bytes\\); Write-Output \"BOM/first bytes: $\\($bytes[0]\\) $\\($bytes[1]\\) $\\($bytes[2]\\)\"; Write-Output \"Has replacement char \\(U+FFFD\\): $\\($text.Contains\\([char]0xFFFD\\)\\)\"; $idx = $text.IndexOf\\([char]0xFFFD\\); Write-Output \"First bad char index: $idx\")",
+      "PowerShell(node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic HeroSlider 2>&1 | Select-Object -Last 12)",
+      "PowerShell(node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic --config apps/web/vite.config.ts --root apps/web ProductGallery 2>&1 | Select-Object -Last 25)",
+      "PowerShell(node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic --root apps/web ProductGallery 2>&1 | Select-Object -Last 25)",
+      "PowerShell(Get-Cert *)",
+      "Bash(cat)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" node --experimental-vm-modules apps/api/node_modules/.bin/../.prisma)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" node /tmp/check_db.mjs)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" node check_db.mjs)",
+      "PowerShell(docker ps *)",
+      "PowerShell(docker compose up *)",
+      "PowerShell(docker exec natsdoll-db-1 *)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" node *)",
+      "Bash(echo \"API_TYPECHECK_EXIT=$?\")",
+      "Bash(grep -E \"venv/|sources.txt|add_files.py|collect_vue|\\\\.output$\")",
+      "Bash(echo \"WEB_LINT_EXIT=$?\")"
     ]
   }
 }

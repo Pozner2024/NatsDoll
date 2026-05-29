@@ -1,30 +1,60 @@
 <template>
   <article class="product-card">
     <div class="product-card__image-wrap">
-      <RouterLink :to="`/product/${product.slug}`" class="product-card__image-link">
-        <div class="product-card__image" :class="{ 'product-card__image--dimmed': product.stock === 0 }">
+      <RouterLink
+        :to="`/product/${product.slug}`"
+        class="product-card__image-link"
+      >
+        <div
+          class="product-card__image"
+          :class="{ 'product-card__image--dimmed': product.stock === 0 }"
+        >
           <img
             v-if="product.image"
             :src="product.image"
             :alt="product.name"
             class="product-card__img"
           >
-          <div v-else class="product-card__placeholder" aria-hidden="true" />
-          <span v-if="product.stock === 0" class="product-card__badge">Sold out</span>
+          <div
+            v-else
+            class="product-card__placeholder"
+            aria-hidden="true"
+          />
+          <span
+            v-if="product.stock === 0"
+            class="product-card__badge"
+          >Sold out</span>
         </div>
-        <div class="product-card__corner product-card__corner--tl" aria-hidden="true" />
-        <div class="product-card__corner product-card__corner--bl" aria-hidden="true" />
-        <div class="product-card__corner product-card__corner--br" aria-hidden="true" />
+        <div
+          class="product-card__corner product-card__corner--tl"
+          aria-hidden="true"
+        />
+        <div
+          class="product-card__corner product-card__corner--bl"
+          aria-hidden="true"
+        />
+        <div
+          class="product-card__corner product-card__corner--br"
+          aria-hidden="true"
+        />
       </RouterLink>
-      <div v-if="$slots.overlay" class="product-card__overlay">
+      <div
+        v-if="$slots.overlay"
+        class="product-card__overlay"
+      >
         <slot name="overlay" />
       </div>
     </div>
 
     <div class="product-card__body">
       <div class="product-card__top-row">
-        <RouterLink :to="`/product/${product.slug}`" class="product-card__name-link">
-          <h3 class="product-card__name">{{ product.name }}</h3>
+        <RouterLink
+          :to="`/product/${product.slug}`"
+          class="product-card__name-link"
+        >
+          <h3 class="product-card__name">
+            {{ product.name }}
+          </h3>
         </RouterLink>
         <span class="product-card__price">{{ formatPrice(product.price) }}</span>
       </div>

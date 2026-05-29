@@ -1,18 +1,40 @@
 <template>
-  <div v-if="isLoading" class="product-page-widget__skeleton" />
+  <div
+    v-if="isLoading"
+    class="product-page-widget__skeleton"
+  />
 
-  <div v-else-if="hasError" class="product-page-widget__error">
+  <div
+    v-else-if="hasError"
+    class="product-page-widget__error"
+  >
     <p>Failed to load product. Please try again.</p>
   </div>
 
-  <div v-else-if="product" class="product-page-widget">
-    <nav class="product-page-widget__breadcrumbs" aria-label="Breadcrumb">
-      <RouterLink class="product-page-widget__breadcrumb-link" to="/shop">The Shop</RouterLink>
-      <span class="product-page-widget__breadcrumb-sep" aria-hidden="true">/</span>
+  <div
+    v-else-if="product"
+    class="product-page-widget"
+  >
+    <nav
+      class="product-page-widget__breadcrumbs"
+      aria-label="Breadcrumb"
+    >
+      <RouterLink
+        class="product-page-widget__breadcrumb-link"
+        to="/shop"
+      >
+        The Shop
+      </RouterLink>
+      <span
+        class="product-page-widget__breadcrumb-sep"
+        aria-hidden="true"
+      >/</span>
       <RouterLink
         class="product-page-widget__breadcrumb-link"
         :to="`/shop/${product.categorySlug}`"
-      >{{ product.category }}</RouterLink>
+      >
+        {{ product.category }}
+      </RouterLink>
     </nav>
     <div class="product-page-widget__main">
       <ProductGallery
@@ -30,7 +52,10 @@
     <div class="product-page-widget__reviews">
       <slot name="reviews" />
     </div>
-    <MoreFromShop v-if="!moreLoading && moreProducts.length > 0" :products="moreProducts" />
+    <MoreFromShop
+      v-if="!moreLoading && moreProducts.length > 0"
+      :products="moreProducts"
+    />
   </div>
 </template>
 

@@ -2,10 +2,16 @@
   <div class="account-page">
     <aside class="account-page__sidebar">
       <div class="account-page__user">
-        <div class="account-page__user-initials">{{ initials }}</div>
+        <div class="account-page__user-initials">
+          {{ initials }}
+        </div>
         <div class="account-page__user-info">
-          <p class="account-page__user-name">{{ user?.name }}</p>
-          <p class="account-page__user-email">{{ user?.email }}</p>
+          <p class="account-page__user-name">
+            {{ user?.name }}
+          </p>
+          <p class="account-page__user-email">
+            {{ user?.email }}
+          </p>
         </div>
       </div>
 
@@ -17,7 +23,10 @@
           class="account-page__nav-item"
           active-class="account-page__nav-item--active"
         >
-          <component :is="item.icon" class="account-page__nav-icon" />
+          <component
+            :is="item.icon"
+            class="account-page__nav-icon"
+          />
           <span>{{ item.label }}</span>
         </RouterLink>
       </nav>

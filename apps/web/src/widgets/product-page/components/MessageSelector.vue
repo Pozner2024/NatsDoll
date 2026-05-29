@@ -1,6 +1,8 @@
 <template>
   <fieldset class="message-selector">
-    <legend class="message-selector__legend">Personalization</legend>
+    <legend class="message-selector__legend">
+      Personalization
+    </legend>
 
     <ul class="message-selector__list">
       <li
@@ -47,11 +49,19 @@
       @input="emitChange"
     />
 
-    <div v-if="isCustom" class="message-selector__counter">
+    <div
+      v-if="isCustom"
+      class="message-selector__counter"
+    >
       {{ customText.length }} / {{ MAX_LENGTH }}
     </div>
 
-    <p v-if="error" class="message-selector__error">{{ error }}</p>
+    <p
+      v-if="error"
+      class="message-selector__error"
+    >
+      {{ error }}
+    </p>
   </fieldset>
 </template>
 

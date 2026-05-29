@@ -1,11 +1,22 @@
 <template>
   <section class="account-profile">
     <div class="account-profile__header">
-      <h2 class="account-profile__title">Profile</h2>
-      <button v-if="editing" class="account-profile__edit-btn account-profile__edit-btn--cancel" @click="cancelEdit">Cancel</button>
+      <h2 class="account-profile__title">
+        Profile
+      </h2>
+      <button
+        v-if="editing"
+        class="account-profile__edit-btn account-profile__edit-btn--cancel"
+        @click="cancelEdit"
+      >
+        Cancel
+      </button>
     </div>
 
-    <div v-if="!editing" class="account-profile__view">
+    <div
+      v-if="!editing"
+      class="account-profile__view"
+    >
       <div class="account-profile__row">
         <span class="account-profile__row-label">Name</span>
         <span class="account-profile__row-value">{{ user?.name }}</span>
@@ -18,10 +29,19 @@
         <span class="account-profile__row-label">Password</span>
         <span class="account-profile__row-value account-profile__row-value--muted">••••••••</span>
       </div>
-      <button class="account-profile__edit-btn account-profile__edit-btn--below" @click="editing = true">Edit</button>
+      <button
+        class="account-profile__edit-btn account-profile__edit-btn--below"
+        @click="editing = true"
+      >
+        Edit
+      </button>
     </div>
 
-    <form v-else class="account-profile__form" @submit.prevent="save">
+    <form
+      v-else
+      class="account-profile__form"
+      @submit.prevent="save"
+    >
       <div class="account-profile__field">
         <label class="account-profile__label">Name</label>
         <input
@@ -30,7 +50,7 @@
           type="text"
           placeholder="Your name"
           required
-        />
+        >
       </div>
 
       <div class="account-profile__field">
@@ -40,8 +60,10 @@
           type="email"
           :value="user?.email"
           readonly
-        />
-        <p class="account-profile__hint">Email cannot be changed</p>
+        >
+        <p class="account-profile__hint">
+          Email cannot be changed
+        </p>
       </div>
 
       <div class="account-profile__field">
@@ -53,14 +75,17 @@
             :type="showPassword ? 'text' : 'password'"
             placeholder="Leave blank to keep current"
             autocomplete="new-password"
-          />
+          >
           <button
             type="button"
             class="account-profile__password-toggle"
             :aria-label="showPassword ? 'Hide password' : 'Show password'"
             @click="showPassword = !showPassword"
           >
-            <IconEye :closed="!showPassword" class="account-profile__password-icon" />
+            <IconEye
+              :closed="!showPassword"
+              class="account-profile__password-icon"
+            />
           </button>
         </div>
       </div>
@@ -75,7 +100,7 @@
             placeholder="Repeat new password"
             autocomplete="new-password"
             :disabled="!password"
-          />
+          >
           <button
             type="button"
             class="account-profile__password-toggle"
@@ -83,15 +108,25 @@
             :disabled="!password"
             @click="showPasswordConfirm = !showPasswordConfirm"
           >
-            <IconEye :closed="!showPasswordConfirm" class="account-profile__password-icon" />
+            <IconEye
+              :closed="!showPasswordConfirm"
+              class="account-profile__password-icon"
+            />
           </button>
         </div>
-        <p v-if="passwordMismatch" class="account-profile__hint account-profile__hint--error">
+        <p
+          v-if="passwordMismatch"
+          class="account-profile__hint account-profile__hint--error"
+        >
           Passwords do not match
         </p>
       </div>
 
-      <AppButton type="submit" class="account-profile__submit" :disabled="passwordMismatch">
+      <AppButton
+        type="submit"
+        class="account-profile__submit"
+        :disabled="passwordMismatch"
+      >
         Save changes
       </AppButton>
     </form>

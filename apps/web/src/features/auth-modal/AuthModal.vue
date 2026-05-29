@@ -80,7 +80,10 @@
               :aria-label="showLoginPassword ? 'Hide password' : 'Show password'"
               @click="showLoginPassword = !showLoginPassword"
             >
-              <IconEye :closed="!showLoginPassword" class="auth-modal__password-icon" />
+              <IconEye
+                :closed="!showLoginPassword"
+                class="auth-modal__password-icon"
+              />
             </button>
           </div>
           <span
@@ -187,7 +190,10 @@
               :aria-label="showRegisterPassword ? 'Hide password' : 'Show password'"
               @click="showRegisterPassword = !showRegisterPassword"
             >
-              <IconEye :closed="!showRegisterPassword" class="auth-modal__password-icon" />
+              <IconEye
+                :closed="!showRegisterPassword"
+                class="auth-modal__password-icon"
+              />
             </button>
           </div>
           <span

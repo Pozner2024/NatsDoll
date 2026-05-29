@@ -1,32 +1,62 @@
 <template>
   <section class="account-dashboard">
-    <h2 class="account-dashboard__greeting">Hello, {{ firstName }}!</h2>
+    <h2 class="account-dashboard__greeting">
+      Hello, {{ firstName }}!
+    </h2>
 
-    <div v-if="lastOrder" class="account-dashboard__last-order">
-      <h3 class="account-dashboard__section-title">Last order</h3>
-      <RouterLink :to="`/orders/${lastOrder.id}`" class="account-dashboard__order-card">
+    <div
+      v-if="lastOrder"
+      class="account-dashboard__last-order"
+    >
+      <h3 class="account-dashboard__section-title">
+        Last order
+      </h3>
+      <RouterLink
+        :to="`/orders/${lastOrder.id}`"
+        class="account-dashboard__order-card"
+      >
         <div class="account-dashboard__order-image">
           <img
             v-if="lastOrder.firstItemImage"
             :src="lastOrder.firstItemImage"
             :alt="'Order ' + lastOrder.id"
-          />
-          <span v-else class="account-dashboard__order-image-placeholder">?</span>
+          >
+          <span
+            v-else
+            class="account-dashboard__order-image-placeholder"
+          >?</span>
         </div>
         <div class="account-dashboard__order-info">
-          <p class="account-dashboard__order-date">{{ formatDate(lastOrder.createdAt) }}</p>
-          <p class="account-dashboard__order-items">{{ lastOrder.itemCount }} {{ lastOrder.itemCount === 1 ? 'item' : 'items' }}</p>
-          <p class="account-dashboard__order-total">{{ formatPrice(lastOrder.totalAmount) }}</p>
+          <p class="account-dashboard__order-date">
+            {{ formatDate(lastOrder.createdAt) }}
+          </p>
+          <p class="account-dashboard__order-items">
+            {{ lastOrder.itemCount }} {{ lastOrder.itemCount === 1 ? 'item' : 'items' }}
+          </p>
+          <p class="account-dashboard__order-total">
+            {{ formatPrice(lastOrder.totalAmount) }}
+          </p>
         </div>
-        <span class="account-dashboard__order-status" :class="`account-dashboard__order-status--${lastOrder.status.toLowerCase()}`">
+        <span
+          class="account-dashboard__order-status"
+          :class="`account-dashboard__order-status--${lastOrder.status.toLowerCase()}`"
+        >
           {{ lastOrder.status }}
         </span>
       </RouterLink>
     </div>
 
-    <div v-else class="account-dashboard__no-orders">
+    <div
+      v-else
+      class="account-dashboard__no-orders"
+    >
       <p>You haven't placed any orders yet.</p>
-      <RouterLink to="/shop" class="account-dashboard__shop-link">Browse the shop</RouterLink>
+      <RouterLink
+        to="/shop"
+        class="account-dashboard__shop-link"
+      >
+        Browse the shop
+      </RouterLink>
     </div>
   </section>
 </template>

@@ -1,13 +1,24 @@
 <template>
   <section class="account-reviews">
-    <h2 class="account-reviews__title">Reviews</h2>
+    <h2 class="account-reviews__title">
+      Reviews
+    </h2>
 
     <div class="account-reviews__empty">
-      <svg class="account-reviews__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+      <svg
+        class="account-reviews__empty-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+        aria-hidden="true"
+      >
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
       </svg>
       <p>No reviews yet</p>
-      <p class="account-reviews__hint">After receiving your order you can leave a review</p>
+      <p class="account-reviews__hint">
+        After receiving your order you can leave a review
+      </p>
     </div>
   </section>
 </template>

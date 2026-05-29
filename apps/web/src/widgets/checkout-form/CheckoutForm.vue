@@ -1,9 +1,18 @@
 <template>
-  <form class="checkout-form" novalidate @submit.prevent="handleSubmit">
-    <h2 class="checkout-form__title">Shipping address</h2>
+  <form
+    class="checkout-form"
+    novalidate
+    @submit.prevent="handleSubmit"
+  >
+    <h2 class="checkout-form__title">
+      Shipping address
+    </h2>
 
     <div class="checkout-form__field">
-      <label class="checkout-form__label" for="cf-name">Full name</label>
+      <label
+        class="checkout-form__label"
+        for="cf-name"
+      >Full name</label>
       <input
         id="cf-name"
         v-model="form.fullName"
@@ -12,11 +21,17 @@
         type="text"
         autocomplete="name"
       >
-      <span v-if="errors.fullName" class="checkout-form__error">{{ errors.fullName }}</span>
+      <span
+        v-if="errors.fullName"
+        class="checkout-form__error"
+      >{{ errors.fullName }}</span>
     </div>
 
     <div class="checkout-form__field">
-      <label class="checkout-form__label" for="cf-line1">Address line 1</label>
+      <label
+        class="checkout-form__label"
+        for="cf-line1"
+      >Address line 1</label>
       <input
         id="cf-line1"
         v-model="form.line1"
@@ -25,11 +40,17 @@
         type="text"
         autocomplete="address-line1"
       >
-      <span v-if="errors.line1" class="checkout-form__error">{{ errors.line1 }}</span>
+      <span
+        v-if="errors.line1"
+        class="checkout-form__error"
+      >{{ errors.line1 }}</span>
     </div>
 
     <div class="checkout-form__field">
-      <label class="checkout-form__label" for="cf-line2">Address line 2 <span class="checkout-form__optional">(optional)</span></label>
+      <label
+        class="checkout-form__label"
+        for="cf-line2"
+      >Address line 2 <span class="checkout-form__optional">(optional)</span></label>
       <input
         id="cf-line2"
         v-model="form.line2"
@@ -41,7 +62,10 @@
 
     <div class="checkout-form__row">
       <div class="checkout-form__field">
-        <label class="checkout-form__label" for="cf-city">City</label>
+        <label
+          class="checkout-form__label"
+          for="cf-city"
+        >City</label>
         <input
           id="cf-city"
           v-model="form.city"
@@ -50,11 +74,17 @@
           type="text"
           autocomplete="address-level2"
         >
-        <span v-if="errors.city" class="checkout-form__error">{{ errors.city }}</span>
+        <span
+          v-if="errors.city"
+          class="checkout-form__error"
+        >{{ errors.city }}</span>
       </div>
 
       <div class="checkout-form__field">
-        <label class="checkout-form__label" for="cf-postal">Postal code</label>
+        <label
+          class="checkout-form__label"
+          for="cf-postal"
+        >Postal code</label>
         <input
           id="cf-postal"
           v-model="form.postalCode"
@@ -63,12 +93,18 @@
           type="text"
           autocomplete="postal-code"
         >
-        <span v-if="errors.postalCode" class="checkout-form__error">{{ errors.postalCode }}</span>
+        <span
+          v-if="errors.postalCode"
+          class="checkout-form__error"
+        >{{ errors.postalCode }}</span>
       </div>
     </div>
 
     <div class="checkout-form__field">
-      <label class="checkout-form__label" for="cf-country">Country</label>
+      <label
+        class="checkout-form__label"
+        for="cf-country"
+      >Country</label>
       <input
         id="cf-country"
         v-model="form.country"
@@ -77,14 +113,24 @@
         type="text"
         autocomplete="country-name"
       >
-      <span v-if="errors.country" class="checkout-form__error">{{ errors.country }}</span>
+      <span
+        v-if="errors.country"
+        class="checkout-form__error"
+      >{{ errors.country }}</span>
     </div>
 
-    <p v-if="submitError" class="checkout-form__error checkout-form__error--global">
+    <p
+      v-if="submitError"
+      class="checkout-form__error checkout-form__error--global"
+    >
       {{ submitError }}
     </p>
 
-    <AppButton type="submit" :disabled="isSubmitting" class="checkout-form__submit">
+    <AppButton
+      type="submit"
+      :disabled="isSubmitting"
+      class="checkout-form__submit"
+    >
       {{ isSubmitting ? 'Placing order…' : 'Place order' }}
     </AppButton>
   </form>

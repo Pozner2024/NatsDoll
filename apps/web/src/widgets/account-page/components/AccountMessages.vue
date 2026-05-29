@@ -1,13 +1,24 @@
 <template>
   <section class="account-messages">
-    <h2 class="account-messages__title">Messages</h2>
+    <h2 class="account-messages__title">
+      Messages
+    </h2>
 
     <div class="account-messages__empty">
-      <svg class="account-messages__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+      <svg
+        class="account-messages__empty-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+        aria-hidden="true"
+      >
         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
       </svg>
       <p>No messages yet</p>
-      <p class="account-messages__hint">Messages about your orders will appear here</p>
+      <p class="account-messages__hint">
+        Messages about your orders will appear here
+      </p>
     </div>
   </section>
 </template>

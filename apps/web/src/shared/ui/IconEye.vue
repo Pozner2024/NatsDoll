@@ -1,5 +1,13 @@
 <template>
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
     <template v-if="closed">
       <path d="M3 3l18 18" />
       <path d="M10.6 6.2A10.4 10.4 0 0 1 12 6c5 0 9 4 10 6-.4.8-1.4 2.2-2.9 3.5" />
@@ -8,7 +16,11 @@
     </template>
     <template v-else>
       <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z" />
-      <circle cx="12" cy="12" r="3" />
+      <circle
+        cx="12"
+        cy="12"
+        r="3"
+      />
     </template>
   </svg>
 </template>

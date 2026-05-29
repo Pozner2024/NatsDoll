@@ -1,21 +1,37 @@
 <template>
   <div class="order-confirmation">
-    <div v-if="loading" class="order-confirmation__loading">Loading…</div>
+    <div
+      v-if="loading"
+      class="order-confirmation__loading"
+    >
+      Loading…
+    </div>
 
-    <div v-else-if="error" class="order-confirmation__error">{{ error }}</div>
+    <div
+      v-else-if="error"
+      class="order-confirmation__error"
+    >
+      {{ error }}
+    </div>
 
     <template v-else-if="order">
       <div class="order-confirmation__header">
-        <h1 class="order-confirmation__title">Order placed!</h1>
+        <h1 class="order-confirmation__title">
+          Order placed!
+        </h1>
         <p class="order-confirmation__subtitle">
           Thank you for your order. We'll start working on it right away.
         </p>
-        <p class="order-confirmation__id">Order #{{ order.id }}</p>
+        <p class="order-confirmation__id">
+          Order #{{ order.id }}
+        </p>
       </div>
 
       <div class="order-confirmation__layout">
         <section class="order-confirmation__items">
-          <h2 class="order-confirmation__section-title">Items</h2>
+          <h2 class="order-confirmation__section-title">
+            Items
+          </h2>
           <ul class="order-confirmation__list">
             <li
               v-for="item in order.items"
@@ -35,7 +51,10 @@
                 >
                   {{ item.productName }}
                 </RouterLink>
-                <p v-if="item.message" class="order-confirmation__item-message">
+                <p
+                  v-if="item.message"
+                  class="order-confirmation__item-message"
+                >
                   "{{ item.message }}"
                 </p>
                 <p class="order-confirmation__item-meta">
@@ -48,7 +67,9 @@
         </section>
 
         <aside class="order-confirmation__summary">
-          <h2 class="order-confirmation__section-title">Summary</h2>
+          <h2 class="order-confirmation__section-title">
+            Summary
+          </h2>
           <p class="order-confirmation__summary-row">
             <span>Status</span>
             <span class="order-confirmation__status">{{ order.status }}</span>
@@ -58,7 +79,9 @@
             <span>{{ formatPrice(order.totalAmount) }}</span>
           </p>
 
-          <h2 class="order-confirmation__section-title order-confirmation__section-title--mt">Shipping to</h2>
+          <h2 class="order-confirmation__section-title order-confirmation__section-title--mt">
+            Shipping to
+          </h2>
           <address class="order-confirmation__address">
             <span>{{ order.shippingAddress.fullName }}</span>
             <span>{{ order.shippingAddress.line1 }}</span>
@@ -69,7 +92,10 @@
         </aside>
       </div>
 
-      <RouterLink to="/shop" class="order-confirmation__continue">
+      <RouterLink
+        to="/shop"
+        class="order-confirmation__continue"
+      >
         Continue shopping
       </RouterLink>
     </template>

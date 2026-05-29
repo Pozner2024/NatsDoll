@@ -1,6 +1,8 @@
 <template>
   <div class="empty-state">
-    <p class="empty-state__text">No items here yet — check back soon</p>
+    <p class="empty-state__text">
+      No items here yet — check back soon
+    </p>
     <RouterLink
       class="empty-state__btn"
       :to="{ name: 'shop' }"

@@ -1,6 +1,8 @@
 <template>
   <main class="checkout-page">
-    <h1 class="checkout-page__title">Checkout</h1>
+    <h1 class="checkout-page__title">
+      Checkout
+    </h1>
 
     <div class="checkout-page__layout">
       <section class="checkout-page__form-section">
@@ -8,7 +10,9 @@
       </section>
 
       <aside class="checkout-page__summary">
-        <h2 class="checkout-page__summary-title">Order summary</h2>
+        <h2 class="checkout-page__summary-title">
+          Order summary
+        </h2>
         <ul class="checkout-page__summary-items">
           <li
             v-for="item in items"

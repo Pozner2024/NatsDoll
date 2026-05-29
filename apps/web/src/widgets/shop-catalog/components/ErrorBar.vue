@@ -3,7 +3,9 @@
     class="error-bar"
     role="alert"
   >
-    <p class="error-bar__text">{{ message }}</p>
+    <p class="error-bar__text">
+      {{ message }}
+    </p>
     <button
       type="button"
       class="error-bar__btn"

@@ -15,13 +15,62 @@
           :src="img"
           :alt="`${name} ${i + 1}`"
         >
+        <template v-if="images.length > 1">
+          <button
+            type="button"
+            class="product-gallery__arrow product-gallery__arrow--prev"
+            aria-label="Предыдущее фото"
+            @click="prev"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M12.5 15L7.5 10L12.5 5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="product-gallery__arrow product-gallery__arrow--next"
+            aria-label="Следующее фото"
+            @click="next"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M7.5 5L12.5 10L7.5 15"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </template>
         <FavoriteToggle
           v-if="product"
           :product="product"
           class="product-gallery__favorite"
         />
       </div>
-      <span v-if="stock === 0" class="product-gallery__badge">Sold out</span>
+      <span
+        v-if="stock === 0"
+        class="product-gallery__badge"
+      >Sold out</span>
       <div class="product-gallery__dots">
         <button
           v-for="(_, i) in images"
@@ -46,7 +95,11 @@
           :class="{ 'product-gallery__thumb--active': i === activeIndex }"
           @click="activeIndex = i"
         >
-          <img :src="img" :alt="`${name} ${i + 1}`" class="product-gallery__thumb-img">
+          <img
+            :src="img"
+            :alt="`${name} ${i + 1}`"
+            class="product-gallery__thumb-img"
+          >
         </button>
       </div>
       <div class="product-gallery__main">
@@ -62,8 +115,20 @@
             aria-label="Предыдущее фото"
             @click="activeIndex = (activeIndex - 1 + images.length) % images.length"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M12.5 15L7.5 10L12.5 5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
           <button
@@ -72,8 +137,20 @@
             aria-label="Следующее фото"
             @click="activeIndex = (activeIndex + 1) % images.length"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M7.5 5L12.5 10L7.5 15"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
         </template>
@@ -82,7 +159,10 @@
           :product="product"
           class="product-gallery__favorite"
         />
-        <span v-if="stock === 0" class="product-gallery__badge">Sold out</span>
+        <span
+          v-if="stock === 0"
+          class="product-gallery__badge"
+        >Sold out</span>
       </div>
     </div>
   </div>
@@ -281,8 +361,7 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
     background: rgb(255 255 255 / 0.75);
     backdrop-filter: blur(4px);
     color: var(--color-text);
-    opacity: 0;
-    transition: opacity 0.2s ease, background-color 0.15s ease;
+    transition: background-color 0.15s ease;
 
     &--prev { left: 0.6rem; }
     &--next { right: 0.6rem; }
@@ -290,10 +369,6 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
     &:hover {
       background: rgb(255 255 255 / 0.95);
     }
-  }
-
-  &__main:hover &__arrow {
-    opacity: 1;
   }
 
   &__favorite {

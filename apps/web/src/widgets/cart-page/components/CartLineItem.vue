@@ -1,6 +1,9 @@
 <template>
   <li class="cart-line">
-    <RouterLink :to="`/product/${item.productSlug}`" class="cart-line__link">
+    <RouterLink
+      :to="`/product/${item.productSlug}`"
+      class="cart-line__link"
+    >
       <img
         v-if="item.productImage"
         :src="item.productImage"
@@ -10,11 +13,17 @@
     </RouterLink>
 
     <div class="cart-line__body">
-      <RouterLink :to="`/product/${item.productSlug}`" class="cart-line__name">
+      <RouterLink
+        :to="`/product/${item.productSlug}`"
+        class="cart-line__name"
+      >
         {{ item.productName }}
       </RouterLink>
 
-      <p v-if="item.message" class="cart-line__message">
+      <p
+        v-if="item.message"
+        class="cart-line__message"
+      >
         <span class="cart-line__message-label">Message:</span>
         <span class="cart-line__message-text">{{ item.message }}</span>
       </p>
@@ -26,23 +35,31 @@
             class="cart-line__qty-btn"
             :disabled="item.quantity <= 1"
             @click="onDecrement"
-          >−</button>
+          >
+            −
+          </button>
           <span class="cart-line__qty-val">{{ item.quantity }}</span>
           <button
             type="button"
             class="cart-line__qty-btn"
             @click="onIncrement"
-          >+</button>
+          >
+            +
+          </button>
         </div>
 
-        <p class="cart-line__subtotal">{{ formatPrice(item.subtotal) }}</p>
+        <p class="cart-line__subtotal">
+          {{ formatPrice(item.subtotal) }}
+        </p>
       </div>
 
       <button
         type="button"
         class="cart-line__remove"
         @click="onRemoveClick"
-      >Remove</button>
+      >
+        Remove
+      </button>
     </div>
   </li>
 </template>

@@ -1,6 +1,8 @@
 <template>
   <section class="more-from-shop">
-    <p class="more-from-shop__label">More from this shop</p>
+    <p class="more-from-shop__label">
+      More from this shop
+    </p>
     <div class="more-from-shop__scroll">
       <ProductCard
         v-for="product in products"

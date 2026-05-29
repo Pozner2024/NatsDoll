@@ -9,8 +9,16 @@
         class="shop-catalog__crumb"
         aria-label="Breadcrumb"
       >
-        <RouterLink to="/shop" class="shop-catalog__crumb-link">The shop</RouterLink>
-        <span class="shop-catalog__crumb-sep" aria-hidden="true">/</span>
+        <RouterLink
+          to="/shop"
+          class="shop-catalog__crumb-link"
+        >
+          The shop
+        </RouterLink>
+        <span
+          class="shop-catalog__crumb-sep"
+          aria-hidden="true"
+        >/</span>
         <span class="shop-catalog__crumb-current">{{ activeCategoryName ?? category }}</span>
       </nav>
     </header>
