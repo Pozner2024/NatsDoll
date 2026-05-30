@@ -238,6 +238,8 @@ async function handleLogout() {
   border-bottom: 1px solid var(--color-border);
   z-index: var(--z-dropdown);
   padding: 0.375rem 0 0.25rem;
+  max-height: calc(100dvh - var(--header-height));
+  overflow-y: auto;
 
   &__group {
     border-bottom: 1px solid var(--color-border);
