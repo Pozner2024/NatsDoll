@@ -255,7 +255,13 @@
       "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" node *)",
       "Bash(echo \"API_TYPECHECK_EXIT=$?\")",
       "Bash(grep -E \"venv/|sources.txt|add_files.py|collect_vue|\\\\.output$\")",
-      "Bash(echo \"WEB_LINT_EXIT=$?\")"
+      "Bash(echo \"WEB_LINT_EXIT=$?\")",
+      "Bash(npx --yes sharp-cli --version)",
+      "Bash(where inkscape *)",
+      "Bash(where magick *)",
+      "Bash(xxd)",
+      "PowerShell(curl *)",
+      "PowerShell(Invoke-WebRequest \"https://github.com/google/fonts/raw/refs/heads/main/ofl/corinthia/Corinthia-Bold.ttf\" -OutFile \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"; \\(Get-Item \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"\\).Length)"
     ]
   }
 }
