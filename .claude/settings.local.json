@@ -261,7 +261,8 @@
       "Bash(where magick *)",
       "Bash(xxd)",
       "PowerShell(curl *)",
-      "PowerShell(Invoke-WebRequest \"https://github.com/google/fonts/raw/refs/heads/main/ofl/corinthia/Corinthia-Bold.ttf\" -OutFile \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"; \\(Get-Item \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"\\).Length)"
+      "PowerShell(Invoke-WebRequest \"https://github.com/google/fonts/raw/refs/heads/main/ofl/corinthia/Corinthia-Bold.ttf\" -OutFile \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"; \\(Get-Item \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"\\).Length)",
+      "Bash(ssh *)"
     ]
   }
 }
