@@ -15,9 +15,7 @@ services:
     restart: unless-stopped
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: ghcr.io/pozner2024/natsdoll/api:latest
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       NODE_ENV: production
@@ -50,11 +48,7 @@ services:
     # Для горизонтального масштабирования вынести rate limit в Redis.
 
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-      args:
-        VITE_API_URL: /api
+    image: ghcr.io/pozner2024/natsdoll/web:latest
     ports:
       - "80:80"
       - "443:443"
@@ -71,9 +65,7 @@ services:
     restart: unless-stopped
 
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: ghcr.io/pozner2024/natsdoll/api:latest
     command: ["npx", "prisma", "migrate", "deploy", "--schema=apps/api/prisma/schema.prisma"]
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
