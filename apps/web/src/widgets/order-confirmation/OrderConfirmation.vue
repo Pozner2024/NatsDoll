@@ -23,7 +23,7 @@
           Thank you for your order. We'll start working on it right away.
         </p>
         <p class="order-confirmation__id">
-          Order #{{ order.id }}
+          Order #{{ order.id.slice(-8).toUpperCase() }}
         </p>
       </div>
 
