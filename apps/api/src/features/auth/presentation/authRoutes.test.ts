@@ -26,13 +26,14 @@ function makeNoop() {
   const getMe = vi.fn().mockResolvedValue(mockUser)
   const googleAuth = vi.fn().mockResolvedValue(mockTokens)
   const verifyEmail = vi.fn().mockResolvedValue(mockTokens)
-  return { register, login, refreshToken, logout, getMe, googleAuth, verifyEmail }
+  const updateProfile = vi.fn().mockResolvedValue(mockUser)
+  return { register, login, refreshToken, logout, getMe, googleAuth, verifyEmail, updateProfile }
 }
 
 function makeApp(fns = makeNoop()) {
   const app = new Hono()
   const router = makeAuthRouter(
-    fns.register, fns.login, fns.refreshToken, fns.logout, fns.getMe, fns.googleAuth, fns.verifyEmail,
+    fns.register, fns.login, fns.refreshToken, fns.logout, fns.getMe, fns.googleAuth, fns.verifyEmail, fns.updateProfile,
   )
   app.route('/api/auth', router)
   return { app, fns }

@@ -16,6 +16,7 @@ export type AuthRepository = {
     verification: { tokenHash: string; expiresAt: Date }
   }): Promise<User>
   deleteUser(id: string): Promise<void>
+  updateUser(id: string, data: { name?: string; passwordHash?: string }): Promise<User>
   findByGoogleId(googleId: string): Promise<User | null>
   linkGoogleId(userId: string, googleId: string): Promise<User>
   createGoogleUser(data: { name: string; email: string; googleId: string }): Promise<User>
@@ -62,6 +63,8 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
     async deleteUser(id) {
       await prisma.user.delete({ where: { id } })
     },
+
+    updateUser: (id, data) => prisma.user.update({ where: { id }, data }),
 
     findByGoogleId: (googleId) => prisma.user.findUnique({ where: { googleId } }),
 

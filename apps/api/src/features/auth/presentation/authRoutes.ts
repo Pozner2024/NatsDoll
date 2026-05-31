@@ -33,6 +33,15 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
+const updateProfileSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  password: z.string().min(4).max(128).refine(
+    (p) => !COMMON_PASSWORDS.has(p.toLowerCase()),
+    { message: 'This password is too common, please choose a stronger one' },
+  ).optional(),
+  currentPassword: z.string().min(1).optional(),
+})
+
 const isProduction = process.env.NODE_ENV === 'production'
 
 const FIFTEEN_MIN_MS = 15 * 60_000
@@ -64,6 +73,7 @@ const googleStartLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS
 const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 const refreshLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 const logoutLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
+const updateProfileLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 
 type AuthUser = AuthTokensResult['user']
 
@@ -74,6 +84,7 @@ type RefreshTokenFn = (rawToken: string) => Promise<{ accessToken: string; refre
 type LogoutFn = (rawToken: string) => Promise<void>
 type GetMeFn = (userId: string) => Promise<AuthUser | null>
 type GoogleAuthFn = (code: string) => Promise<AuthTokensResult>
+type UpdateProfileFn = (userId: string, data: { name?: string; password?: string; currentPassword?: string }) => Promise<{ id: string; name: string; email: string; role: string }>
 
 export function makeAuthRouter(
   register: RegisterFn,
@@ -83,6 +94,7 @@ export function makeAuthRouter(
   getMe: GetMeFn,
   googleAuth: GoogleAuthFn,
   verifyEmail: VerifyEmailFn,
+  updateProfile: UpdateProfileFn,
 ) {
   const router = new Hono()
 
@@ -118,6 +130,13 @@ export function makeAuthRouter(
     const { userId } = c.get('auth')
     const user = await getMe(userId)
     if (!user) return c.json({ error: 'User not found' }, 404)
+    return c.json({ user })
+  })
+
+  router.patch('/me', requireAuth, updateProfileLimiter.middleware, zValidator('json', updateProfileSchema), async (c) => {
+    const { userId } = c.get('auth')
+    const data = c.req.valid('json')
+    const user = await updateProfile(userId, data)
     return c.json({ user })
   })
 
