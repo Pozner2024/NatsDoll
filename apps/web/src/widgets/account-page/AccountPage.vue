@@ -88,13 +88,12 @@ const currentTitle = computed(() => {
 
   // ── Sidebar ──────────────────────────────────────────
   &__sidebar {
-    background: var(--color-bg);
+    background: #2c1810;
     padding: 1.25rem 1rem 0;
 
     @include tablet {
       width: 240px;
       min-height: 100vh;
-      background: #2c1810;
       padding: 0;
       display: flex;
       flex-direction: column;
@@ -103,12 +102,13 @@ const currentTitle = computed(() => {
   }
 
   &__brand {
-    display: none;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgb(236 221 213 / 0.12);
+    margin-bottom: 0.75rem;
 
     @include tablet {
-      display: block;
       padding: 28px 24px 20px;
-      border-bottom: 1px solid rgb(236 221 213 / 0.12);
+      margin-bottom: 0;
     }
   }
 
@@ -124,12 +124,11 @@ const currentTitle = computed(() => {
     align-items: center;
     gap: 0.75rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid rgb(236 221 213 / 0.12);
     margin-bottom: 0.5rem;
 
     @include tablet {
       padding: 14px 18px 16px;
-      border-bottom: 1px solid rgb(236 221 213 / 0.12);
       margin-bottom: 0;
       gap: 10px;
     }
@@ -163,28 +162,26 @@ const currentTitle = computed(() => {
   &__user-name {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--color-text);
+    color: rgb(253 246 239 / 0.85);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 
     @include tablet {
       font-size: 0.72rem;
-      color: rgb(253 246 239 / 0.85);
     }
   }
 
   &__user-email {
     font-size: 0.78rem;
-    color: var(--color-text-muted);
+    color: rgb(253 246 239 / 0.45);
+    font-style: italic;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 
     @include tablet {
       font-size: 0.62rem;
-      color: rgb(253 246 239 / 0.45);
-      font-style: italic;
     }
   }
 
@@ -212,19 +209,19 @@ const currentTitle = computed(() => {
     padding: 0.65rem 0.5rem;
     border-radius: 8px;
     font-size: 0.72rem;
-    color: var(--color-text-muted);
+    color: rgb(253 246 239 / 0.55);
     text-decoration: none;
     text-align: center;
     transition: background 0.15s, color 0.15s;
 
     &:hover {
-      background: var(--color-border);
-      color: var(--color-text);
+      background: rgb(253 246 239 / 0.05);
+      color: rgb(253 246 239 / 0.9);
     }
 
     &--active {
-      background: rgb(var(--btn-gradient-light) / 0.7);
-      color: var(--color-accent);
+      background: rgb(139 94 82 / 0.25);
+      color: var(--color-bg);
       font-weight: 600;
     }
 
@@ -234,18 +231,11 @@ const currentTitle = computed(() => {
       padding: 11px 24px;
       border-radius: 0;
       font-size: 0.82rem;
-      color: rgb(253 246 239 / 0.55);
       text-align: left;
       position: relative;
-
-      &:hover {
-        background: rgb(253 246 239 / 0.05);
-        color: rgb(253 246 239 / 0.9);
-      }
+      font-weight: 400;
 
       &--active {
-        background: rgb(139 94 82 / 0.25);
-        color: var(--color-bg);
         font-weight: 400;
 
         &::before {
@@ -266,7 +256,7 @@ const currentTitle = computed(() => {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    opacity: 0.6;
+    opacity: 0.65;
 
     .account-page__nav-item--active & {
       opacity: 1;
@@ -275,11 +265,6 @@ const currentTitle = computed(() => {
     @include tablet {
       width: 16px;
       height: 16px;
-      opacity: 0.65;
-
-      .account-page__nav-item--active & {
-        opacity: 1;
-      }
     }
   }
 
