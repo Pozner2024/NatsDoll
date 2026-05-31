@@ -1,6 +1,6 @@
 <template>
   <div class="admin-section">
-    <AdminTopbar title="Listings" subtitle="Products &amp; categories" />
+    <AdminTopbar title="Listings" subtitle="Products & categories" />
     <div class="admin-section__placeholder">Coming soon</div>
   </div>
 </template>
