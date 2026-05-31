@@ -2,8 +2,7 @@
   <div class="account-page">
     <aside class="account-page__sidebar">
       <div class="account-page__brand">
-        <div class="account-page__logo">NatsDoll</div>
-        <div class="account-page__brand-label">My Account</div>
+        <div class="account-page__logo">My Account</div>
       </div>
 
       <div class="account-page__user">
@@ -118,15 +117,6 @@ const currentTitle = computed(() => {
     font-size: 2.2rem;
     color: var(--color-bg);
     line-height: 1;
-  }
-
-  &__brand-label {
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgb(253 246 239 / 0.38);
-    margin-top: 5px;
   }
 
   &__user {
