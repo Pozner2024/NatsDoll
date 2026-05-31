@@ -33,6 +33,7 @@ model User {
   refreshTokens      RefreshToken[]
   emailVerifications EmailVerification[]
   favorites          Favorite[]
+  addresses          Address[]
 }
 
 model EmailVerification {
@@ -184,6 +185,24 @@ model Favorite {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@id([userId, productId])
+  @@index([userId])
+}
+
+// ─── Addresses ────────────────────────────────────────
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName   String
+  line1      String
+  line2      String?
+  city       String
+  country    String
+  postalCode String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
   @@index([userId])
 }
 
