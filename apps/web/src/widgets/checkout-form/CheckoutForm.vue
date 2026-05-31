@@ -137,16 +137,18 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { AppButton } from '@/shared'
 import { useOrderStore } from '@/entities/order'
 import type { ShippingAddress } from '@/entities/order'
+import { useAddressStore } from '@/entities/address'
 
 const emit = defineEmits<{
   success: [orderId: string]
 }>()
 
 const orderStore = useOrderStore()
+const addressStore = useAddressStore()
 
 const form = reactive({
   fullName: '',
@@ -155,6 +157,19 @@ const form = reactive({
   city: '',
   country: '',
   postalCode: '',
+})
+
+onMounted(async () => {
+  await addressStore.load()
+  const def = addressStore.defaultAddress
+  if (def) {
+    form.fullName = def.fullName
+    form.line1 = def.line1
+    form.line2 = def.line2 ?? ''
+    form.city = def.city
+    form.country = def.country
+    form.postalCode = def.postalCode
+  }
 })
 
 const errors = reactive({
