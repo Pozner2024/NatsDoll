@@ -1,8 +1,7 @@
 <template>
   <aside class="admin-sidebar">
     <div class="admin-sidebar__brand">
-      <div class="admin-sidebar__logo">NatsDoll</div>
-      <div class="admin-sidebar__label">Shop Manager</div>
+      <div class="admin-sidebar__logo">Shop Manager</div>
     </div>
 
     <div class="admin-sidebar__user">
@@ -71,15 +70,6 @@ const navItems = [
     font-size: 2.2rem;
     color: var(--color-bg);
     line-height: 1;
-  }
-
-  &__label {
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgb(253 246 239 / 0.38);
-    margin-top: 5px;
   }
 
   &__user {
