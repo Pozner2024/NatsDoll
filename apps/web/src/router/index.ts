@@ -4,6 +4,7 @@ import type { RouteRecordRaw } from 'vue-router'
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
+    requiresAdmin?: boolean
   }
 }
 import { useAuthStore } from '@/entities/user'
@@ -105,6 +106,48 @@ const routes: RouteRecordRaw[] = [
     name: 'product',
     component: () => import('@/pages/ProductPage.vue'),
   },
+  {
+    path: '/admin',
+    component: () => import('@/pages/AdminPage.vue'),
+    meta: { requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'admin',
+        component: () => import('@/widgets/admin-panel/components/AdminDashboard.vue'),
+      },
+      {
+        path: 'listings',
+        name: 'admin-listings',
+        component: () => import('@/widgets/admin-panel/components/AdminListings.vue'),
+      },
+      {
+        path: 'messages',
+        name: 'admin-messages',
+        component: () => import('@/widgets/admin-panel/components/AdminMessages.vue'),
+      },
+      {
+        path: 'orders',
+        name: 'admin-orders',
+        component: () => import('@/widgets/admin-panel/components/AdminOrders.vue'),
+      },
+      {
+        path: 'analytics',
+        name: 'admin-analytics',
+        component: () => import('@/widgets/admin-panel/components/AdminAnalytics.vue'),
+      },
+      {
+        path: 'sales',
+        name: 'admin-sales',
+        component: () => import('@/widgets/admin-panel/components/AdminSales.vue'),
+      },
+      {
+        path: 'finances',
+        name: 'admin-finances',
+        component: () => import('@/widgets/admin-panel/components/AdminFinances.vue'),
+      },
+    ],
+  },
 ]
 
 const router = createRouter({
@@ -118,13 +161,24 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (!to.meta.requiresAuth) return true
+  const needsAuth = to.meta.requiresAuth || to.meta.requiresAdmin
+  if (!needsAuth) return true
+
   const authStore = useAuthStore()
   if (!authStore.authReady) await authStore.initAuth()
-  if (authStore.isLoggedIn) return true
-  const { open } = useAuthModal()
-  open()
-  return { name: 'home' }
+
+  if (!authStore.isLoggedIn) {
+    if (to.meta.requiresAdmin) return { name: 'home' }
+    const { open } = useAuthModal()
+    open()
+    return { name: 'home' }
+  }
+
+  if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
+    return { name: 'home' }
+  }
+
+  return true
 })
 
 export default router
