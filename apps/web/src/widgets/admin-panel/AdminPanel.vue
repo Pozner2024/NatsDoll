@@ -1,26 +1,68 @@
 <template>
   <div class="admin-panel">
-    <div class="admin-panel__mobile-bar">
+    <div class="admin-panel__mobile-header">
       <div class="admin-panel__mobile-logo">Shop Manager</div>
-      <button class="admin-panel__hamburger" @click="isOpen = true" aria-label="Open menu">
-        <span /><span /><span />
-      </button>
+      <span class="admin-panel__mobile-title">{{ currentTitle }}</span>
     </div>
 
-    <AdminSidebar :is-open="isOpen" @close="isOpen = false" />
+    <AdminSidebar />
 
     <div class="admin-panel__main">
       <RouterView />
     </div>
+
+    <nav class="admin-panel__tabbar">
+      <RouterLink
+        v-for="item in tabItems"
+        :key="item.to"
+        :to="item.to"
+        class="admin-panel__tab"
+        :active-class="item.exact ? '' : 'admin-panel__tab--active'"
+        :exact-active-class="'admin-panel__tab--active'"
+      >
+        <component :is="item.icon" class="admin-panel__tab-icon" />
+        <span class="admin-panel__tab-label">{{ item.label }}</span>
+      </RouterLink>
+    </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import AdminSidebar from './components/AdminSidebar.vue'
+import IconDashboard from './components/icons/IconDashboard.vue'
+import IconListings from './components/icons/IconListings.vue'
+import IconOrders from './components/icons/IconOrders.vue'
+import IconMessages from './components/icons/IconMessages.vue'
+import IconAnalytics from './components/icons/IconAnalytics.vue'
 
-const isOpen = ref(false)
+const route = useRoute()
+
+const tabItems = [
+  { to: '/admin',           label: 'Home',     icon: IconDashboard, exact: true  },
+  { to: '/admin/listings',  label: 'Listings', icon: IconListings,  exact: false },
+  { to: '/admin/orders',    label: 'Orders',   icon: IconOrders,    exact: false },
+  { to: '/admin/messages',  label: 'Messages', icon: IconMessages,  exact: false },
+  { to: '/admin/analytics', label: 'More',     icon: IconAnalytics, exact: false },
+]
+
+const allTitles: Record<string, string> = {
+  '/admin':           'Dashboard',
+  '/admin/listings':  'Listings',
+  '/admin/orders':    'Orders',
+  '/admin/messages':  'Messages',
+  '/admin/analytics': 'Analytics',
+  '/admin/sales':     'Sales & Discounts',
+  '/admin/finances':  'Finances',
+}
+
+const currentTitle = computed(() => {
+  const match = Object.keys(allTitles)
+    .sort((a, b) => b.length - a.length)
+    .find(path => route.path === path || route.path.startsWith(path + '/'))
+  return match ? allTitles[match] : 'Dashboard'
+})
 </script>
 
 <style scoped lang="scss">
@@ -36,12 +78,14 @@ const isOpen = ref(false)
     flex-direction: row;
   }
 
-  &__mobile-bar {
+  // ── Mobile header ─────────────────────────────────────
+  &__mobile-header {
     height: 52px;
     background: #2c1810;
     display: flex;
     align-items: center;
     padding: 0 16px;
+    gap: 12px;
     flex-shrink: 0;
 
     @include tablet {
@@ -54,32 +98,77 @@ const isOpen = ref(false)
     font-size: 2rem;
     color: var(--color-bg);
     line-height: 1;
-    flex: 1;
   }
 
-  &__hamburger {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    background: none;
-    border: none;
-    padding: 6px;
+  &__mobile-title {
+    font-size: 0.82rem;
+    color: rgb(253 246 239 / 0.55);
+    font-style: italic;
 
-    span {
-      display: block;
-      width: 22px;
-      height: 2px;
-      background: rgb(253 246 239 / 0.75);
-      border-radius: 1px;
+    &::before {
+      content: '·';
+      margin-right: 12px;
+      color: rgb(253 246 239 / 0.25);
     }
   }
 
+  // ── Main ─────────────────────────────────────────────
   &__main {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
     background: var(--color-bg);
+    padding-bottom: 56px;
+
+    @include tablet {
+      padding-bottom: 0;
+    }
+  }
+
+  // ── Bottom tab bar ────────────────────────────────────
+  &__tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: #2c1810;
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid rgb(236 221 213 / 0.12);
+    z-index: 100;
+
+    @include tablet {
+      display: none;
+    }
+  }
+
+  &__tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none;
+    color: rgb(253 246 239 / 0.4);
+    transition: color 0.15s;
+
+    &--active {
+      color: var(--color-accent);
+    }
+  }
+
+  &__tab-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  &__tab-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.04em;
   }
 }
 </style>

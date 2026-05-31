@@ -1,9 +1,5 @@
 <template>
-  <Transition name="overlay-fade">
-    <div v-if="isOpen" class="admin-sidebar__overlay" @click="$emit('close')" />
-  </Transition>
-
-  <aside class="admin-sidebar" :class="{ 'admin-sidebar--open': isOpen }">
+  <aside class="admin-sidebar">
     <div class="admin-sidebar__brand">
       <div class="admin-sidebar__logo">Shop Manager</div>
     </div>
@@ -20,7 +16,6 @@
         class="admin-sidebar__item"
         :active-class="item.exact ? '' : 'admin-sidebar__item--active'"
         :exact-active-class="'admin-sidebar__item--active'"
-        @click="$emit('close')"
       >
         <component :is="item.icon" class="admin-sidebar__icon" />
         <span>{{ item.label }}</span>
@@ -42,9 +37,6 @@ import IconAnalytics from './icons/IconAnalytics.vue'
 import IconSales from './icons/IconSales.vue'
 import IconFinances from './icons/IconFinances.vue'
 
-defineProps<{ isOpen: boolean }>()
-defineEmits<{ close: [] }>()
-
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
 
@@ -63,40 +55,15 @@ const navItems = [
 @use '@/assets/styles/breakpoints.module' as *;
 
 .admin-sidebar {
-  width: 240px;
-  background: #2c1810;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-
-  // Mobile: hidden off-screen, slides in when open
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 200;
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-
-  &--open {
-    transform: translateX(0);
-  }
+  display: none;
 
   @include tablet {
-    position: static;
-    transform: none;
+    width: 240px;
     min-height: 100vh;
-  }
-
-  &__overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.45);
-    z-index: 199;
-
-    @include tablet {
-      display: none;
-    }
+    background: #2c1810;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
   }
 
   &__brand {
@@ -127,7 +94,6 @@ const navItems = [
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
   }
 
   &__item {
@@ -184,15 +150,5 @@ const navItems = [
     padding: 2px 6px;
     border-radius: 10px;
   }
-}
-
-.overlay-fade-enter-active,
-.overlay-fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.overlay-fade-enter-from,
-.overlay-fade-leave-to {
-  opacity: 0;
 }
 </style>
