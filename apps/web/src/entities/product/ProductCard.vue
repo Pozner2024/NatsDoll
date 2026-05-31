@@ -98,6 +98,7 @@ async function onAdd() {
     await cartStore.add({ productId: props.product.id, quantity: 1, message: null })
     await router.push({ name: 'cart' })
   } catch {
+    await router.push(`/product/${props.product.slug}`)
   }
 }
 </script>
