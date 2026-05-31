@@ -74,6 +74,12 @@ import {
   makeCreateReview,
   makeReviewRouter,
 } from './features/reviews'
+import {
+  makeMessageRepository,
+  makeGetMyMessages,
+  makeCreateMessage,
+  makeMessageRouter,
+} from './features/messages'
 import { requireAuth } from './shared/middleware'
 
 export function createApp() {
@@ -199,6 +205,14 @@ export function createApp() {
   app.use('/me/reviews', requireAuth)
   app.use('/me/reviews/*', requireAuth)
   app.route('/me/reviews', makeReviewRouter(getMyReviews, getReviewableItems, createReview))
+
+  // Messages
+  const messageRepo = makeMessageRepository(prisma)
+  const getMyMessages = makeGetMyMessages(messageRepo)
+  const createMessage = makeCreateMessage(messageRepo, emailService)
+  app.use('/me/messages', requireAuth)
+  app.use('/me/messages/*', requireAuth)
+  app.route('/me/messages', makeMessageRouter(getMyMessages, createMessage))
 
   return app
 }

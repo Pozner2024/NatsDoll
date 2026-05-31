@@ -1,0 +1,28 @@
+import { Hono } from 'hono'
+import { z } from 'zod/v3'
+import { zValidator } from '@hono/zod-validator'
+import type { GetMyMessages, CreateMessage } from '../types'
+
+const createMessageSchema = z.object({
+  text: z.string().min(1).max(2000),
+  orderId: z.string().optional(),
+})
+
+export function makeMessageRouter(getMyMessages: GetMyMessages, createMessage: CreateMessage) {
+  const router = new Hono()
+
+  router.get('/', async (c) => {
+    const { userId } = c.get('auth')
+    const messages = await getMyMessages(userId)
+    return c.json(messages)
+  })
+
+  router.post('/', zValidator('json', createMessageSchema), async (c) => {
+    const { userId } = c.get('auth')
+    const data = c.req.valid('json')
+    await createMessage(userId, data)
+    return c.json({ message: 'Message sent' }, 201)
+  })
+
+  return router
+}

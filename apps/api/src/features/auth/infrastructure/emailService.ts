@@ -5,6 +5,7 @@ import { Resend } from 'resend'
 
 export type EmailService = {
   sendVerificationEmail(to: string, verificationUrl: string): Promise<void>
+  sendMessageNotification(adminEmail: string, fromName: string, fromEmail: string, text: string, orderNumber?: number): Promise<void>
 }
 
 export function makeEmailService(): EmailService {
@@ -17,6 +18,10 @@ export function makeEmailService(): EmailService {
       resend = new Resend(apiKey)
     }
     return resend
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 
   return {
@@ -33,6 +38,21 @@ export function makeEmailService(): EmailService {
           <p>Please confirm your email address by clicking the link below:</p>
           <p><a href="${verificationUrl}">Confirm email</a></p>
           <p>The link expires in 24 hours.</p>
+        `,
+      })
+    },
+    async sendMessageNotification(adminEmail, fromName, fromEmail, text, orderNumber) {
+      const subject = orderNumber
+        ? `New message re: Order #${orderNumber} — NatsDoll`
+        : `New message from ${escapeHtml(fromName)} — NatsDoll`
+      await getResend().emails.send({
+        from: 'noreply@natsdoll.com',
+        to: adminEmail,
+        subject,
+        html: `
+          <p><strong>${escapeHtml(fromName)}</strong> (${escapeHtml(fromEmail)}) sent a message:</p>
+          ${orderNumber ? `<p>Re: Order #${orderNumber}</p>` : ''}
+          <p>${escapeHtml(text)}</p>
         `,
       })
     },
