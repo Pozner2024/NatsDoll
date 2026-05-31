@@ -24,6 +24,7 @@ export type OrderDetail = {
   orderNumber: number
   status: string
   totalAmount: number
+  shippingCost: number
   shippingAddress: ShippingAddress
   createdAt: string
   items: OrderItemView[]
