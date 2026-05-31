@@ -21,6 +21,7 @@ export type OrderItemView = {
 
 export type OrderDetail = {
   id: string
+  orderNumber: number
   userId: string
   status: string
   totalAmount: number
@@ -31,6 +32,7 @@ export type OrderDetail = {
 
 export type OrderSummary = {
   id: string
+  orderNumber: number
   status: string
   totalAmount: number
   itemCount: number

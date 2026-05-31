@@ -86,6 +86,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           },
           select: {
             id: true,
+            orderNumber: true,
             userId: true,
             status: true,
             totalAmount: true,
@@ -117,6 +118,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
+          orderNumber: true,
           status: true,
           totalAmount: true,
           createdAt: true,
@@ -133,6 +135,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
 
       return orders.map((o) => ({
         id: o.id,
+        orderNumber: o.orderNumber,
         status: o.status,
         totalAmount: o.totalAmount.toNumber(),
         itemCount: o._count.items,
@@ -146,6 +149,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
         where: { id: orderId },
         select: {
           id: true,
+          orderNumber: true,
           userId: true,
           status: true,
           totalAmount: true,
@@ -170,6 +174,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
 
 type OrderRow = {
   id: string
+  orderNumber: number
   userId: string
   status: string
   totalAmount: { toNumber(): number }
@@ -202,6 +207,7 @@ function toOrderDetail(order: OrderRow): OrderDetail {
 
   return {
     id: order.id,
+    orderNumber: order.orderNumber,
     userId: order.userId,
     status: order.status,
     totalAmount: order.totalAmount.toNumber(),

@@ -25,6 +25,7 @@ const shippingAddressSchema = z.object({
 
 const orderDetailSchema = z.object({
   id: z.string(),
+  orderNumber: z.number(),
   status: z.string(),
   totalAmount: z.number(),
   shippingAddress: shippingAddressSchema,
@@ -34,6 +35,7 @@ const orderDetailSchema = z.object({
 
 const orderSummarySchema = z.object({
   id: z.string(),
+  orderNumber: z.number(),
   status: z.string(),
   totalAmount: z.number(),
   itemCount: z.number(),

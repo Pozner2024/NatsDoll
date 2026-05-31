@@ -28,7 +28,7 @@
             {{ formatDate(order.createdAt) }}
           </p>
           <p class="purchase-detail__id">
-            Order #{{ order.id.slice(-8).toUpperCase() }}
+            Order #{{ order.orderNumber }}
           </p>
         </div>
         <span
