@@ -178,6 +178,10 @@ router.beforeEach(async (to) => {
     return { name: 'home' }
   }
 
+  if (to.path.startsWith('/account') && authStore.user?.role === 'ADMIN') {
+    return { name: 'admin' }
+  }
+
   return true
 })
 
