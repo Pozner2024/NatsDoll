@@ -416,6 +416,8 @@ onMounted(() => {
   }
 
   &__input {
+    width: 100%;
+    box-sizing: border-box;
     border: 1px solid var(--color-border);
     border-radius: 6px;
     padding: 0.75rem 1rem;
@@ -435,6 +437,10 @@ onMounted(() => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+
+    .account-addresses__field {
+      min-width: 0;
+    }
   }
 
   &__form-actions {
