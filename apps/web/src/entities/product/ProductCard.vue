@@ -75,13 +75,30 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
+import { useCartStore } from '@/entities/cart'
+import { useAuthStore } from '@/entities/user'
+import { useAuthModal } from '@/features/auth-modal'
 import type { Product } from './types'
 
 const props = defineProps<{ product: Product; hideButton?: boolean }>()
 
-function onAdd() {
+const cartStore = useCartStore()
+const authStore = useAuthStore()
+const authModal = useAuthModal()
+const router = useRouter()
+
+async function onAdd() {
+  if (!authStore.isLoggedIn) {
+    authModal.open()
+    return
+  }
+  try {
+    await cartStore.add({ productId: props.product.id, quantity: 1, message: null })
+    await router.push({ name: 'cart' })
+  } catch {
+  }
 }
 </script>
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
+import { createPinia } from 'pinia'
 import ProductCard from './ProductCard.vue'
 import type { Product } from './types'
 
@@ -23,7 +24,7 @@ function mountCard(product: Product, extraProps: Record<string, unknown> = {}) {
   })
   return mount(ProductCard, {
     props: { product, ...extraProps },
-    global: { plugins: [router] },
+    global: { plugins: [router, createPinia()] },
   })
 }
 
