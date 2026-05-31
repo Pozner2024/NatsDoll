@@ -55,9 +55,17 @@
           <span>Items</span>
           <span>{{ itemCount }}</span>
         </p>
+        <p class="cart-page__summary-row">
+          <span>Subtotal</span>
+          <span>{{ formatPrice(subtotal) }}</span>
+        </p>
+        <p class="cart-page__summary-row">
+          <span>Shipping</span>
+          <span>{{ formatPrice(shippingCost) }}</span>
+        </p>
         <p class="cart-page__summary-row cart-page__summary-row--total">
           <span>Total</span>
-          <span>{{ formatPrice(totalAmount) }}</span>
+          <span>{{ formatPrice(grandTotal) }}</span>
         </p>
         <AppButton
           type="button"
@@ -75,7 +83,7 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { AppButton, formatPrice } from '@/shared'
+import { AppButton, formatPrice, calcShipping } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
 import CartLineItem from './components/CartLineItem.vue'
@@ -86,7 +94,10 @@ const authStore = useAuthStore()
 
 const items = computed(() => cartStore.items)
 const itemCount = computed(() => cartStore.itemCount)
-const totalAmount = computed(() => cartStore.totalAmount)
+const subtotal = computed(() => cartStore.totalAmount)
+const totalItemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
+const shippingCost = computed(() => calcShipping(totalItemCount.value))
+const grandTotal = computed(() => subtotal.value + shippingCost.value)
 const loading = computed(() => cartStore.loading)
 const error = computed(() => cartStore.error)
 
