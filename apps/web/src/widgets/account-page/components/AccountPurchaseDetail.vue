@@ -99,9 +99,19 @@
           <p>{{ order.shippingAddress.country }}</p>
         </div>
 
-        <div class="purchase-detail__total">
-          <span class="purchase-detail__total-label">Total</span>
-          <span class="purchase-detail__total-value">{{ formatPrice(order.totalAmount) }}</span>
+        <div class="purchase-detail__totals">
+          <div class="purchase-detail__totals-row">
+            <span class="purchase-detail__totals-label">Subtotal</span>
+            <span class="purchase-detail__totals-value">{{ formatPrice(order.totalAmount - order.shippingCost) }}</span>
+          </div>
+          <div class="purchase-detail__totals-row">
+            <span class="purchase-detail__totals-label">Shipping</span>
+            <span class="purchase-detail__totals-value">{{ formatPrice(order.shippingCost) }}</span>
+          </div>
+          <div class="purchase-detail__totals-row purchase-detail__totals-row--grand">
+            <span class="purchase-detail__totals-label">Total</span>
+            <span class="purchase-detail__totals-value purchase-detail__totals-value--grand">{{ formatPrice(order.totalAmount) }}</span>
+          </div>
         </div>
       </div>
     </template>
@@ -308,25 +318,42 @@ onMounted(() => {
     color: var(--color-text);
   }
 
-  &__total {
+  &__totals {
     display: flex;
-    align-items: baseline;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.35rem;
     flex-shrink: 0;
   }
 
-  &__total-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text-muted);
+  &__totals-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    font-size: 0.9rem;
+
+    &--grand {
+      margin-top: 0.25rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--color-border);
+    }
   }
 
-  &__total-value {
-    font-size: 1.5rem;
-    font-weight: 600;
+  &__totals-label {
+    color: var(--color-text-muted);
+
+    .purchase-detail__totals-row--grand & {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+  }
+
+  &__totals-value {
     color: var(--color-text);
+
+    &--grand {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
   }
 }
 </style>

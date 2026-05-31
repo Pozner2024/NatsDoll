@@ -74,6 +74,14 @@
             <span>Status</span>
             <span class="order-confirmation__status">{{ order.status }}</span>
           </p>
+          <p class="order-confirmation__summary-row">
+            <span>Subtotal</span>
+            <span>{{ formatPrice(order.totalAmount - order.shippingCost) }}</span>
+          </p>
+          <p class="order-confirmation__summary-row">
+            <span>Shipping</span>
+            <span>{{ formatPrice(order.shippingCost) }}</span>
+          </p>
           <p class="order-confirmation__summary-row order-confirmation__summary-row--total">
             <span>Total</span>
             <span>{{ formatPrice(order.totalAmount) }}</span>
