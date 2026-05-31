@@ -34,6 +34,7 @@ model User {
   emailVerifications EmailVerification[]
   favorites          Favorite[]
   addresses          Address[]
+  messages           Message[]
 }
 
 model EmailVerification {
@@ -146,6 +147,7 @@ model Order {
   user            User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   items           OrderItem[]
   reviews         Review[]
+  messages        Message[]
 
   @@index([userId])
   @@index([status])
@@ -270,4 +272,19 @@ model ContactMessage {
   email     String
   message   String
   createdAt DateTime @default(now())
+}
+
+// ─── Messages ──────────────────────────────────────────
+
+model Message {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([orderId])
 }
