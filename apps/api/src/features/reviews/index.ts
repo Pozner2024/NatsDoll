@@ -1,0 +1,5 @@
+export { makeReviewRepository } from './infrastructure/reviewRepository'
+export { makeGetMyReviews } from './application/getMyReviews'
+export { makeGetReviewableItems } from './application/getReviewableItems'
+export { makeCreateReview } from './application/createReview'
+export { makeReviewRouter } from './presentation/reviewRoutes'

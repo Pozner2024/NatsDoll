@@ -67,6 +67,13 @@ import {
   makeSetDefaultAddress,
   makeAddressRouter,
 } from './features/addresses'
+import {
+  makeReviewRepository,
+  makeGetMyReviews,
+  makeGetReviewableItems,
+  makeCreateReview,
+  makeReviewRouter,
+} from './features/reviews'
 import { requireAuth } from './shared/middleware'
 
 export function createApp() {
@@ -183,6 +190,15 @@ export function createApp() {
   app.use('/me/addresses', requireAuth)
   app.use('/me/addresses/*', requireAuth)
   app.route('/me/addresses', makeAddressRouter(getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress))
+
+  // Reviews
+  const reviewRepo = makeReviewRepository(prisma)
+  const getMyReviews = makeGetMyReviews(reviewRepo)
+  const getReviewableItems = makeGetReviewableItems(reviewRepo)
+  const createReview = makeCreateReview(reviewRepo)
+  app.use('/me/reviews', requireAuth)
+  app.use('/me/reviews/*', requireAuth)
+  app.route('/me/reviews', makeReviewRouter(getMyReviews, getReviewableItems, createReview))
 
   return app
 }
