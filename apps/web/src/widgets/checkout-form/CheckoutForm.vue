@@ -134,29 +134,14 @@
       {{ isSubmitting ? 'Placing order…' : 'Place order' }}
     </AppButton>
 
-    <div class="checkout-form__summary">
-      <div class="checkout-form__summary-row">
-        <span>Subtotal</span>
-        <span>{{ formatPrice(subtotal) }}</span>
-      </div>
-      <div class="checkout-form__summary-row">
-        <span>Shipping</span>
-        <span>{{ formatPrice(shippingCost) }}</span>
-      </div>
-      <div class="checkout-form__summary-row checkout-form__summary-row--total">
-        <span>Total</span>
-        <span>{{ formatPrice(grandTotal) }}</span>
-      </div>
-    </div>
   </form>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, computed } from 'vue'
-import { AppButton, calcShipping, formatPrice } from '@/shared'
+import { reactive, ref, onMounted } from 'vue'
+import { AppButton } from '@/shared'
 import { useOrderStore } from '@/entities/order'
 import type { ShippingAddress } from '@/entities/order'
-import { useCartStore } from '@/entities/cart'
 import { useAddressStore } from '@/entities/address'
 
 const emit = defineEmits<{
@@ -165,14 +150,6 @@ const emit = defineEmits<{
 
 const orderStore = useOrderStore()
 const addressStore = useAddressStore()
-const cartStore = useCartStore()
-
-const totalItemCount = computed(() =>
-  cartStore.items.reduce((sum, item) => sum + item.quantity, 0),
-)
-const shippingCost = computed(() => calcShipping(totalItemCount.value))
-const subtotal = computed(() => cartStore.totalAmount)
-const grandTotal = computed(() => subtotal.value + shippingCost.value)
 
 const form = reactive({
   fullName: '',
@@ -315,26 +292,5 @@ async function handleSubmit() {
     margin-top: 0.5rem;
   }
 
-  &__summary {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  &__summary-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    color: var(--color-text-muted);
-
-    &--total {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--color-text);
-      margin-top: 0.25rem;
-    }
-  }
 }
 </style>

@@ -24,10 +24,20 @@
             <span class="checkout-page__item-price">{{ formatPrice(item.subtotal) }}</span>
           </li>
         </ul>
-        <p class="checkout-page__total">
-          <span>Total</span>
-          <span>{{ formatPrice(totalAmount) }}</span>
-        </p>
+        <div class="checkout-page__summary-costs">
+          <p class="checkout-page__summary-row">
+            <span>Subtotal</span>
+            <span>{{ formatPrice(subtotal) }}</span>
+          </p>
+          <p class="checkout-page__summary-row">
+            <span>Shipping</span>
+            <span>{{ formatPrice(shippingCost) }}</span>
+          </p>
+          <p class="checkout-page__total">
+            <span>Total</span>
+            <span>{{ formatPrice(grandTotal) }}</span>
+          </p>
+        </div>
       </aside>
     </div>
   </main>
@@ -36,7 +46,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatPrice } from '@/shared'
+import { formatPrice, calcShipping } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { CheckoutForm } from '@/widgets/checkout-form'
 
@@ -44,7 +54,10 @@ const router = useRouter()
 const cartStore = useCartStore()
 
 const items = computed(() => cartStore.items)
-const totalAmount = computed(() => cartStore.totalAmount)
+const subtotal = computed(() => cartStore.totalAmount)
+const totalItemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
+const shippingCost = computed(() => calcShipping(totalItemCount.value))
+const grandTotal = computed(() => subtotal.value + shippingCost.value)
 
 function onOrderPlaced(orderId: string) {
   router.push({ name: 'order-confirmation', params: { id: orderId } })
@@ -135,13 +148,27 @@ function onOrderPlaced(orderId: string) {
     color: var(--color-text);
   }
 
+  &__summary-costs {
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  &__summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
   &__total {
     display: flex;
     justify-content: space-between;
     font-weight: 700;
-    border-top: 1px solid var(--color-border);
-    padding-top: 0.75rem;
-    margin: 0;
+    margin: 0.25rem 0 0;
   }
 }
 </style>
