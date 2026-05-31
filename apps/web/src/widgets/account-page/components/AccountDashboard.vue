@@ -64,7 +64,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { formatPrice } from '@/shared'
+import { formatPrice, formatDate } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 import { useOrderStore } from '@/entities/order'
 
@@ -74,9 +74,6 @@ const orderStore = useOrderStore()
 const firstName = computed(() => authStore.user?.name.split(' ')[0] ?? '')
 const lastOrder = computed(() => orderStore.myOrders[0] ?? null)
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 onMounted(() => {
   orderStore.loadMyOrders()

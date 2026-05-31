@@ -41,6 +41,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/widgets/account-page/components/AccountPurchases.vue'),
       },
       {
+        path: 'purchases/:id',
+        name: 'account-purchase-detail',
+        component: () => import('@/widgets/account-page/components/AccountPurchaseDetail.vue'),
+      },
+      {
         path: 'favorites',
         name: 'account-favorites',
         component: () => import('@/widgets/account-page/components/AccountFavorites.vue'),
