@@ -58,6 +58,15 @@ import {
   makeListFavorites,
   makeFavoritesRouter,
 } from './features/favorites'
+import {
+  makeAddressRepository,
+  makeGetAddresses,
+  makeCreateAddress,
+  makeUpdateAddress,
+  makeDeleteAddress,
+  makeSetDefaultAddress,
+  makeAddressRouter,
+} from './features/addresses'
 import { requireAuth } from './shared/middleware'
 
 export function createApp() {
@@ -163,6 +172,17 @@ export function createApp() {
   app.use('/favorites', requireAuth)
   app.use('/favorites/*', requireAuth)
   app.route('/favorites', makeFavoritesRouter(addFavorite, removeFavorite, listFavorites))
+
+  // Addresses
+  const addressRepo = makeAddressRepository(prisma)
+  const getAddresses = makeGetAddresses(addressRepo)
+  const createAddress = makeCreateAddress(addressRepo)
+  const updateAddress = makeUpdateAddress(addressRepo)
+  const deleteAddress = makeDeleteAddress(addressRepo)
+  const setDefaultAddress = makeSetDefaultAddress(addressRepo)
+  app.use('/me/addresses', requireAuth)
+  app.use('/me/addresses/*', requireAuth)
+  app.route('/me/addresses', makeAddressRouter(getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress))
 
   return app
 }

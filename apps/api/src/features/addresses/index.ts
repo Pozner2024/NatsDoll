@@ -1,0 +1,7 @@
+export { makeAddressRepository } from './infrastructure/addressRepository'
+export { makeGetAddresses } from './application/getAddresses'
+export { makeCreateAddress } from './application/createAddress'
+export { makeUpdateAddress } from './application/updateAddress'
+export { makeDeleteAddress } from './application/deleteAddress'
+export { makeSetDefaultAddress } from './application/setDefaultAddress'
+export { makeAddressRouter } from './presentation/addressRoutes'
