@@ -90,44 +90,82 @@
         </div>
       </div>
 
-      <div class="account-profile__field">
-        <label class="account-profile__label">Confirm new password</label>
-        <div class="account-profile__password">
-          <input
-            v-model="passwordConfirm"
-            class="account-profile__input account-profile__input--password"
-            :type="showPasswordConfirm ? 'text' : 'password'"
-            placeholder="Repeat new password"
-            autocomplete="new-password"
-            :disabled="!password"
-          >
-          <button
-            type="button"
-            class="account-profile__password-toggle"
-            :aria-label="showPasswordConfirm ? 'Hide password' : 'Show password'"
-            :disabled="!password"
-            @click="showPasswordConfirm = !showPasswordConfirm"
-          >
-            <IconEye
-              :closed="!showPasswordConfirm"
-              class="account-profile__password-icon"
-            />
-          </button>
+      <template v-if="password">
+        <div class="account-profile__field">
+          <label class="account-profile__label">Current password</label>
+          <div class="account-profile__password">
+            <input
+              v-model="currentPassword"
+              class="account-profile__input account-profile__input--password"
+              :type="showCurrentPassword ? 'text' : 'password'"
+              placeholder="Enter current password"
+              autocomplete="current-password"
+              required
+            >
+            <button
+              type="button"
+              class="account-profile__password-toggle"
+              :aria-label="showCurrentPassword ? 'Hide password' : 'Show password'"
+              @click="showCurrentPassword = !showCurrentPassword"
+            >
+              <IconEye
+                :closed="!showCurrentPassword"
+                class="account-profile__password-icon"
+              />
+            </button>
+          </div>
         </div>
-        <p
-          v-if="passwordMismatch"
-          class="account-profile__hint account-profile__hint--error"
-        >
-          Passwords do not match
-        </p>
-      </div>
+
+        <div class="account-profile__field">
+          <label class="account-profile__label">Confirm new password</label>
+          <div class="account-profile__password">
+            <input
+              v-model="passwordConfirm"
+              class="account-profile__input account-profile__input--password"
+              :type="showPasswordConfirm ? 'text' : 'password'"
+              placeholder="Repeat new password"
+              autocomplete="new-password"
+            >
+            <button
+              type="button"
+              class="account-profile__password-toggle"
+              :aria-label="showPasswordConfirm ? 'Hide password' : 'Show password'"
+              @click="showPasswordConfirm = !showPasswordConfirm"
+            >
+              <IconEye
+                :closed="!showPasswordConfirm"
+                class="account-profile__password-icon"
+              />
+            </button>
+          </div>
+          <p
+            v-if="passwordMismatch"
+            class="account-profile__hint account-profile__hint--error"
+          >
+            Passwords do not match
+          </p>
+        </div>
+      </template>
+
+      <p
+        v-if="errorMsg"
+        class="account-profile__hint account-profile__hint--error"
+      >
+        {{ errorMsg }}
+      </p>
+      <p
+        v-if="successMsg"
+        class="account-profile__hint account-profile__hint--success"
+      >
+        {{ successMsg }}
+      </p>
 
       <AppButton
         type="submit"
         class="account-profile__submit"
-        :disabled="passwordMismatch"
+        :disabled="passwordMismatch || saving || (password && !currentPassword)"
       >
-        Save changes
+        {{ saving ? 'Saving…' : 'Save changes' }}
       </AppButton>
     </form>
   </section>
@@ -145,8 +183,13 @@ const editing = ref(false)
 const name = ref(user.value?.name ?? '')
 const password = ref('')
 const passwordConfirm = ref('')
+const currentPassword = ref('')
 const showPassword = ref(false)
 const showPasswordConfirm = ref(false)
+const showCurrentPassword = ref(false)
+const saving = ref(false)
+const errorMsg = ref('')
+const successMsg = ref('')
 
 const passwordMismatch = computed(
   () => password.value.length > 0 && passwordConfirm.value.length > 0 && password.value !== passwordConfirm.value,
@@ -156,14 +199,37 @@ function cancelEdit() {
   name.value = user.value?.name ?? ''
   password.value = ''
   passwordConfirm.value = ''
+  currentPassword.value = ''
   showPassword.value = false
   showPasswordConfirm.value = false
+  showCurrentPassword.value = false
+  errorMsg.value = ''
+  successMsg.value = ''
   editing.value = false
 }
 
-function save() {
-  if (password.value && password.value !== passwordConfirm.value) return
-  editing.value = false
+async function save() {
+  if (passwordMismatch.value) return
+  errorMsg.value = ''
+  successMsg.value = ''
+  saving.value = true
+  try {
+    const data: { name?: string; password?: string; currentPassword?: string } = {}
+    if (name.value.trim() && name.value !== user.value?.name) data.name = name.value.trim()
+    if (password.value) {
+      data.password = password.value
+      data.currentPassword = currentPassword.value
+    }
+    await authStore.updateProfile(data)
+    successMsg.value = 'Profile updated successfully'
+    password.value = ''
+    passwordConfirm.value = ''
+    currentPassword.value = ''
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : 'Something went wrong'
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -326,6 +392,10 @@ function save() {
 
     &--error {
       color: var(--color-error);
+    }
+
+    &--success {
+      color: #1a7a42;
     }
   }
 

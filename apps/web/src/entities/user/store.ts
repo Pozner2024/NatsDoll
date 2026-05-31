@@ -118,6 +118,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateProfile(data: { name?: string; password?: string; currentPassword?: string }): Promise<void> {
+    const res = await apiFetch('/auth/me', {
+      method: 'PATCH',
+      json: data,
+      accessToken: accessToken.value ?? undefined,
+    })
+    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Failed to update profile'))
+    const body = z.object({ user: userSchema }).parse(await res.json())
+    user.value = body.user
+  }
+
   async function loginWithToken(token: string): Promise<void> {
     if (initPromise) await initPromise
     initPromise = _doLoginWithToken(token)
@@ -150,5 +161,6 @@ export const useAuthStore = defineStore('auth', () => {
     initAuth,
     loginWithToken,
     setAccessToken,
+    updateProfile,
   }
 })
