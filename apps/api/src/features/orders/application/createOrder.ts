@@ -1,4 +1,5 @@
 import { AppError } from '../../../shared/errors'
+import { calcShipping } from '../../../shared/lib/shipping'
 import type { OrderRepository, CreateOrder, ShippingAddress } from '../types'
 
 export function makeCreateOrder(repo: OrderRepository): CreateOrder {
@@ -18,8 +19,11 @@ export function makeCreateOrder(repo: OrderRepository): CreateOrder {
       }
     }
 
-    const totalAmount = items.reduce((sum, item) => sum + item.productPrice * item.quantity, 0)
+    const subtotal = items.reduce((sum, item) => sum + item.productPrice * item.quantity, 0)
+    const totalItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+    const shippingCost = calcShipping(totalItemCount)
+    const totalAmount = subtotal + shippingCost
 
-    return repo.createOrderFromCart(userId, items, totalAmount, shippingAddress)
+    return repo.createOrderFromCart(userId, items, totalAmount, shippingCost, shippingAddress)
   }
 }

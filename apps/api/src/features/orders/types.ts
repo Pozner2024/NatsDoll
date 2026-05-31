@@ -25,6 +25,7 @@ export type OrderDetail = {
   userId: string
   status: string
   totalAmount: number
+  shippingCost: number
   shippingAddress: ShippingAddress
   createdAt: string
   items: OrderItemView[]
@@ -62,6 +63,7 @@ export interface OrderRepository {
     userId: string,
     items: CartItemForCheckout[],
     totalAmount: number,
+    shippingCost: number,
     shippingAddress: ShippingAddress,
   ): Promise<OrderDetail>
   getMyOrders(userId: string): Promise<OrderSummary[]>

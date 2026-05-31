@@ -47,6 +47,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
       userId: string,
       items: CartItemForCheckout[],
       totalAmount: number,
+      shippingCost: number,
       shippingAddress: ShippingAddress,
     ): Promise<OrderDetail> {
       const cartItemIds = items.map((i) => i.id)
@@ -74,6 +75,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           data: {
             userId,
             totalAmount,
+            shippingCost,
             shippingAddress: shippingAddress as object,
             items: {
               create: items.map((item) => ({
@@ -87,6 +89,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           select: {
             id: true,
             orderNumber: true,
+            shippingCost: true,
             userId: true,
             status: true,
             totalAmount: true,
@@ -150,6 +153,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
         select: {
           id: true,
           orderNumber: true,
+          shippingCost: true,
           userId: true,
           status: true,
           totalAmount: true,
@@ -175,6 +179,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
 type OrderRow = {
   id: string
   orderNumber: number
+  shippingCost: { toNumber(): number }
   userId: string
   status: string
   totalAmount: { toNumber(): number }
@@ -211,6 +216,7 @@ function toOrderDetail(order: OrderRow): OrderDetail {
     userId: order.userId,
     status: order.status,
     totalAmount: order.totalAmount.toNumber(),
+    shippingCost: order.shippingCost.toNumber(),
     shippingAddress: order.shippingAddress as ShippingAddress,
     createdAt: order.createdAt.toISOString(),
     items,
