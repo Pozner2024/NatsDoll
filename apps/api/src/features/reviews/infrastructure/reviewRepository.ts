@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import type { ReviewRepository, ReviewView, ReviewableItem, CreateReviewData } from '../types'
+import type { ReviewRepository, ReviewView, ReviewableItem } from '../types'
 
 export function makeReviewRepository(prisma: PrismaClient): ReviewRepository {
   return {

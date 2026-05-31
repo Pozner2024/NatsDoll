@@ -1,8 +1,13 @@
 <template>
   <header class="admin-topbar">
     <div class="admin-topbar__left">
-      <h1 class="admin-topbar__title">{{ title }}</h1>
-      <span v-if="subtitle" class="admin-topbar__subtitle">{{ subtitle }}</span>
+      <h1 class="admin-topbar__title">
+        {{ title }}
+      </h1>
+      <span
+        v-if="subtitle"
+        class="admin-topbar__subtitle"
+      >{{ subtitle }}</span>
     </div>
     <div class="admin-topbar__actions">
       <slot />

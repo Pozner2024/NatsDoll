@@ -1,7 +1,9 @@
 <template>
   <div class="admin-panel">
     <div class="admin-panel__mobile-header">
-      <div class="admin-panel__mobile-logo">Shop Manager</div>
+      <div class="admin-panel__mobile-logo">
+        Shop Manager
+      </div>
       <span class="admin-panel__mobile-title">{{ currentTitle }}</span>
     </div>
 
@@ -18,9 +20,12 @@
         :to="item.to"
         class="admin-panel__tab"
         :active-class="item.exact ? '' : 'admin-panel__tab--active'"
-        :exact-active-class="'admin-panel__tab--active'"
+        :exact-active-class="item.exact ? 'admin-panel__tab--active' : ''"
       >
-        <component :is="item.icon" class="admin-panel__tab-icon" />
+        <component
+          :is="item.icon"
+          class="admin-panel__tab-icon"
+        />
         <span class="admin-panel__tab-label">{{ item.label }}</span>
       </RouterLink>
     </nav>

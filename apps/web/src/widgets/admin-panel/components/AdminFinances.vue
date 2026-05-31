@@ -1,7 +1,12 @@
 <template>
   <div class="admin-section">
-    <AdminTopbar title="Finances" subtitle="Revenue and payouts" />
-    <div class="admin-section__placeholder">Coming soon</div>
+    <AdminTopbar
+      title="Finances"
+      subtitle="Revenue and payouts"
+    />
+    <div class="admin-section__placeholder">
+      Coming soon
+    </div>
   </div>
 </template>
 

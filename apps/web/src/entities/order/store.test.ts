@@ -10,7 +10,7 @@ const mockAddress = {
 }
 
 const mockOrder = {
-  id: 'order-1', status: 'PENDING', totalAmount: 20,
+  id: 'order-1', orderNumber: 1, status: 'PENDING', totalAmount: 20, shippingCost: 0,
   shippingAddress: mockAddress, createdAt: '2026-05-21T00:00:00.000Z', items: [],
 }
 
@@ -51,7 +51,7 @@ describe('useOrderStore', () => {
 
   it('loadMyOrders() sets myOrders', async () => {
     vi.mocked(api.fetchMyOrders).mockResolvedValue([
-      { id: 'o1', status: 'PENDING', totalAmount: 20, itemCount: 1,
+      { id: 'o1', orderNumber: 1, status: 'PENDING', totalAmount: 20, itemCount: 1,
         createdAt: '2026-05-21T00:00:00.000Z', firstItemImage: null },
     ])
     const store = useOrderStore()

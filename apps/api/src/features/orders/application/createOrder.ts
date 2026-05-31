@@ -1,5 +1,5 @@
 import { AppError } from '../../../shared/errors'
-import { calcShipping } from '../../../shared/lib/shipping'
+import { calcShipping } from '../../../shared/lib'
 import type { OrderRepository, CreateOrder, ShippingAddress } from '../types'
 
 export function makeCreateOrder(repo: OrderRepository): CreateOrder {

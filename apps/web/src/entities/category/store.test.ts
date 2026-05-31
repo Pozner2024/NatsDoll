@@ -8,6 +8,7 @@ vi.mock('./categoryApi', () => ({
 
 import { fetchCategories } from './categoryApi'
 import { useCategoryStore } from './store'
+import type { Category } from './types'
 
 const mockFetch = vi.mocked(fetchCategories)
 
@@ -57,7 +58,7 @@ describe('categoryStore', () => {
   })
 
   it('load sets loading=true while fetching', async () => {
-    let resolve!: (v: unknown) => void
+    let resolve!: (v: Category[]) => void
     mockFetch.mockReturnValue(new Promise((r) => { resolve = r }))
 
     const store = useCategoryStore()

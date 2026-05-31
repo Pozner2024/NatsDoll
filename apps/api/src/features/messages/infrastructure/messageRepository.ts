@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import { AppError } from '../../../shared/errors'
-import type { MessageRepository, MessageView, CreateMessageData, CreateMessageResult } from '../types'
+import type { MessageRepository, MessageView } from '../types'
 
 export function makeMessageRepository(prisma: PrismaClient): MessageRepository {
   return {

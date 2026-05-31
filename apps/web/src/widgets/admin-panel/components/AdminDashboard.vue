@@ -1,28 +1,55 @@
 <template>
   <div class="admin-dashboard">
-    <AdminTopbar title="Dashboard" subtitle="Overview for today" />
+    <AdminTopbar
+      title="Dashboard"
+      subtitle="Overview for today"
+    />
 
     <div class="admin-dashboard__content">
       <div class="admin-dashboard__stats">
         <div class="stat-card">
-          <div class="stat-card__label">Orders today</div>
-          <div class="stat-card__value">—</div>
-          <div class="stat-card__hint">Loading...</div>
+          <div class="stat-card__label">
+            Orders today
+          </div>
+          <div class="stat-card__value">
+            —
+          </div>
+          <div class="stat-card__hint">
+            Loading...
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">Revenue today</div>
-          <div class="stat-card__value">—</div>
-          <div class="stat-card__hint">Month total: —</div>
+          <div class="stat-card__label">
+            Revenue today
+          </div>
+          <div class="stat-card__value">
+            —
+          </div>
+          <div class="stat-card__hint">
+            Month total: —
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">New messages</div>
-          <div class="stat-card__value stat-card__value--accent">—</div>
-          <div class="stat-card__hint">Unread: —</div>
+          <div class="stat-card__label">
+            New messages
+          </div>
+          <div class="stat-card__value stat-card__value--accent">
+            —
+          </div>
+          <div class="stat-card__hint">
+            Unread: —
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">Active listings</div>
-          <div class="stat-card__value">—</div>
-          <div class="stat-card__hint">Published products</div>
+          <div class="stat-card__label">
+            Active listings
+          </div>
+          <div class="stat-card__value">
+            —
+          </div>
+          <div class="stat-card__hint">
+            Published products
+          </div>
         </div>
       </div>
 
@@ -30,7 +57,12 @@
         <div class="admin-panel-card">
           <div class="admin-panel-card__head">
             <span class="admin-panel-card__title">Recent Orders</span>
-            <RouterLink to="/admin/orders" class="admin-panel-card__link">View all →</RouterLink>
+            <RouterLink
+              to="/admin/orders"
+              class="admin-panel-card__link"
+            >
+              View all →
+            </RouterLink>
           </div>
           <div class="admin-panel-card__body admin-panel-card__body--empty">
             No orders yet
@@ -40,7 +72,12 @@
         <div class="admin-panel-card">
           <div class="admin-panel-card__head">
             <span class="admin-panel-card__title">New Messages</span>
-            <RouterLink to="/admin/messages" class="admin-panel-card__link">View all →</RouterLink>
+            <RouterLink
+              to="/admin/messages"
+              class="admin-panel-card__link"
+            >
+              View all →
+            </RouterLink>
           </div>
           <div class="admin-panel-card__body admin-panel-card__body--empty">
             No messages yet

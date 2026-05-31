@@ -133,7 +133,6 @@
     >
       {{ isSubmitting ? 'Placing order…' : 'Place order' }}
     </AppButton>
-
   </form>
 </template>
 

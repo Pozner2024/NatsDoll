@@ -38,9 +38,20 @@
         </h3>
 
         <div class="account-reviews__field">
-          <label for="review-product" class="account-reviews__label">Product</label>
-          <select id="review-product" v-model="selectedKey" class="account-reviews__select" required>
-            <option value="" disabled>
+          <label
+            for="review-product"
+            class="account-reviews__label"
+          >Product</label>
+          <select
+            id="review-product"
+            v-model="selectedKey"
+            class="account-reviews__select"
+            required
+          >
+            <option
+              value=""
+              disabled
+            >
               Select a product
             </option>
             <option
@@ -70,7 +81,10 @@
         </div>
 
         <div class="account-reviews__field">
-          <label for="review-comment" class="account-reviews__label">Comment <span class="account-reviews__optional">(optional)</span></label>
+          <label
+            for="review-comment"
+            class="account-reviews__label"
+          >Comment <span class="account-reviews__optional">(optional)</span></label>
           <textarea
             id="review-comment"
             v-model="comment"
@@ -80,15 +94,25 @@
           />
         </div>
 
-        <p v-if="formError" class="account-reviews__hint account-reviews__hint--error">
+        <p
+          v-if="formError"
+          class="account-reviews__hint account-reviews__hint--error"
+        >
           {{ formError }}
         </p>
 
         <div class="account-reviews__form-actions">
-          <AppButton type="submit" :disabled="!selectedKey || rating === 0 || formSaving">
+          <AppButton
+            type="submit"
+            :disabled="!selectedKey || rating === 0 || formSaving"
+          >
             {{ formSaving ? 'Submitting…' : 'Submit review' }}
           </AppButton>
-          <button type="button" class="account-reviews__cancel-btn" @click="closeForm">
+          <button
+            type="button"
+            class="account-reviews__cancel-btn"
+            @click="closeForm"
+          >
             Cancel
           </button>
         </div>
@@ -126,7 +150,10 @@
                 :class="{ 'account-reviews__card-star--active': n <= review.rating }"
               >★</span>
             </div>
-            <p v-if="review.comment" class="account-reviews__card-comment">
+            <p
+              v-if="review.comment"
+              class="account-reviews__card-comment"
+            >
               {{ review.comment }}
             </p>
             <p class="account-reviews__card-date">

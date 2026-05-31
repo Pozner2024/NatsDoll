@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import { AppError } from '../../../shared/errors'
-import type { AddressRepository, AddressData, AddressView } from '../types'
+import type { AddressRepository, AddressView } from '../types'
 
 function toView(a: { id: string; fullName: string; line1: string; line2: string | null; city: string; country: string; postalCode: string; isDefault: boolean; createdAt: Date }): AddressView {
   return {

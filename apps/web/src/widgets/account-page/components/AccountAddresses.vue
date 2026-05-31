@@ -90,7 +90,11 @@
           aria-hidden="true"
         >
           <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" />
-          <circle cx="12" cy="10" r="3" />
+          <circle
+            cx="12"
+            cy="10"
+            r="3"
+          />
         </svg>
         <p>No saved addresses</p>
         <p class="account-addresses__hint">
@@ -109,40 +113,79 @@
 
         <div class="account-addresses__field">
           <label class="account-addresses__label">Full name</label>
-          <input v-model="form.fullName" class="account-addresses__input" type="text" required>
+          <input
+            v-model="form.fullName"
+            class="account-addresses__input"
+            type="text"
+            required
+          >
         </div>
         <div class="account-addresses__field">
           <label class="account-addresses__label">Address line 1</label>
-          <input v-model="form.line1" class="account-addresses__input" type="text" required>
+          <input
+            v-model="form.line1"
+            class="account-addresses__input"
+            type="text"
+            required
+          >
         </div>
         <div class="account-addresses__field">
           <label class="account-addresses__label">Address line 2 <span class="account-addresses__optional">(optional)</span></label>
-          <input v-model="form.line2" class="account-addresses__input" type="text">
+          <input
+            v-model="form.line2"
+            class="account-addresses__input"
+            type="text"
+          >
         </div>
         <div class="account-addresses__row">
           <div class="account-addresses__field">
             <label class="account-addresses__label">City</label>
-            <input v-model="form.city" class="account-addresses__input" type="text" required>
+            <input
+              v-model="form.city"
+              class="account-addresses__input"
+              type="text"
+              required
+            >
           </div>
           <div class="account-addresses__field">
             <label class="account-addresses__label">Postal code</label>
-            <input v-model="form.postalCode" class="account-addresses__input" type="text" required>
+            <input
+              v-model="form.postalCode"
+              class="account-addresses__input"
+              type="text"
+              required
+            >
           </div>
         </div>
         <div class="account-addresses__field">
           <label class="account-addresses__label">Country</label>
-          <input v-model="form.country" class="account-addresses__input" type="text" required>
+          <input
+            v-model="form.country"
+            class="account-addresses__input"
+            type="text"
+            required
+          >
         </div>
 
-        <p v-if="formError" class="account-addresses__hint account-addresses__hint--error">
+        <p
+          v-if="formError"
+          class="account-addresses__hint account-addresses__hint--error"
+        >
           {{ formError }}
         </p>
 
         <div class="account-addresses__form-actions">
-          <AppButton type="submit" :disabled="formSaving">
+          <AppButton
+            type="submit"
+            :disabled="formSaving"
+          >
             {{ formSaving ? 'Saving…' : (editingId ? 'Save changes' : 'Add address') }}
           </AppButton>
-          <button type="button" class="account-addresses__cancel-btn" @click="closeForm">
+          <button
+            type="button"
+            class="account-addresses__cancel-btn"
+            @click="closeForm"
+          >
             Cancel
           </button>
         </div>

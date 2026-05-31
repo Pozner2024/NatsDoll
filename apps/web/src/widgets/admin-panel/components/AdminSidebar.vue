@@ -1,7 +1,9 @@
 <template>
   <aside class="admin-sidebar">
     <div class="admin-sidebar__brand">
-      <div class="admin-sidebar__logo">Shop Manager</div>
+      <div class="admin-sidebar__logo">
+        Shop Manager
+      </div>
     </div>
 
     <div class="admin-sidebar__user">
@@ -17,16 +19,22 @@
         :active-class="item.exact ? '' : 'admin-sidebar__item--active'"
         :exact-active-class="'admin-sidebar__item--active'"
       >
-        <component :is="item.icon" class="admin-sidebar__icon" />
+        <component
+          :is="item.icon"
+          class="admin-sidebar__icon"
+        />
         <span>{{ item.label }}</span>
-        <span v-if="item.badge" class="admin-sidebar__badge">{{ item.badge }}</span>
+        <span
+          v-if="item.badge"
+          class="admin-sidebar__badge"
+        >{{ item.badge }}</span>
       </RouterLink>
     </nav>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/entities/user'
 import IconDashboard from './icons/IconDashboard.vue'
@@ -40,7 +48,15 @@ import IconFinances from './icons/IconFinances.vue'
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
 
-const navItems = [
+type NavItem = {
+  to: string
+  label: string
+  icon: Component
+  exact: boolean
+  badge?: string
+}
+
+const navItems: NavItem[] = [
   { to: '/admin',           label: 'Dashboard',        icon: IconDashboard,  exact: true  },
   { to: '/admin/listings',  label: 'Listings',          icon: IconListings,   exact: false },
   { to: '/admin/messages',  label: 'Messages',          icon: IconMessages,   exact: false },
