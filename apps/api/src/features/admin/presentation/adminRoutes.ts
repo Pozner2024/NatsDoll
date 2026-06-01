@@ -1,10 +1,50 @@
 import { Hono } from 'hono'
+import { z } from 'zod/v3'
+import { zValidator } from '@hono/zod-validator'
 import { requireAdmin } from '../../../shared/middleware'
-import type { GetDashboard, MarkAllMessagesRead } from '../types'
+import type {
+  GetDashboard, MarkAllMessagesRead,
+  ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish,
+  ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
+} from '../types'
+
+const productListQuerySchema = z.object({
+  search: z.string().optional(),
+  categoryId: z.string().optional(),
+  status: z.enum(['published', 'draft']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(48).default(12),
+})
+
+const productBodySchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  description: z.string(),
+  price: z.number().positive(),
+  stock: z.number().int().min(0),
+  categoryId: z.string().min(1),
+  images: z.array(z.string()),
+  messageOptions: z.array(z.string()),
+  isPublished: z.boolean(),
+})
+
+const categoryBodySchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1),
+})
 
 export function makeAdminRouter(
   getDashboard: GetDashboard,
   markAllMessagesRead: MarkAllMessagesRead,
+  listAdminProducts: ListAdminProducts,
+  createProduct: CreateProduct,
+  updateProduct: UpdateProduct,
+  deleteProduct: DeleteProduct,
+  togglePublish: TogglePublish,
+  listCategoriesWithCount: ListCategoriesWithCount,
+  createCategory: CreateCategory,
+  updateCategory: UpdateCategory,
+  deleteCategory: DeleteCategory,
 ) {
   const router = new Hono()
 
@@ -17,6 +57,63 @@ export function makeAdminRouter(
 
   router.patch('/messages/mark-all-read', async (c) => {
     await markAllMessagesRead()
+    return c.json({ ok: true })
+  })
+
+  router.get('/products', zValidator('query', productListQuerySchema), async (c) => {
+    const params = c.req.valid('query')
+    const result = await listAdminProducts(params)
+    return c.json(result)
+  })
+
+  router.post('/products', zValidator('json', productBodySchema, (result, c) => {
+    if (!result.success) return c.json({ error: 'Validation failed' }, 422)
+  }), async (c) => {
+    const input = c.req.valid('json')
+    const result = await createProduct(input)
+    return c.json(result, 201)
+  })
+
+  router.put('/products/:id', zValidator('json', productBodySchema), async (c) => {
+    const id = c.req.param('id')
+    const input = c.req.valid('json')
+    await updateProduct(id, input)
+    return c.json({ ok: true })
+  })
+
+  router.delete('/products/:id', async (c) => {
+    const id = c.req.param('id')
+    await deleteProduct(id)
+    return c.json({ ok: true })
+  })
+
+  router.patch('/products/:id/toggle-publish', async (c) => {
+    const id = c.req.param('id')
+    const result = await togglePublish(id)
+    return c.json(result)
+  })
+
+  router.get('/categories', async (c) => {
+    const result = await listCategoriesWithCount()
+    return c.json(result)
+  })
+
+  router.post('/categories', zValidator('json', categoryBodySchema), async (c) => {
+    const { name, slug } = c.req.valid('json')
+    const result = await createCategory(name, slug)
+    return c.json(result, 201)
+  })
+
+  router.put('/categories/:id', zValidator('json', categoryBodySchema), async (c) => {
+    const id = c.req.param('id')
+    const { name, slug } = c.req.valid('json')
+    await updateCategory(id, name, slug)
+    return c.json({ ok: true })
+  })
+
+  router.delete('/categories/:id', async (c) => {
+    const id = c.req.param('id')
+    await deleteCategory(id)
     return c.json({ ok: true })
   })
 
