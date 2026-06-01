@@ -392,12 +392,12 @@ onMounted(async () => {
   &__tag {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 0.75rem;
+    gap: 6px;
+    font-size: 0.85rem;
     background: var(--color-bg);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
-    padding: 2px 10px;
+    border-radius: 16px;
+    padding: 5px 14px;
     color: var(--color-text);
 
     button {
