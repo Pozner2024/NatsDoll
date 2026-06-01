@@ -98,7 +98,10 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
     },
 
     async markAllMessagesRead(): Promise<void> {
-      await prisma.message.updateMany({ data: { isReadByAdmin: true } })
+      await prisma.message.updateMany({
+        where: { isReadByAdmin: false },
+        data: { isReadByAdmin: true },
+      })
     },
   }
 }
