@@ -6,6 +6,7 @@ import type {
   GetDashboard, MarkAllMessagesRead,
   ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish,
   ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
+  GetAdminProduct,
 } from '../types'
 
 const productListQuerySchema = z.object({
@@ -24,7 +25,7 @@ const productBodySchema = z.object({
   stock: z.number().int().min(0),
   categoryId: z.string().min(1),
   images: z.array(z.string()),
-  messageOptions: z.array(z.string()),
+  messageOptions: z.array(z.string()).max(10),
   isPublished: z.boolean(),
 })
 
@@ -45,6 +46,7 @@ export function makeAdminRouter(
   createCategory: CreateCategory,
   updateCategory: UpdateCategory,
   deleteCategory: DeleteCategory,
+  getAdminProduct: GetAdminProduct,
 ) {
   const router = new Hono()
 
@@ -91,6 +93,13 @@ export function makeAdminRouter(
     const id = c.req.param('id')
     const result = await togglePublish(id)
     return c.json(result)
+  })
+
+  router.get('/products/:id', async (c) => {
+    const id = c.req.param('id')
+    const product = await getAdminProduct(id)
+    if (!product) return c.json({ error: 'Not found' }, 404)
+    return c.json(product)
   })
 
   router.get('/categories', async (c) => {

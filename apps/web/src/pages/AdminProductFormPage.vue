@@ -106,12 +106,24 @@
             ✕
           </button>
         </span>
-        <input
-          v-model="newMessageOption"
-          class="product-form-page__tag-input"
-          placeholder="Add option…"
-          @keydown.enter.prevent="addMessageOption"
-        />
+        <div
+          v-if="form.messageOptions.length < 10"
+          class="product-form-page__tag-add"
+        >
+          <input
+            v-model="newMessageOption"
+            class="product-form-page__tag-input"
+            placeholder="Add option…"
+            @keydown.enter.prevent="addMessageOption"
+          />
+          <button
+            type="button"
+            class="product-form-page__tag-btn"
+            @click="addMessageOption"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <label class="product-form-page__label">
@@ -396,6 +408,12 @@ onMounted(async () => {
     }
   }
 
+  &__tag-add {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   &__tag-input {
     font-size: 0.8rem;
     border: 1px dashed var(--color-border);
@@ -405,6 +423,21 @@ onMounted(async () => {
     color: var(--color-text);
     font-family: var(--font-display);
     width: 120px;
+  }
+
+  &__tag-btn {
+    font-size: 0.85rem;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background: var(--color-white);
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   &__checkbox-label {
