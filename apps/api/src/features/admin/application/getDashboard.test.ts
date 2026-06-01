@@ -6,6 +6,15 @@ function makeRepo(): AdminRepository {
   return {
     getDashboardData: vi.fn(),
     markAllMessagesRead: vi.fn(),
+    listProducts: vi.fn(),
+    createProduct: vi.fn(),
+    updateProduct: vi.fn(),
+    deleteProduct: vi.fn(),
+    togglePublish: vi.fn(),
+    listCategoriesWithCount: vi.fn(),
+    createCategory: vi.fn(),
+    updateCategory: vi.fn(),
+    deleteCategory: vi.fn(),
   }
 }
 
