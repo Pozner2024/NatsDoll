@@ -120,15 +120,10 @@
 
     <hr class="product-info__divider">
 
-    <div class="product-info__desc">
-      <p
-        v-for="(paragraph, i) in paragraphs"
-        :key="i"
-        class="product-info__desc-p"
-      >
-        {{ paragraph }}
-      </p>
-    </div>
+    <div
+      class="product-info__desc"
+      v-html="product.description"
+    />
   </div>
 </template>
 
@@ -146,12 +141,6 @@ const message = ref<string | null>(null)
 const messageError = ref<string | undefined>(undefined)
 const isAdding = ref(false)
 
-const paragraphs = computed(() =>
-  props.product.description
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean),
-)
 
 const buttonLabel = computed(() => {
   if (props.product.stock === 0) return 'Sold out'
@@ -337,12 +326,6 @@ defineExpose({ resetAdding: () => { isAdding.value = false } })
   }
 
   &__desc {
-    display: flex;
-    flex-direction: column;
-    gap: 0.875rem;
-  }
-
-  &__desc-p {
     font-size: 0.88rem;
     line-height: 1.75;
     color: var(--color-text-muted);
@@ -350,6 +333,30 @@ defineExpose({ resetAdding: () => { isAdding.value = false } })
 
     @include desktop {
       font-size: var(--fs-md);
+    }
+
+    :deep(p) {
+      margin: 0 0 0.875rem;
+      &:last-child { margin-bottom: 0; }
+    }
+
+    :deep(ul),
+    :deep(ol) {
+      padding-left: 1.4em;
+      margin: 0 0 0.875rem;
+    }
+
+    :deep(li) {
+      margin-bottom: 0.25em;
+    }
+
+    :deep(strong) {
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    :deep(em) {
+      font-style: italic;
     }
   }
 }
