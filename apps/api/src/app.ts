@@ -84,6 +84,15 @@ import {
   makeAdminRepository,
   makeGetDashboard,
   makeMarkAllMessagesRead,
+  makeListAdminProducts,
+  makeCreateProduct,
+  makeUpdateProduct,
+  makeDeleteProduct,
+  makeTogglePublish,
+  makeListCategoriesWithCount,
+  makeCreateCategory,
+  makeUpdateCategory,
+  makeDeleteCategory,
   makeAdminRouter,
 } from './features/admin'
 import { requireAuth } from './shared/middleware'
@@ -224,8 +233,21 @@ export function createApp() {
   const adminRepo = makeAdminRepository(prisma)
   const getDashboard = makeGetDashboard(adminRepo)
   const markAllMessagesRead = makeMarkAllMessagesRead(adminRepo)
+  const listAdminProducts = makeListAdminProducts(adminRepo)
+  const createProduct = makeCreateProduct(adminRepo)
+  const updateProduct = makeUpdateProduct(adminRepo)
+  const deleteProduct = makeDeleteProduct(adminRepo)
+  const togglePublish = makeTogglePublish(adminRepo)
+  const listCategoriesWithCount = makeListCategoriesWithCount(adminRepo)
+  const createCategory = makeCreateCategory(adminRepo)
+  const updateCategory = makeUpdateCategory(adminRepo)
+  const deleteCategory = makeDeleteCategory(adminRepo)
   app.use('/admin/*', requireAuth)
-  app.route('/admin', makeAdminRouter(getDashboard, markAllMessagesRead))
+  app.route('/admin', makeAdminRouter(
+    getDashboard, markAllMessagesRead,
+    listAdminProducts, createProduct, updateProduct, deleteProduct, togglePublish,
+    listCategoriesWithCount, createCategory, updateCategory, deleteCategory,
+  ))
 
   return app
 }
