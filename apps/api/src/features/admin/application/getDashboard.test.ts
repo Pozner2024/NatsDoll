@@ -1,0 +1,33 @@
+import { describe, it, expect, vi } from 'vitest'
+import { makeGetDashboard } from './getDashboard'
+import type { AdminRepository, DashboardResponse } from '../types'
+
+function makeRepo(): AdminRepository {
+  return {
+    getDashboardData: vi.fn(),
+    markAllMessagesRead: vi.fn(),
+  }
+}
+
+const mockResponse: DashboardResponse = {
+  stats: {
+    ordersToday: 3,
+    revenueToday: 150.5,
+    revenueMonth: 2400,
+    newMessages: 2,
+    activeListings: 12,
+  },
+  recentOrders: [],
+  recentMessages: [],
+}
+
+describe('getDashboard', () => {
+  it('delegates to repo.getDashboardData', async () => {
+    const repo = makeRepo()
+    vi.mocked(repo.getDashboardData).mockResolvedValue(mockResponse)
+    const getDashboard = makeGetDashboard(repo)
+    const result = await getDashboard()
+    expect(result).toEqual(mockResponse)
+    expect(repo.getDashboardData).toHaveBeenCalledOnce()
+  })
+})
