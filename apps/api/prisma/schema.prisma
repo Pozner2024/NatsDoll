@@ -282,8 +282,9 @@ model Message {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderId   String?
   order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  text      String
-  createdAt DateTime @default(now())
+  text          String
+  isReadByAdmin Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   @@index([userId])
   @@index([orderId])
