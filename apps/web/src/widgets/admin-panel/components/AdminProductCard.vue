@@ -57,7 +57,7 @@
             </button>
             <button
               class="product-card__menu-item product-card__menu-item--danger"
-              @click="emit('delete', product.id)"
+              @click="() => { if (confirm('Вы действительно хотите удалить этот товар?')) emit('delete', product.id) }"
             >
               Delete
             </button>
