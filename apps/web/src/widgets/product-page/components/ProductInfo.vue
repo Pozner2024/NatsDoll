@@ -122,13 +122,14 @@
 
     <div
       class="product-info__desc"
-      v-html="product.description"
+      v-html="safeDescription"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import DOMPurify from 'dompurify'
 import { AppButton, formatPrice } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
 import MessageSelector from './MessageSelector.vue'
@@ -140,6 +141,13 @@ const qty = ref(1)
 const message = ref<string | null>(null)
 const messageError = ref<string | undefined>(undefined)
 const isAdding = ref(false)
+
+const safeDescription = computed(() =>
+  DOMPurify.sanitize(props.product.description, {
+    ALLOWED_TAGS: ['p', 'strong', 'em', 'ul', 'ol', 'li', 'br'],
+    ALLOWED_ATTR: [],
+  }),
+)
 
 
 const buttonLabel = computed(() => {
