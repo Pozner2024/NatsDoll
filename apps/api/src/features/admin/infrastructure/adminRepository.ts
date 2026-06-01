@@ -1,8 +1,12 @@
-// apps/api/src/features/admin/infrastructure/adminRepository.ts
 import type { PrismaClient } from '@prisma/client'
 import type { AdminRepository, DashboardResponse } from '../types'
 
-const PAID_STATUSES = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'] as const
+const PAID_STATUSES: Array<'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED'> = [
+  'PAID',
+  'PROCESSING',
+  'SHIPPED',
+  'DELIVERED',
+]
 
 export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
   return {
@@ -73,8 +77,8 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       return {
         stats: {
           ordersToday,
-          revenueToday: Number(revenueTodayResult._sum.totalAmount ?? 0),
-          revenueMonth: Number(revenueMonthResult._sum.totalAmount ?? 0),
+          revenueToday: Number(revenueTodayResult._sum?.totalAmount ?? 0),
+          revenueMonth: Number(revenueMonthResult._sum?.totalAmount ?? 0),
           newMessages,
           activeListings,
         },

@@ -1,5 +1,3 @@
-// apps/api/src/features/admin/types.ts
-
 export type DashboardStats = {
   ordersToday: number
   revenueToday: number
