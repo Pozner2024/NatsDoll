@@ -9,8 +9,8 @@
         class="admin-topbar__subtitle"
       >{{ subtitle }}</span>
     </div>
-    <div class="admin-topbar__actions">
-      <slot />
+    <div class="admin-topbar__action">
+      <slot name="action" />
     </div>
   </header>
 </template>
@@ -58,7 +58,7 @@ defineProps<{
     }
   }
 
-  &__actions {
+  &__action {
     margin-left: auto;
     display: flex;
     gap: 10px;
