@@ -80,6 +80,12 @@ import {
   makeCreateMessage,
   makeMessageRouter,
 } from './features/messages'
+import {
+  makeAdminRepository,
+  makeGetDashboard,
+  makeMarkAllMessagesRead,
+  makeAdminRouter,
+} from './features/admin'
 import { requireAuth } from './shared/middleware'
 
 export function createApp() {
@@ -213,6 +219,13 @@ export function createApp() {
   app.use('/me/messages', requireAuth)
   app.use('/me/messages/*', requireAuth)
   app.route('/me/messages', makeMessageRouter(getMyMessages, createMessage))
+
+  // Admin
+  const adminRepo = makeAdminRepository(prisma)
+  const getDashboard = makeGetDashboard(adminRepo)
+  const markAllMessagesRead = makeMarkAllMessagesRead(adminRepo)
+  app.use('/admin/*', requireAuth)
+  app.route('/admin', makeAdminRouter(getDashboard, markAllMessagesRead))
 
   return app
 }
