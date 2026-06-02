@@ -158,6 +158,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           status: true,
           totalAmount: true,
           shippingAddress: true,
+          trackingNumber: true,
           createdAt: true,
           items: {
             select: {
@@ -184,6 +185,7 @@ type OrderRow = {
   status: string
   totalAmount: { toNumber(): number }
   shippingAddress: unknown
+  trackingNumber: string | null
   createdAt: Date
   items: Array<{
     id: string
@@ -218,6 +220,7 @@ function toOrderDetail(order: OrderRow): OrderDetail {
     totalAmount: order.totalAmount.toNumber(),
     shippingCost: order.shippingCost.toNumber(),
     shippingAddress: order.shippingAddress as ShippingAddress,
+    trackingNumber: order.trackingNumber,
     createdAt: order.createdAt.toISOString(),
     items,
   }
