@@ -98,6 +98,9 @@ import {
   makeGetConversation,
   makeReplyToUser,
   makeMarkConversationRead,
+  makeListAdminOrders,
+  makeGetAdminOrder,
+  makeUpdateAdminOrder,
   makeAdminRouter,
 } from './features/admin'
 import { requireAuth } from './shared/middleware'
@@ -252,6 +255,9 @@ export function createApp() {
   const getConversation = makeGetConversation(adminRepo)
   const replyToUser = makeReplyToUser(adminRepo)
   const markConversationRead = makeMarkConversationRead(adminRepo)
+  const listAdminOrders = makeListAdminOrders(adminRepo)
+  const getAdminOrder = makeGetAdminOrder(adminRepo)
+  const updateAdminOrder = makeUpdateAdminOrder(adminRepo, emailService)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
     getDashboard, markAllMessagesRead,
@@ -259,6 +265,7 @@ export function createApp() {
     listCategoriesWithCount, createCategory, updateCategory, deleteCategory,
     getAdminProduct,
     listConversations, getConversation, replyToUser, markConversationRead,
+    listAdminOrders, getAdminOrder, updateAdminOrder,
   ))
 
   return app

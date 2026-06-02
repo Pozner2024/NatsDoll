@@ -1,5 +1,6 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
 import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput } from '../types'
+import type { ShippingAddress } from '../../orders/types'
 import { AppError } from '../../../shared/errors'
 
 const PAID_STATUSES: Array<'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED'> = [
@@ -292,7 +293,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         status: order.status,
         totalAmount: Number(order.totalAmount),
         shippingCost: Number(order.shippingCost),
-        shippingAddress: order.shippingAddress as import('../orders/types').ShippingAddress,
+        shippingAddress: order.shippingAddress as ShippingAddress,
         trackingNumber: order.trackingNumber,
         adminNote: order.adminNote,
         createdAt: order.createdAt.toISOString(),

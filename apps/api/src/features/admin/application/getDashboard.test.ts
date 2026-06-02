@@ -20,6 +20,9 @@ function makeRepo(): AdminRepository {
     updateCategory: vi.fn(),
     deleteCategory: vi.fn(),
     getProduct: vi.fn(),
+    listAdminOrders: vi.fn(),
+    getAdminOrder: vi.fn(),
+    updateAdminOrder: vi.fn(),
   }
 }
 
