@@ -94,6 +94,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
             status: true,
             totalAmount: true,
             shippingAddress: true,
+            trackingNumber: true,
             createdAt: true,
             items: {
               select: {

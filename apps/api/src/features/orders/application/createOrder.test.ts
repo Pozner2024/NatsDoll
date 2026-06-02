@@ -60,7 +60,7 @@ describe('createOrder', () => {
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue(items)
     vi.mocked(repo.createOrderFromCart).mockResolvedValue({
       id: 'order-1', orderNumber: 1, userId: 'u1', status: 'PENDING',
-      totalAmount: 64, shippingCost: 14,
+      totalAmount: 64, shippingCost: 14, trackingNumber: null,
       shippingAddress: address, createdAt: new Date().toISOString(), items: [],
     })
     const createOrder = makeCreateOrder(repo)
@@ -77,7 +77,7 @@ describe('createOrder', () => {
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue(items)
     vi.mocked(repo.createOrderFromCart).mockResolvedValue({
       id: 'order-1', orderNumber: 1, userId: 'u1', status: 'PENDING',
-      totalAmount: 22, shippingCost: 12,
+      totalAmount: 22, shippingCost: 12, trackingNumber: null,
       shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', items: [],
     })
     const createOrder = makeCreateOrder(repo)
