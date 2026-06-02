@@ -6,6 +6,7 @@ import { Resend } from 'resend'
 export type EmailService = {
   sendVerificationEmail(to: string, verificationUrl: string): Promise<void>
   sendMessageNotification(adminEmail: string, fromName: string, fromEmail: string, text: string, orderNumber?: number): Promise<void>
+  sendTrackingNotification(to: string, name: string, orderNumber: number, trackingNumber: string): Promise<void>
 }
 
 export function makeEmailService(): EmailService {
@@ -53,6 +54,20 @@ export function makeEmailService(): EmailService {
           <p><strong>${escapeHtml(fromName)}</strong> (${escapeHtml(fromEmail)}) sent a message:</p>
           ${orderNumber ? `<p>Re: Order #${orderNumber}</p>` : ''}
           <p>${escapeHtml(text)}</p>
+        `,
+      })
+    },
+    async sendTrackingNotification(to, name, orderNumber, trackingNumber) {
+      await getResend().emails.send({
+        from: 'noreply@natsdoll.com',
+        to,
+        subject: `Your order #${orderNumber} has been shipped — NatsDoll`,
+        html: `
+          <p>Hi ${escapeHtml(name)},</p>
+          <p>Your order <strong>#${orderNumber}</strong> has been shipped!</p>
+          <p>Tracking number: <strong>${escapeHtml(trackingNumber)}</strong></p>
+          <p>You can track your order using this number with your shipping carrier.</p>
+          <p>You can also view your order details in your <a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/account/purchases">account cabinet</a>.</p>
         `,
       })
     },

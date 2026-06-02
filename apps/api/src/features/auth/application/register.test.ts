@@ -53,6 +53,7 @@ const mockRepo: AuthRepository = {
 const mockEmailService: EmailService = {
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendMessageNotification: vi.fn().mockResolvedValue(undefined),
+  sendTrackingNotification: vi.fn().mockResolvedValue(undefined),
 }
 
 describe('register', () => {
