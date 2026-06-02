@@ -9,6 +9,8 @@ import type {
   GetAdminProduct, AdminProductDetail,
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
   ConversationPreview, ConversationDetail,
+  ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
+  AdminOrderListResponse, AdminOrderDetail,
 } from '../types'
 
 const mockDashboard: DashboardResponse = {
@@ -41,6 +43,9 @@ function makeApp(overrides: {
   getConversation?: GetConversation
   replyToUser?: ReplyToUser
   markConversationRead?: MarkConversationRead
+  listAdminOrders?: ListAdminOrders
+  getAdminOrder?: GetAdminOrder
+  updateAdminOrder?: UpdateAdminOrder
 } = {}) {
   const app = new Hono()
   app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'ADMIN' }); await next() })
@@ -61,6 +66,9 @@ function makeApp(overrides: {
     overrides.getConversation ?? vi.fn().mockResolvedValue(null),
     overrides.replyToUser ?? vi.fn().mockResolvedValue(undefined),
     overrides.markConversationRead ?? vi.fn().mockResolvedValue(undefined),
+    overrides.listAdminOrders ?? vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, totalPages: 0 }),
+    overrides.getAdminOrder ?? vi.fn().mockResolvedValue(null),
+    overrides.updateAdminOrder ?? vi.fn().mockResolvedValue(undefined),
   ))
   return app
 }
@@ -78,7 +86,7 @@ describe('GET /admin/dashboard', () => {
     const app = new Hono()
     app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'CUSTOMER' }); await next() })
     app.route('/admin', makeAdminRouter(
-      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
+      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
     ))
     const res = await app.request('/admin/dashboard')
     expect(res.status).toBe(403)
@@ -252,5 +260,67 @@ describe('PATCH /admin/messages/conversations/:userId/mark-read', () => {
     const res = await app.request('/admin/messages/conversations/u2/mark-read', { method: 'PATCH' })
     expect(res.status).toBe(200)
     expect(mark).toHaveBeenCalledWith('u2')
+  })
+})
+
+describe('GET /admin/orders', () => {
+  it('returns order list', async () => {
+    const mockList: AdminOrderListResponse = {
+      items: [{ id: 'o1', orderNumber: 1, status: 'PENDING', totalAmount: 30, userName: 'Alice', userEmail: 'a@test.com', itemCount: 2, createdAt: '2026-06-01T00:00:00.000Z' }],
+      total: 1, page: 1, totalPages: 1,
+    }
+    const app = makeApp({ listAdminOrders: vi.fn().mockResolvedValue(mockList) })
+    const res = await app.request('/admin/orders')
+    expect(res.status).toBe(200)
+    const body = await res.json() as AdminOrderListResponse
+    expect(body.items).toHaveLength(1)
+    expect(body.items[0].orderNumber).toBe(1)
+  })
+})
+
+describe('GET /admin/orders/:id', () => {
+  it('returns 404 when not found', async () => {
+    const app = makeApp({ getAdminOrder: vi.fn().mockResolvedValue(null) })
+    const res = await app.request('/admin/orders/nonexistent')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns order detail', async () => {
+    const mockDetail: AdminOrderDetail = {
+      id: 'o1', orderNumber: 1, status: 'PENDING', totalAmount: 30, shippingCost: 5,
+      shippingAddress: { fullName: 'Alice', line1: '1 St', city: 'NY', country: 'US', postalCode: '10001' },
+      trackingNumber: null, adminNote: null, createdAt: '2026-06-01T00:00:00.000Z',
+      userName: 'Alice', userEmail: 'a@test.com', items: [],
+    }
+    const app = makeApp({ getAdminOrder: vi.fn().mockResolvedValue(mockDetail) })
+    const res = await app.request('/admin/orders/o1')
+    expect(res.status).toBe(200)
+    const body = await res.json() as AdminOrderDetail
+    expect(body.orderNumber).toBe(1)
+    expect(body.adminNote).toBeNull()
+  })
+})
+
+describe('PATCH /admin/orders/:id', () => {
+  it('calls updateAdminOrder and returns 200', async () => {
+    const update = vi.fn().mockResolvedValue(undefined)
+    const app = makeApp({ updateAdminOrder: update })
+    const res = await app.request('/admin/orders/o1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'SHIPPED', trackingNumber: 'TRACK123', adminNote: null }),
+    })
+    expect(res.status).toBe(200)
+    expect(update).toHaveBeenCalledWith('o1', { status: 'SHIPPED', trackingNumber: 'TRACK123', adminNote: null })
+  })
+
+  it('returns 422 when status is invalid', async () => {
+    const app = makeApp()
+    const res = await app.request('/admin/orders/o1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'INVALID_STATUS' }),
+    })
+    expect(res.status).toBe(422)
   })
 })

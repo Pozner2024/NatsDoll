@@ -8,6 +8,7 @@ import type {
   ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
   GetAdminProduct,
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
+  ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
 } from '../types'
 
 const productListQuerySchema = z.object({
@@ -35,6 +36,19 @@ const categoryBodySchema = z.object({
   slug: z.string().min(1),
 })
 
+const orderListQuerySchema = z.object({
+  status: z.string().optional(),
+  search: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+})
+
+const orderUpdateBodySchema = z.object({
+  status: z.enum(['PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
+  trackingNumber: z.string().nullable().optional(),
+  adminNote: z.string().nullable().optional(),
+})
+
 const replyBodySchema = z.object({
   userId: z.string().min(1),
   text: z.string().min(1).max(2000),
@@ -58,6 +72,9 @@ export function makeAdminRouter(
   getConversation: GetConversation,
   replyToUser: ReplyToUser,
   markConversationRead: MarkConversationRead,
+  listAdminOrders: ListAdminOrders,
+  getAdminOrder: GetAdminOrder,
+  updateAdminOrder: UpdateAdminOrder,
 ) {
   const router = new Hono()
 
@@ -160,6 +177,32 @@ export function makeAdminRouter(
   router.delete('/categories/:id', async (c) => {
     const id = c.req.param('id')
     await deleteCategory(id)
+    return c.json({ ok: true })
+  })
+
+  router.get('/orders', zValidator('query', orderListQuerySchema), async (c) => {
+    const params = c.req.valid('query')
+    const result = await listAdminOrders(params)
+    return c.json(result)
+  })
+
+  router.get('/orders/:id', async (c) => {
+    const id = c.req.param('id')
+    const order = await getAdminOrder(id)
+    if (!order) return c.json({ error: 'Not found' }, 404)
+    return c.json(order)
+  })
+
+  router.patch('/orders/:id', zValidator('json', orderUpdateBodySchema, (result, c) => {
+    if (!result.success) return c.json({ error: 'Validation failed' }, 422)
+  }), async (c) => {
+    const id = c.req.param('id')
+    const { status, trackingNumber, adminNote } = c.req.valid('json')
+    await updateAdminOrder(id, {
+      status,
+      trackingNumber: trackingNumber ?? null,
+      adminNote: adminNote ?? null,
+    })
     return c.json({ ok: true })
   })
 
