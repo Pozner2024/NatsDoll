@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput } from '../types'
+import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput } from '../types'
 import { AppError } from '../../../shared/errors'
 
 const PAID_STATUSES: Array<'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED'> = [
@@ -214,6 +214,131 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         where: { userId, fromAdmin: false, isReadByAdmin: false },
         data: { isReadByAdmin: true },
       })
+    },
+
+    async listAdminOrders(params: AdminOrderListParams) {
+      const { page, limit, status, search } = params
+      const where: Prisma.OrderWhereInput = {
+        ...(status ? { status: status as Prisma.EnumOrderStatusFilter } : {}),
+        ...(search
+          ? {
+              OR: [
+                ...(isNaN(Number(search)) ? [] : [{ orderNumber: { equals: Number(search) } }]),
+                { user: { name: { contains: search, mode: 'insensitive' as const } } },
+              ],
+            }
+          : {}),
+      }
+      const [rows, total] = await Promise.all([
+        prisma.order.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            totalAmount: true,
+            createdAt: true,
+            user: { select: { name: true, email: true } },
+            _count: { select: { items: true } },
+          },
+        }),
+        prisma.order.count({ where }),
+      ])
+      const items: AdminOrderSummary[] = rows.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        totalAmount: Number(o.totalAmount),
+        userName: o.user.name,
+        userEmail: o.user.email,
+        itemCount: o._count.items,
+        createdAt: o.createdAt.toISOString(),
+      }))
+      return { items, total }
+    },
+
+    async getAdminOrder(orderId: string): Promise<AdminOrderDetail | null> {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          totalAmount: true,
+          shippingCost: true,
+          shippingAddress: true,
+          trackingNumber: true,
+          adminNote: true,
+          createdAt: true,
+          user: { select: { name: true, email: true } },
+          items: {
+            select: {
+              id: true,
+              quantity: true,
+              price: true,
+              message: true,
+              product: { select: { id: true, slug: true, name: true, images: true } },
+            },
+          },
+        },
+      })
+      if (!order) return null
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        totalAmount: Number(order.totalAmount),
+        shippingCost: Number(order.shippingCost),
+        shippingAddress: order.shippingAddress as import('../orders/types').ShippingAddress,
+        trackingNumber: order.trackingNumber,
+        adminNote: order.adminNote,
+        createdAt: order.createdAt.toISOString(),
+        userName: order.user.name,
+        userEmail: order.user.email,
+        items: order.items.map((item) => ({
+          id: item.id,
+          productId: item.product.id,
+          productSlug: item.product.slug,
+          productName: item.product.name,
+          productImage: item.product.images[0] ?? null,
+          quantity: item.quantity,
+          price: Number(item.price),
+          subtotal: Number(item.price) * item.quantity,
+          message: item.message,
+        })),
+      }
+    },
+
+    async updateAdminOrder(orderId: string, input: UpdateOrderInput) {
+      const current = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { trackingNumber: true, orderNumber: true, user: { select: { name: true, email: true } } },
+      })
+      if (!current) throw new AppError(404, 'Order not found')
+
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: input.status as 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED',
+          trackingNumber: input.trackingNumber,
+          adminNote: input.adminNote,
+        },
+      })
+
+      const wasNull = current.trackingNumber === null
+      const isNowSet = input.trackingNumber !== null && input.trackingNumber !== undefined && input.trackingNumber !== ''
+      if (wasNull && isNowSet) {
+        return {
+          userEmail: current.user.email,
+          userName: current.user.name,
+          orderNumber: current.orderNumber,
+          trackingNumber: input.trackingNumber as string,
+        }
+      }
+      return null
     },
 
     async listProducts(params: AdminProductListParams) {
