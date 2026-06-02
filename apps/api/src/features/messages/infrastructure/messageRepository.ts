@@ -17,6 +17,7 @@ export function makeMessageRepository(prisma: PrismaClient): MessageRepository {
         text: r.text,
         orderId: r.orderId,
         orderNumber: r.order?.orderNumber ?? null,
+        fromAdmin: r.fromAdmin,
         createdAt: r.createdAt.toISOString(),
       }))
     },
@@ -43,6 +44,7 @@ export function makeMessageRepository(prisma: PrismaClient): MessageRepository {
         text: row.text,
         orderId: row.orderId,
         orderNumber: row.order?.orderNumber ?? null,
+        fromAdmin: row.fromAdmin,
         createdAt: row.createdAt.toISOString(),
       }
 

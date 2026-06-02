@@ -3,6 +3,7 @@ export type MessageView = {
   text: string
   orderId: string | null
   orderNumber: number | null
+  fromAdmin: boolean
   createdAt: string
 }
 
