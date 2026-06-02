@@ -7,6 +7,7 @@ import type {
   ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish,
   ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
   GetAdminProduct,
+  ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
 } from '../types'
 
 const productListQuerySchema = z.object({
@@ -34,6 +35,12 @@ const categoryBodySchema = z.object({
   slug: z.string().min(1),
 })
 
+const replyBodySchema = z.object({
+  userId: z.string().min(1),
+  text: z.string().min(1).max(2000),
+  orderId: z.string().optional(),
+})
+
 export function makeAdminRouter(
   getDashboard: GetDashboard,
   markAllMessagesRead: MarkAllMessagesRead,
@@ -47,6 +54,10 @@ export function makeAdminRouter(
   updateCategory: UpdateCategory,
   deleteCategory: DeleteCategory,
   getAdminProduct: GetAdminProduct,
+  listConversations: ListConversations,
+  getConversation: GetConversation,
+  replyToUser: ReplyToUser,
+  markConversationRead: MarkConversationRead,
 ) {
   const router = new Hono()
 
@@ -59,6 +70,32 @@ export function makeAdminRouter(
 
   router.patch('/messages/mark-all-read', async (c) => {
     await markAllMessagesRead()
+    return c.json({ ok: true })
+  })
+
+  router.get('/messages/conversations', async (c) => {
+    const data = await listConversations()
+    return c.json(data)
+  })
+
+  router.get('/messages/conversations/:userId', async (c) => {
+    const userId = c.req.param('userId')
+    const data = await getConversation(userId)
+    if (!data) return c.json({ error: 'Not found' }, 404)
+    return c.json(data)
+  })
+
+  router.post('/messages/reply', zValidator('json', replyBodySchema, (result, c) => {
+    if (!result.success) return c.json({ error: 'Validation failed' }, 422)
+  }), async (c) => {
+    const { userId, text, orderId } = c.req.valid('json')
+    await replyToUser({ userId, text, orderId })
+    return c.json({ ok: true }, 201)
+  })
+
+  router.patch('/messages/conversations/:userId/mark-read', async (c) => {
+    const userId = c.req.param('userId')
+    await markConversationRead(userId)
     return c.json({ ok: true })
   })
 
