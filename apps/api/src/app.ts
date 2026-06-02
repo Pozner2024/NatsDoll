@@ -93,6 +93,11 @@ import {
   makeCreateCategory,
   makeUpdateCategory,
   makeDeleteCategory,
+  makeGetAdminProduct,
+  makeListConversations,
+  makeGetConversation,
+  makeReplyToUser,
+  makeMarkConversationRead,
   makeAdminRouter,
 } from './features/admin'
 import { requireAuth } from './shared/middleware'
@@ -242,11 +247,18 @@ export function createApp() {
   const createCategory = makeCreateCategory(adminRepo)
   const updateCategory = makeUpdateCategory(adminRepo)
   const deleteCategory = makeDeleteCategory(adminRepo)
+  const getAdminProduct = makeGetAdminProduct(adminRepo)
+  const listConversations = makeListConversations(adminRepo)
+  const getConversation = makeGetConversation(adminRepo)
+  const replyToUser = makeReplyToUser(adminRepo)
+  const markConversationRead = makeMarkConversationRead(adminRepo)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
     getDashboard, markAllMessagesRead,
     listAdminProducts, createProduct, updateProduct, deleteProduct, togglePublish,
     listCategoriesWithCount, createCategory, updateCategory, deleteCategory,
+    getAdminProduct,
+    listConversations, getConversation, replyToUser, markConversationRead,
   ))
 
   return app
