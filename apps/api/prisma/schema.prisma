@@ -277,13 +277,14 @@ model ContactMessage {
 // ─── Messages ──────────────────────────────────────────
 
 model Message {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderId   String?
-  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId       String?
+  order         Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
   text          String
   isReadByAdmin Boolean  @default(false)
+  fromAdmin     Boolean  @default(false)
   createdAt     DateTime @default(now())
 
   @@index([userId])
