@@ -84,6 +84,10 @@ export type AdminCategoryItem = {
 export type AdminRepository = {
   getDashboardData(): Promise<DashboardResponse>
   markAllMessagesRead(): Promise<void>
+  listConversations(): Promise<ConversationPreview[]>
+  getConversation(userId: string): Promise<ConversationDetail | null>
+  replyToUser(input: ReplyInput): Promise<void>
+  markConversationRead(userId: string): Promise<void>
   // products
   listProducts(params: AdminProductListParams): Promise<{ items: AdminProductListItem[]; total: number }>
   createProduct(input: AdminProductInput): Promise<{ id: string }>
@@ -95,6 +99,7 @@ export type AdminRepository = {
   createCategory(name: string, slug: string): Promise<{ id: string }>
   updateCategory(id: string, name: string, slug: string): Promise<void>
   deleteCategory(id: string): Promise<void>
+  getProduct(id: string): Promise<AdminProductDetail | null>
 }
 
 export type ListAdminProducts = (params: AdminProductListParams) => Promise<AdminProductListResponse>
@@ -106,3 +111,57 @@ export type ListCategoriesWithCount = () => Promise<AdminCategoryItem[]>
 export type CreateCategory = (name: string, slug: string) => Promise<{ id: string }>
 export type UpdateCategory = (id: string, name: string, slug: string) => Promise<void>
 export type DeleteCategory = (id: string) => Promise<void>
+
+export type AdminProductDetail = {
+  id: string
+  name: string
+  slug: string
+  description: string
+  price: number
+  stock: number
+  categoryId: string
+  images: string[]
+  messageOptions: string[]
+  isPublished: boolean
+}
+
+export type GetAdminProduct = (id: string) => Promise<AdminProductDetail | null>
+
+// ── Admin Conversations ───────────────────────────────────────
+
+export type ConversationPreview = {
+  userId: string
+  userName: string
+  userEmail: string
+  lastMessageText: string
+  lastMessageAt: string
+  unreadCount: number
+}
+
+export type ConversationMessage = {
+  id: string
+  text: string
+  fromAdmin: boolean
+  orderId: string | null
+  orderNumber: number | null
+  createdAt: string
+}
+
+export type ConversationDetail = {
+  userId: string
+  userName: string
+  userEmail: string
+  messages: ConversationMessage[]
+  userOrders: { id: string; orderNumber: number; createdAt: string }[]
+}
+
+export type ReplyInput = {
+  userId: string
+  text: string
+  orderId?: string
+}
+
+export type ListConversations = () => Promise<ConversationPreview[]>
+export type GetConversation = (userId: string) => Promise<ConversationDetail | null>
+export type ReplyToUser = (input: ReplyInput) => Promise<void>
+export type MarkConversationRead = (userId: string) => Promise<void>
