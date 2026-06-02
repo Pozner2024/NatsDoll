@@ -27,8 +27,13 @@
           v-for="msg in messages"
           :key="msg.id"
           class="account-messages__item"
+          :class="msg.fromAdmin ? 'account-messages__item--admin' : 'account-messages__item--user'"
         >
           <div class="account-messages__item-meta">
+            <span
+              v-if="msg.fromAdmin"
+              class="account-messages__item-sender"
+            >NatsDoll</span>
             <span
               v-if="msg.orderNumber"
               class="account-messages__item-order"
@@ -198,12 +203,32 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    max-width: 85%;
+
+    &--user {
+      align-self: flex-end;
+      background: var(--color-white);
+    }
+
+    &--admin {
+      align-self: flex-start;
+      background: rgb(var(--btn-gradient-light) / 0.12);
+      border-color: rgb(var(--btn-gradient-light) / 0.25);
+    }
   }
 
   &__item-meta {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+  }
+
+  &__item-sender {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   &__item-order {
