@@ -1,3 +1,5 @@
+import type { OrderItemView, ShippingAddress } from '../orders/types'
+
 export type DashboardStats = {
   ordersToday: number
   revenueToday: number
@@ -88,6 +90,9 @@ export type AdminRepository = {
   getConversation(userId: string): Promise<ConversationDetail | null>
   replyToUser(input: ReplyInput): Promise<void>
   markConversationRead(userId: string): Promise<void>
+  listAdminOrders(params: AdminOrderListParams): Promise<{ items: AdminOrderSummary[]; total: number }>
+  getAdminOrder(orderId: string): Promise<AdminOrderDetail | null>
+  updateAdminOrder(orderId: string, input: UpdateOrderInput): Promise<{ userEmail: string; userName: string; orderNumber: number; trackingNumber: string } | null>
   // products
   listProducts(params: AdminProductListParams): Promise<{ items: AdminProductListItem[]; total: number }>
   createProduct(input: AdminProductInput): Promise<{ id: string }>
@@ -165,3 +170,55 @@ export type ListConversations = () => Promise<ConversationPreview[]>
 export type GetConversation = (userId: string) => Promise<ConversationDetail | null>
 export type ReplyToUser = (input: ReplyInput) => Promise<void>
 export type MarkConversationRead = (userId: string) => Promise<void>
+
+// ── Admin Orders ──────────────────────────────────────────────
+
+export type AdminOrderSummary = {
+  id: string
+  orderNumber: number
+  status: string
+  totalAmount: number
+  userName: string
+  userEmail: string
+  itemCount: number
+  createdAt: string
+}
+
+export type AdminOrderDetail = {
+  id: string
+  orderNumber: number
+  status: string
+  totalAmount: number
+  shippingCost: number
+  shippingAddress: ShippingAddress
+  trackingNumber: string | null
+  adminNote: string | null
+  createdAt: string
+  userName: string
+  userEmail: string
+  items: OrderItemView[]
+}
+
+export type AdminOrderListParams = {
+  status?: string
+  search?: string
+  page: number
+  limit: number
+}
+
+export type AdminOrderListResponse = {
+  items: AdminOrderSummary[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+export type UpdateOrderInput = {
+  status: string
+  trackingNumber: string | null
+  adminNote: string | null
+}
+
+export type ListAdminOrders = (params: AdminOrderListParams) => Promise<AdminOrderListResponse>
+export type GetAdminOrder = (orderId: string) => Promise<AdminOrderDetail | null>
+export type UpdateAdminOrder = (orderId: string, input: UpdateOrderInput) => Promise<void>
