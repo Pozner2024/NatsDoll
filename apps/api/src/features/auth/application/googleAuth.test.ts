@@ -34,6 +34,7 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     findEmailVerification: vi.fn(),
     deleteEmailVerification: vi.fn(),
     finalizeEmailVerification: vi.fn(),
+    updateUser: vi.fn(),
     ...overrides,
   }
 }

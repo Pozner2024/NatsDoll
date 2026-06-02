@@ -57,6 +57,7 @@ const mockRepo: AuthRepository = {
   findEmailVerification: vi.fn(),
   deleteEmailVerification: vi.fn(),
   finalizeEmailVerification: vi.fn(),
+  updateUser: vi.fn(),
 }
 
 describe('refreshToken', () => {

@@ -6,6 +6,10 @@ function makeRepo(): AdminRepository {
   return {
     getDashboardData: vi.fn(),
     markAllMessagesRead: vi.fn(),
+    listConversations: vi.fn(),
+    getConversation: vi.fn(),
+    replyToUser: vi.fn(),
+    markConversationRead: vi.fn(),
     listProducts: vi.fn(),
     createProduct: vi.fn(),
     updateProduct: vi.fn(),
@@ -15,6 +19,7 @@ function makeRepo(): AdminRepository {
     createCategory: vi.fn(),
     updateCategory: vi.fn(),
     deleteCategory: vi.fn(),
+    getProduct: vi.fn(),
   }
 }
 

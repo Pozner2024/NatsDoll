@@ -15,7 +15,7 @@ describe('getMyOrders', () => {
   it('delegates to repo.getMyOrders', async () => {
     const repo = makeRepo()
     const expected = [
-      { id: 'o1', status: 'PENDING', totalAmount: 30, itemCount: 2,
+      { id: 'o1', orderNumber: 1, status: 'PENDING', totalAmount: 30, itemCount: 2,
         createdAt: '2026-05-21T00:00:00.000Z', firstItemImage: null },
     ]
     vi.mocked(repo.getMyOrders).mockResolvedValue(expected)

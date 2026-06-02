@@ -47,10 +47,12 @@ const mockRepo: AuthRepository = {
   findEmailVerification: vi.fn(),
   deleteEmailVerification: vi.fn(),
   finalizeEmailVerification: vi.fn(),
+  updateUser: vi.fn(),
 }
 
 const mockEmailService: EmailService = {
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+  sendMessageNotification: vi.fn().mockResolvedValue(undefined),
 }
 
 describe('register', () => {
