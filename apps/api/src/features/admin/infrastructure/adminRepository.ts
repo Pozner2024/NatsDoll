@@ -11,11 +11,14 @@ const PAID_STATUSES: Array<'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED'> = [
 ]
 
 function bucketKey(period: AnalyticsPeriod, date: Date): string {
+  if (period === 'today' || period === 'yesterday') {
+    // YYYY-MM-DD HH:00
+    return `${date.toISOString().slice(0, 10)} ${String(date.getUTCHours()).padStart(2, '0')}:00`
+  }
   if (period === '365d') {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-01`
   }
   if (period === '90d') {
-    // ISO week start (Monday)
     const d = new Date(date)
     const day = d.getUTCDay() || 7
     d.setUTCDate(d.getUTCDate() - day + 1)
@@ -32,7 +35,14 @@ function buildBuckets(
   const buckets: Record<string, { revenue: number; count: number }> = {}
   const cur = new Date(start)
 
-  if (period === '365d') {
+  if (period === 'today' || period === 'yesterday') {
+    // 24 hourly buckets
+    while (cur <= end) {
+      const key = `${cur.toISOString().slice(0, 10)} ${String(cur.getUTCHours()).padStart(2, '0')}:00`
+      buckets[key] = { revenue: 0, count: 0 }
+      cur.setUTCHours(cur.getUTCHours() + 1)
+    }
+  } else if (period === '365d') {
     cur.setUTCDate(1)
     while (cur <= end) {
       const key = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-01`
@@ -40,7 +50,6 @@ function buildBuckets(
       cur.setUTCMonth(cur.getUTCMonth() + 1)
     }
   } else if (period === '90d') {
-    // Advance to Monday
     const day = cur.getUTCDay() || 7
     cur.setUTCDate(cur.getUTCDate() - day + 1)
     while (cur <= end) {
@@ -392,20 +401,41 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
 
     async getAnalyticsData(period: AnalyticsPeriod): Promise<AnalyticsResponse> {
       const now = new Date()
-      const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365
 
-      const currentStart = new Date(now)
-      currentStart.setUTCDate(currentStart.getUTCDate() - days)
-      currentStart.setUTCHours(0, 0, 0, 0)
+      let currentStart: Date
+      let endOfPeriod: Date
+      let endBucket: Date
+      let prevStart: Date | null = null
 
-      const endOfPeriod = new Date(now)
-      endOfPeriod.setUTCHours(0, 0, 0, 0) // start of today — upper bound for Prisma query
-
-      const endBucket = new Date(endOfPeriod)
-      endBucket.setUTCDate(endBucket.getUTCDate() - 1) // yesterday — last bucket to show
-
-      const prevStart = new Date(currentStart)
-      prevStart.setUTCDate(prevStart.getUTCDate() - days)
+      if (period === 'today') {
+        currentStart = new Date(now)
+        currentStart.setUTCHours(0, 0, 0, 0)
+        endOfPeriod = now
+        endBucket = new Date(now)
+        endBucket.setUTCMinutes(0, 0, 0)  // current hour bucket (inclusive)
+        prevStart = null
+      } else if (period === 'yesterday') {
+        const yesterday = new Date(now)
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+        currentStart = new Date(yesterday)
+        currentStart.setUTCHours(0, 0, 0, 0)
+        endBucket = new Date(yesterday)
+        endBucket.setUTCHours(23, 0, 0, 0)
+        endOfPeriod = new Date(now)
+        endOfPeriod.setUTCHours(0, 0, 0, 0)  // start of today = end of yesterday
+        prevStart = null
+      } else {
+        const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365
+        endOfPeriod = new Date(now)
+        endOfPeriod.setUTCHours(0, 0, 0, 0)
+        endBucket = new Date(endOfPeriod)
+        endBucket.setUTCDate(endBucket.getUTCDate() - 1)
+        currentStart = new Date(endOfPeriod)
+        currentStart.setUTCDate(currentStart.getUTCDate() - days)
+        currentStart.setUTCHours(0, 0, 0, 0)
+        prevStart = new Date(currentStart)
+        prevStart.setUTCDate(prevStart.getUTCDate() - days)
+      }
 
       const [currentOrders, prevOrders] = await Promise.all([
         prisma.order.findMany({
@@ -413,10 +443,12 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
           select: { createdAt: true, totalAmount: true, status: true },
           orderBy: { createdAt: 'asc' },
         }),
-        prisma.order.findMany({
-          where: { createdAt: { gte: prevStart, lt: currentStart } },
-          select: { totalAmount: true, status: true },
-        }),
+        prevStart
+          ? prisma.order.findMany({
+              where: { createdAt: { gte: prevStart, lt: currentStart } },
+              select: { totalAmount: true, status: true },
+            })
+          : Promise.resolve([]),
       ])
 
       // Build zero-filled date buckets
@@ -443,8 +475,8 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         .reduce((s, o) => s + Number(o.totalAmount), 0)
       const prevOrderCount = prevOrders.length
 
-      const revenueChange = prevRevenue === 0 ? 0 : Number(((totalRevenue - prevRevenue) / prevRevenue * 100).toFixed(1))
-      const ordersChange  = prevOrderCount === 0 ? 0 : Number(((totalOrders - prevOrderCount) / prevOrderCount * 100).toFixed(1))
+      const revenueChange = prevStart === null || prevRevenue === 0 ? 0 : Number(((totalRevenue - prevRevenue) / prevRevenue * 100).toFixed(1))
+      const ordersChange  = prevStart === null || prevOrderCount === 0 ? 0 : Number(((totalOrders - prevOrderCount) / prevOrderCount * 100).toFixed(1))
 
       return { revenue, orders, summary: { totalRevenue, totalOrders, revenueChange, ordersChange } }
     },

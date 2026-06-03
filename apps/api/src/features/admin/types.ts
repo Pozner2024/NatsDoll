@@ -227,7 +227,7 @@ export type UpdateAdminOrder = (orderId: string, input: UpdateOrderInput) => Pro
 
 // ── Admin Analytics ───────────────────────────────────────────
 
-export type AnalyticsPeriod = '7d' | '30d' | '90d' | '365d'
+export type AnalyticsPeriod = 'today' | 'yesterday' | '7d' | '30d' | '90d' | '365d'
 
 export type AnalyticsDataPoint = {
   date: string   // YYYY-MM-DD (for 7d/30d), YYYY-MM-DD week start (90d), YYYY-MM-01 (365d)

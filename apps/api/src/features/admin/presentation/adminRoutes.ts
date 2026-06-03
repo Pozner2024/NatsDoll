@@ -51,7 +51,7 @@ const orderUpdateBodySchema = z.object({
 })
 
 const analyticsQuerySchema = z.object({
-  period: z.enum(['7d', '30d', '90d', '365d']).default('7d'),
+  period: z.enum(['today', 'yesterday', '7d', '30d', '90d', '365d']).default('7d'),
 })
 
 const replyBodySchema = z.object({
