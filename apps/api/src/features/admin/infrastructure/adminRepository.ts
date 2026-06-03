@@ -398,12 +398,18 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       currentStart.setUTCDate(currentStart.getUTCDate() - days)
       currentStart.setUTCHours(0, 0, 0, 0)
 
+      const endOfPeriod = new Date(now)
+      endOfPeriod.setUTCHours(0, 0, 0, 0) // start of today — upper bound for Prisma query
+
+      const endBucket = new Date(endOfPeriod)
+      endBucket.setUTCDate(endBucket.getUTCDate() - 1) // yesterday — last bucket to show
+
       const prevStart = new Date(currentStart)
       prevStart.setUTCDate(prevStart.getUTCDate() - days)
 
       const [currentOrders, prevOrders] = await Promise.all([
         prisma.order.findMany({
-          where: { createdAt: { gte: currentStart } },
+          where: { createdAt: { gte: currentStart, lt: endOfPeriod } },
           select: { createdAt: true, totalAmount: true, status: true },
           orderBy: { createdAt: 'asc' },
         }),
@@ -414,7 +420,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       ])
 
       // Build zero-filled date buckets
-      const buckets = buildBuckets(period, currentStart, now)
+      const buckets = buildBuckets(period, currentStart, endBucket)
 
       for (const order of currentOrders) {
         const key = bucketKey(period, order.createdAt)
