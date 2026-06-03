@@ -39,7 +39,7 @@
               {{ isLoading ? '—' : formatMoney(data?.summary.totalRevenue ?? 0) }}
             </div>
             <div
-              v-if="!isLoading && data"
+              v-if="!isLoading && data && period !== 'today' && period !== 'yesterday'"
               class="stat-card__hint"
               :class="{ 'stat-card__hint--down': data.summary.revenueChange < 0 }"
             >
@@ -52,7 +52,7 @@
               {{ isLoading ? '—' : data?.summary.totalOrders ?? 0 }}
             </div>
             <div
-              v-if="!isLoading && data"
+              v-if="!isLoading && data && period !== 'today' && period !== 'yesterday'"
               class="stat-card__hint"
               :class="{ 'stat-card__hint--down': data.summary.ordersChange < 0 }"
             >
@@ -152,6 +152,8 @@ const COLOR_ACCENT = '#8b5e52'
 const COLOR_BORDER = '#ecddd5'
 
 const PERIODS: { label: string; value: AnalyticsPeriod }[] = [
+  { label: 'Today',     value: 'today' },
+  { label: 'Yesterday', value: 'yesterday' },
   { label: '7 days',    value: '7d' },
   { label: '30 days',   value: '30d' },
   { label: '3 months',  value: '90d' },
@@ -162,6 +164,7 @@ const period = ref<AnalyticsPeriod>('7d')
 const { data, isLoading, error, refresh } = useAnalytics(period)
 
 const granularityLabel = computed(() => {
+  if (period.value === 'today' || period.value === 'yesterday') return 'hour'
   if (period.value === '365d') return 'month'
   if (period.value === '90d') return 'week'
   return 'day'

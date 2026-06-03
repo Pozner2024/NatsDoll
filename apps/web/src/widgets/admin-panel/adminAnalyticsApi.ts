@@ -24,7 +24,7 @@ const AnalyticsResponseSchema = z.object({
 })
 
 export type AnalyticsResponse = z.infer<typeof AnalyticsResponseSchema>
-export type AnalyticsPeriod = '7d' | '30d' | '90d' | '365d'
+export type AnalyticsPeriod = 'today' | 'yesterday' | '7d' | '30d' | '90d' | '365d'
 
 export function useAnalytics(period: ReturnType<typeof ref<AnalyticsPeriod>>) {
   const data = ref<AnalyticsResponse | null>(null)
