@@ -217,8 +217,8 @@ export type AdminOrderListResponse = {
 
 export type UpdateOrderInput = {
   status: string
-  trackingNumber: string | null
-  adminNote: string | null
+  trackingNumber?: string | null
+  adminNote?: string | null
 }
 
 export type ListAdminOrders = (params: AdminOrderListParams) => Promise<AdminOrderListResponse>
@@ -245,8 +245,8 @@ export type AnalyticsResponse = {
   summary: {
     totalRevenue: number
     totalOrders: number
-    revenueChange: number   // % vs previous equal period, e.g. 18.5 or -5.2
-    ordersChange: number
+    revenueChange: number | null   // % vs previous equal period; null when no baseline
+    ordersChange: number | null
   }
 }
 

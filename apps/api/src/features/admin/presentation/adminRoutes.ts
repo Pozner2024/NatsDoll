@@ -204,11 +204,7 @@ export function makeAdminRouter(
   }), async (c) => {
     const id = c.req.param('id')
     const { status, trackingNumber, adminNote } = c.req.valid('json')
-    await updateAdminOrder(id, {
-      status,
-      trackingNumber: trackingNumber ?? null,
-      adminNote: adminNote ?? null,
-    })
+    await updateAdminOrder(id, { status, trackingNumber, adminNote })
     return c.json({ ok: true })
   })
 

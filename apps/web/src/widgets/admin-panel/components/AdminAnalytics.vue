@@ -39,7 +39,7 @@
               {{ isLoading ? '—' : formatMoney(data?.summary.totalRevenue ?? 0) }}
             </div>
             <div
-              v-if="!isLoading && data && period !== 'today' && period !== 'yesterday'"
+              v-if="!isLoading && data && data.summary.revenueChange !== null"
               class="stat-card__hint"
               :class="{ 'stat-card__hint--down': data.summary.revenueChange < 0 }"
             >
@@ -52,7 +52,7 @@
               {{ isLoading ? '—' : data?.summary.totalOrders ?? 0 }}
             </div>
             <div
-              v-if="!isLoading && data && period !== 'today' && period !== 'yesterday'"
+              v-if="!isLoading && data && data.summary.ordersChange !== null"
               class="stat-card__hint"
               :class="{ 'stat-card__hint--down': data.summary.ordersChange < 0 }"
             >
@@ -167,9 +167,8 @@ const granularityLabel = computed(() => {
   return 'day'
 })
 
-function barColors(dates: string[]): string[] {
-  const today = new Date().toISOString().slice(0, 10)
-  return dates.map(d => d === today ? COLOR_ACCENT : COLOR_BORDER)
+function barColors(count: number): string[] {
+  return Array.from({ length: count }, (_, i) => (i === count - 1 ? COLOR_ACCENT : COLOR_BORDER))
 }
 
 const revenueChartData = computed(() => {
@@ -179,7 +178,7 @@ const revenueChartData = computed(() => {
     labels,
     datasets: [{
       data: data.value.revenue.map(r => r.amount),
-      backgroundColor: barColors(labels),
+      backgroundColor: barColors(labels.length),
       borderRadius: 3,
     }],
   }
@@ -192,7 +191,7 @@ const ordersChartData = computed(() => {
     labels,
     datasets: [{
       data: data.value.orders.map(o => o.count),
-      backgroundColor: barColors(labels),
+      backgroundColor: barColors(labels.length),
       borderRadius: 3,
     }],
   }

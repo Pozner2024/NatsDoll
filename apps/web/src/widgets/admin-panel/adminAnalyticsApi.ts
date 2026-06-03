@@ -18,8 +18,8 @@ const AnalyticsResponseSchema = z.object({
   summary: z.object({
     totalRevenue: z.number(),
     totalOrders: z.number(),
-    revenueChange: z.number(),
-    ordersChange: z.number(),
+    revenueChange: z.number().nullable(),
+    ordersChange: z.number().nullable(),
   }),
 })
 
@@ -31,20 +31,26 @@ export function useAnalytics(period: ReturnType<typeof ref<AnalyticsPeriod>>) {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  let requestId = 0
+
   async function refresh() {
+    const current = ++requestId
     isLoading.value = true
     error.value = null
     try {
       const res = await authFetch(`/admin/analytics?period=${period.value}`)
       if (!res.ok) {
-        error.value = await apiErrorMessage(res, 'Failed to load analytics')
+        const message = await apiErrorMessage(res, 'Failed to load analytics')
+        if (current === requestId) error.value = message
         return
       }
-      data.value = AnalyticsResponseSchema.parse(await res.json())
+      const json = await res.json()
+      if (current !== requestId) return
+      data.value = AnalyticsResponseSchema.parse(json)
     } catch {
-      error.value = 'Failed to load analytics'
+      if (current === requestId) error.value = 'Failed to load analytics'
     } finally {
-      isLoading.value = false
+      if (current === requestId) isLoading.value = false
     }
   }
 
