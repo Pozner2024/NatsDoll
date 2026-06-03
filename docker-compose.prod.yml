@@ -74,7 +74,33 @@ services:
         condition: service_healthy
     restart: "no"
 
+  umami_db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${UMAMI_DB_USER}
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+      POSTGRES_DB: ${UMAMI_DB_NAME}
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${UMAMI_DB_USER} -d ${UMAMI_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    environment:
+      DATABASE_URL: postgresql://${UMAMI_DB_USER}:${UMAMI_DB_PASSWORD}@umami_db:5432/${UMAMI_DB_NAME}
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    depends_on:
+      umami_db:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  umami_db_data:
