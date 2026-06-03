@@ -13,5 +13,6 @@ export {
 export type { AccessTokenPayload } from './tokens'
 export { FRONTEND_URL } from './config'
 export { COMMON_PASSWORDS } from './passwordBlocklist'
+export { DUMMY_HASH } from './dummyHash'
 export { uploadToS3 } from './s3Client'
 export { calcShipping, SHIPPING_BASE, SHIPPING_PER_EXTRA_ITEM } from './shipping'
