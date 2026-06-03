@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput } from '../types'
+import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput, AnalyticsPeriod, AnalyticsResponse } from '../types'
 import type { ShippingAddress } from '../../orders/types'
 import { AppError } from '../../../shared/errors'
 
@@ -9,6 +9,53 @@ const PAID_STATUSES: Array<'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED'> = [
   'SHIPPED',
   'DELIVERED',
 ]
+
+function bucketKey(period: AnalyticsPeriod, date: Date): string {
+  if (period === '365d') {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-01`
+  }
+  if (period === '90d') {
+    // ISO week start (Monday)
+    const d = new Date(date)
+    const day = d.getUTCDay() || 7
+    d.setUTCDate(d.getUTCDate() - day + 1)
+    return d.toISOString().slice(0, 10)
+  }
+  return date.toISOString().slice(0, 10)
+}
+
+function buildBuckets(
+  period: AnalyticsPeriod,
+  start: Date,
+  end: Date,
+): Record<string, { revenue: number; count: number }> {
+  const buckets: Record<string, { revenue: number; count: number }> = {}
+  const cur = new Date(start)
+
+  if (period === '365d') {
+    cur.setUTCDate(1)
+    while (cur <= end) {
+      const key = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-01`
+      buckets[key] = { revenue: 0, count: 0 }
+      cur.setUTCMonth(cur.getUTCMonth() + 1)
+    }
+  } else if (period === '90d') {
+    // Advance to Monday
+    const day = cur.getUTCDay() || 7
+    cur.setUTCDate(cur.getUTCDate() - day + 1)
+    while (cur <= end) {
+      buckets[cur.toISOString().slice(0, 10)] = { revenue: 0, count: 0 }
+      cur.setUTCDate(cur.getUTCDate() + 7)
+    }
+  } else {
+    while (cur <= end) {
+      buckets[cur.toISOString().slice(0, 10)] = { revenue: 0, count: 0 }
+      cur.setUTCDate(cur.getUTCDate() + 1)
+    }
+  }
+
+  return buckets
+}
 
 export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
   return {
@@ -274,7 +321,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
           trackingNumber: true,
           adminNote: true,
           createdAt: true,
-          user: { select: { name: true, email: true } },
+          user: { select: { id: true, name: true, email: true } },
           items: {
             select: {
               id: true,
@@ -297,6 +344,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         trackingNumber: order.trackingNumber,
         adminNote: order.adminNote,
         createdAt: order.createdAt.toISOString(),
+        userId: order.user.id,
         userName: order.user.name,
         userEmail: order.user.email,
         items: order.items.map((item) => ({
@@ -340,6 +388,59 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         }
       }
       return null
+    },
+
+    async getAnalyticsData(period: AnalyticsPeriod): Promise<AnalyticsResponse> {
+      const now = new Date()
+      const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365
+
+      const currentStart = new Date(now)
+      currentStart.setUTCDate(currentStart.getUTCDate() - days)
+      currentStart.setUTCHours(0, 0, 0, 0)
+
+      const prevStart = new Date(currentStart)
+      prevStart.setUTCDate(prevStart.getUTCDate() - days)
+
+      const [currentOrders, prevOrders] = await Promise.all([
+        prisma.order.findMany({
+          where: { createdAt: { gte: currentStart } },
+          select: { createdAt: true, totalAmount: true, status: true },
+          orderBy: { createdAt: 'asc' },
+        }),
+        prisma.order.findMany({
+          where: { createdAt: { gte: prevStart, lt: currentStart } },
+          select: { totalAmount: true, status: true },
+        }),
+      ])
+
+      // Build zero-filled date buckets
+      const buckets = buildBuckets(period, currentStart, now)
+
+      for (const order of currentOrders) {
+        const key = bucketKey(period, order.createdAt)
+        if (buckets[key]) {
+          buckets[key].count += 1
+          if (PAID_STATUSES.includes(order.status as typeof PAID_STATUSES[number])) {
+            buckets[key].revenue += Number(order.totalAmount)
+          }
+        }
+      }
+
+      const revenue = Object.entries(buckets).map(([date, b]) => ({ date, amount: b.revenue }))
+      const orders  = Object.entries(buckets).map(([date, b]) => ({ date, count: b.count }))
+
+      const totalRevenue = revenue.reduce((s, r) => s + r.amount, 0)
+      const totalOrders  = orders.reduce((s, o) => s + o.count, 0)
+
+      const prevRevenue = prevOrders
+        .filter(o => PAID_STATUSES.includes(o.status as typeof PAID_STATUSES[number]))
+        .reduce((s, o) => s + Number(o.totalAmount), 0)
+      const prevOrderCount = prevOrders.length
+
+      const revenueChange = prevRevenue === 0 ? 0 : Number(((totalRevenue - prevRevenue) / prevRevenue * 100).toFixed(1))
+      const ordersChange  = prevOrderCount === 0 ? 0 : Number(((totalOrders - prevOrderCount) / prevOrderCount * 100).toFixed(1))
+
+      return { revenue, orders, summary: { totalRevenue, totalOrders, revenueChange, ordersChange } }
     },
 
     async listProducts(params: AdminProductListParams) {
