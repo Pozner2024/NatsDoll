@@ -253,8 +253,7 @@ async function handleSubmit() {
     const method = isEdit.value ? 'PUT' : 'POST'
     const res = await authFetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value),
+      json: form.value,
     })
     if (!res.ok) {
       submitError.value = await apiErrorMessage(res, 'Failed to save product')

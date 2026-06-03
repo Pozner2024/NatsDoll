@@ -132,6 +132,16 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/widgets/admin-panel/components/AdminOrders.vue'),
       },
       {
+        path: 'listings/new',
+        name: 'admin-listing-new',
+        component: () => import('@/pages/AdminProductFormPage.vue'),
+      },
+      {
+        path: 'listings/:id/edit',
+        name: 'admin-listing-edit',
+        component: () => import('@/pages/AdminProductFormPage.vue'),
+      },
+      {
         path: 'analytics',
         name: 'admin-analytics',
         component: () => import('@/widgets/admin-panel/components/AdminAnalytics.vue'),

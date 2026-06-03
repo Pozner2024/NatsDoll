@@ -45,6 +45,7 @@ const OrderDetailSchema = z.object({
   trackingNumber: z.string().nullable(),
   adminNote: z.string().nullable(),
   createdAt: z.string(),
+  userId: z.string(),
   userName: z.string(),
   userEmail: z.string(),
   items: z.array(OrderItemSchema),

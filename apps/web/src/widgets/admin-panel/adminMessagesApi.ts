@@ -95,8 +95,7 @@ export function useConversationThread(userId: Ref<string | null>) {
 export async function replyToUser(payload: { userId: string; text: string; orderId?: string }): Promise<void> {
   const res = await authFetch('/admin/messages/reply', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    json: payload,
   })
   if (!res.ok) {
     const msg = await apiErrorMessage(res, 'Failed to send reply')

@@ -10,7 +10,7 @@
         >
           <component
             :is="Component"
-            :key="$route.fullPath"
+            :key="$route.path.startsWith('/admin') ? '/admin' : $route.path.startsWith('/account') ? '/account' : $route.fullPath"
           />
         </Transition>
       </RouterView>

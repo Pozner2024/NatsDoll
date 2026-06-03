@@ -37,8 +37,7 @@ export function useAdminCategories() {
     const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
     const res = await authFetch('/admin/categories', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug }),
+      json: { name, slug },
     })
     if (!res.ok) return false
     await load()
@@ -49,8 +48,7 @@ export function useAdminCategories() {
     const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
     const res = await authFetch(`/admin/categories/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug }),
+      json: { name, slug },
     })
     if (!res.ok) return false
     await load()

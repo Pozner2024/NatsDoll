@@ -39,11 +39,7 @@
     </aside>
 
     <div class="account-page__main">
-      <header class="account-page__topbar">
-        <h1 class="account-page__topbar-title">
-          {{ currentTitle }}
-        </h1>
-      </header>
+      <div class="account-page__topbar" />
       <div class="account-page__content">
         <RouterView />
       </div>
@@ -53,7 +49,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView } from 'vue-router'
 import { useAuthStore } from '@/entities/user'
 import IconProfile from './components/IconProfile.vue'
 import IconPurchases from './components/IconPurchases.vue'
@@ -63,8 +59,6 @@ import IconReviews from './components/IconReviews.vue'
 import IconMessages from './components/IconMessages.vue'
 
 const authStore = useAuthStore()
-const route = useRoute()
-
 const user = computed(() => authStore.user)
 
 const initials = computed(() => {
@@ -81,10 +75,6 @@ const navItems = [
   { to: '/account/messages',  label: 'Messages',   icon: IconMessages  },
 ]
 
-const currentTitle = computed(() => {
-  const match = navItems.find(item => route.path.startsWith(item.to))
-  return match?.label ?? 'Account'
-})
 </script>
 
 <style scoped lang="scss">
@@ -299,21 +289,11 @@ const currentTitle = computed(() => {
     display: none;
 
     @include tablet {
-      display: flex;
-      align-items: center;
-      height: 56px;
-      padding: 0 32px;
-      background: var(--color-white);
-      border-bottom: 1px solid var(--color-border);
+      display: block;
+      height: 1px;
+      background: var(--color-border);
       flex-shrink: 0;
     }
-  }
-
-  &__topbar-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text);
-    letter-spacing: 0.01em;
   }
 
   &__content {

@@ -8,6 +8,7 @@ const messageSchema = z.object({
   orderId: z.string().nullable(),
   orderNumber: z.number().nullable(),
   createdAt: z.string(),
+  fromAdmin: z.boolean(),
 })
 
 export async function fetchMyMessages(): Promise<MessageView[]> {

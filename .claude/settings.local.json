@@ -262,7 +262,27 @@
       "Bash(xxd)",
       "PowerShell(curl *)",
       "PowerShell(Invoke-WebRequest \"https://github.com/google/fonts/raw/refs/heads/main/ofl/corinthia/Corinthia-Bold.ttf\" -OutFile \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"; \\(Get-Item \"C:/Users/user/AppData/Local/Temp/corinthia-bold.ttf\"\\).Length)",
-      "Bash(ssh *)"
+      "Bash(ssh *)",
+      "Bash(DATABASE_URL=\"postgresql://natsdoll:natsdoll@localhost:5432/natsdoll\" npx prisma migrate deploy)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma studio --browser none)",
+      "Bash(grep -E \"^\\\\s*//\" apps/web/src/entities/message/*.ts apps/web/src/widgets/account-page/components/AccountMessages.vue)",
+      "Bash(Get-ChildItem *)",
+      "Bash(npx --workspace apps/web eslint src --fix)",
+      "Bash(echo \"EXIT_WEB_FIX=$?\")",
+      "Bash(C:\\\\Users\\\\user\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.1.0\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh *)",
+      "Bash(DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\" npx prisma *)",
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll; $items = Get-ChildItem -Path \"apps/api/dist\" -Force -Recurse -ErrorAction SilentlyContinue; if \\($items\\) { Remove-Item \"apps/api/dist\" -Recurse -Force }; $items = Get-ChildItem -Path \".tsbuildinfo\" -Force -Recurse -ErrorAction SilentlyContinue | where {$_.PSPath -match 'apps/\\(api|web\\)'}; if \\($items\\) { Remove-Item $items.FullName -Force }; \"Cleaned\")",
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll; Test-Path \"apps/api/dist\"; if \\(Test-Path \"apps/api/dist\"\\) { \"DIST EXISTS: \" + \\(Get-ChildItem \"apps/api/dist\" -Recurse | Measure-Object\\).Count + \" items\" } else { \"DIST DOES NOT EXIST\" })",
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api; node --max-old-space-size=8192 ../../node_modules/typescript/bin/tsc --noEmit --skipLibCheck 2>&1 | Where-Object {$_ -match \"admin\"} | Select-Object -First 20)",
+      "Bash(scripts/start-server.sh *)",
+      "Bash(/c/Users/user/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/brainstorming/scripts/start-server.sh *)",
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api; $env:DATABASE_URL=\"postgresql://user:password@localhost:5432/natsdoll\"; npx prisma migrate dev --name add_message_from_admin)",
+      "Bash(cd D:\\\\\\\\Natalia\\\\\\\\NatsDoll)",
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll; foreach \\($dir in @\\('apps/api/dist', 'apps/web/dist'\\)\\) { if \\(Test-Path $dir\\) { Remove-Item $dir -Recurse -Force } }; node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit 2>&1 | Select-Object -First 50)",
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api; node --max-old-space-size=4096 ../../node_modules/typescript/bin/tsc --noEmit src/app.ts src/features/admin/index.ts 2>&1 | Where-Object { $_ -notmatch 'dist/' })",
+      "PowerShell(cd \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\"; $env:DOTENV_KEY = \"\"; npx prisma migrate dev --name add_order_tracking_and_note 2>&1)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -E \"\\\\.ts$|\\\\.vue$|index\")"
     ]
   }
 }

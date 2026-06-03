@@ -11,6 +11,7 @@ import type {
   ConversationPreview, ConversationDetail,
   ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
   AdminOrderListResponse, AdminOrderDetail,
+  GetAnalytics,
 } from '../types'
 
 const mockDashboard: DashboardResponse = {
@@ -46,6 +47,7 @@ function makeApp(overrides: {
   listAdminOrders?: ListAdminOrders
   getAdminOrder?: GetAdminOrder
   updateAdminOrder?: UpdateAdminOrder
+  getAnalytics?: GetAnalytics
 } = {}) {
   const app = new Hono()
   app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'ADMIN' }); await next() })
@@ -69,6 +71,7 @@ function makeApp(overrides: {
     overrides.listAdminOrders ?? vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, totalPages: 0 }),
     overrides.getAdminOrder ?? vi.fn().mockResolvedValue(null),
     overrides.updateAdminOrder ?? vi.fn().mockResolvedValue(undefined),
+    overrides.getAnalytics ?? vi.fn().mockResolvedValue({ dataPoints: [], totalRevenue: 0, totalOrders: 0, avgOrderValue: 0 }),
   ))
   return app
 }
@@ -86,7 +89,7 @@ describe('GET /admin/dashboard', () => {
     const app = new Hono()
     app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'CUSTOMER' }); await next() })
     app.route('/admin', makeAdminRouter(
-      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
+      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
     ))
     const res = await app.request('/admin/dashboard')
     expect(res.status).toBe(403)
@@ -290,7 +293,7 @@ describe('GET /admin/orders/:id', () => {
       id: 'o1', orderNumber: 1, status: 'PENDING', totalAmount: 30, shippingCost: 5,
       shippingAddress: { fullName: 'Alice', line1: '1 St', city: 'NY', country: 'US', postalCode: '10001' },
       trackingNumber: null, adminNote: null, createdAt: '2026-06-01T00:00:00.000Z',
-      userName: 'Alice', userEmail: 'a@test.com', items: [],
+      userId: 'u1', userName: 'Alice', userEmail: 'a@test.com', items: [],
     }
     const app = makeApp({ getAdminOrder: vi.fn().mockResolvedValue(mockDetail) })
     const res = await app.request('/admin/orders/o1')

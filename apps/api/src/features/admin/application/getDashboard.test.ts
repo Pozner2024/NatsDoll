@@ -23,6 +23,7 @@ function makeRepo(): AdminRepository {
     listAdminOrders: vi.fn(),
     getAdminOrder: vi.fn(),
     updateAdminOrder: vi.fn(),
+    getAnalyticsData: vi.fn(),
   }
 }
 

@@ -4,6 +4,7 @@ export type MessageView = {
   orderId: string | null
   orderNumber: number | null
   createdAt: string
+  fromAdmin: boolean
 }
 
 export type SendMessageData = {

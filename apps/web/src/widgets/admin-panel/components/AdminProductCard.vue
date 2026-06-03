@@ -57,7 +57,7 @@
             </button>
             <button
               class="product-card__menu-item product-card__menu-item--danger"
-              @click="() => { if (confirm('Вы действительно хотите удалить этот товар?')) emit('delete', product.id) }"
+              @click="handleDelete"
             >
               Delete
             </button>
@@ -73,13 +73,17 @@ import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { AdminProductItem } from '../adminListingsApi'
 
-defineProps<{ product: AdminProductItem }>()
+const props = defineProps<{ product: AdminProductItem }>()
 const emit = defineEmits<{
   (e: 'toggle-publish', id: string): void
   (e: 'delete', id: string): void
 }>()
 
 const menuOpen = ref(false)
+
+function handleDelete() {
+  if (window.confirm('Вы действительно хотите удалить этот товар?')) emit('delete', props.product.id)
+}
 </script>
 
 <style scoped lang="scss">

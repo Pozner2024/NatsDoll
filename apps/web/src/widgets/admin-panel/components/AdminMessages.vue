@@ -69,6 +69,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AdminTopbar from './AdminTopbar.vue'
 import ConversationList from './ConversationList.vue'
 import ConversationThread from './ConversationThread.vue'
@@ -81,6 +82,7 @@ import {
 
 const MOBILE_BREAKPOINT = 768
 
+const route = useRoute()
 const selectedUserId = ref<string | null>(null)
 const sending = ref(false)
 const isMobile = ref(window.innerWidth < MOBILE_BREAKPOINT)
@@ -118,6 +120,10 @@ function handleResize() {
 onMounted(() => {
   convsRefresh()
   window.addEventListener('resize', handleResize)
+  const preselect = route.query.userId
+  if (typeof preselect === 'string' && preselect) {
+    handleSelect(preselect)
+  }
 })
 
 onUnmounted(() => {
