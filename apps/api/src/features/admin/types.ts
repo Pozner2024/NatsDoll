@@ -93,6 +93,7 @@ export type AdminRepository = {
   listAdminOrders(params: AdminOrderListParams): Promise<{ items: AdminOrderSummary[]; total: number }>
   getAdminOrder(orderId: string): Promise<AdminOrderDetail | null>
   updateAdminOrder(orderId: string, input: UpdateOrderInput): Promise<{ userEmail: string; userName: string; orderNumber: number; trackingNumber: string } | null>
+  getAnalyticsData(period: AnalyticsPeriod): Promise<AnalyticsResponse>
   // products
   listProducts(params: AdminProductListParams): Promise<{ items: AdminProductListItem[]; total: number }>
   createProduct(input: AdminProductInput): Promise<{ id: string }>
@@ -194,6 +195,7 @@ export type AdminOrderDetail = {
   trackingNumber: string | null
   adminNote: string | null
   createdAt: string
+  userId: string
   userName: string
   userEmail: string
   items: OrderItemView[]
@@ -222,3 +224,30 @@ export type UpdateOrderInput = {
 export type ListAdminOrders = (params: AdminOrderListParams) => Promise<AdminOrderListResponse>
 export type GetAdminOrder = (orderId: string) => Promise<AdminOrderDetail | null>
 export type UpdateAdminOrder = (orderId: string, input: UpdateOrderInput) => Promise<void>
+
+// ── Admin Analytics ───────────────────────────────────────────
+
+export type AnalyticsPeriod = '7d' | '30d' | '90d' | '365d'
+
+export type AnalyticsDataPoint = {
+  date: string   // YYYY-MM-DD (for 7d/30d), YYYY-MM-DD week start (90d), YYYY-MM-01 (365d)
+  amount: number
+}
+
+export type AnalyticsCountPoint = {
+  date: string
+  count: number
+}
+
+export type AnalyticsResponse = {
+  revenue: AnalyticsDataPoint[]
+  orders: AnalyticsCountPoint[]
+  summary: {
+    totalRevenue: number
+    totalOrders: number
+    revenueChange: number   // % vs previous equal period, e.g. 18.5 or -5.2
+    ordersChange: number
+  }
+}
+
+export type GetAnalytics = (period: AnalyticsPeriod) => Promise<AnalyticsResponse>
