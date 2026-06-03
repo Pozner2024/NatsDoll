@@ -30,3 +30,7 @@
 		file_server
 	}
 }
+
+stats.natsdoll.com {
+	reverse_proxy umami:3000
+}
