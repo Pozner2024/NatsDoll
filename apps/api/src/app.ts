@@ -101,6 +101,7 @@ import {
   makeListAdminOrders,
   makeGetAdminOrder,
   makeUpdateAdminOrder,
+  makeGetAnalytics,
   makeAdminRouter,
 } from './features/admin'
 import { requireAuth } from './shared/middleware'
@@ -258,6 +259,7 @@ export function createApp() {
   const listAdminOrders = makeListAdminOrders(adminRepo)
   const getAdminOrder = makeGetAdminOrder(adminRepo)
   const updateAdminOrder = makeUpdateAdminOrder(adminRepo, emailService)
+  const getAnalytics = makeGetAnalytics(adminRepo)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
     getDashboard, markAllMessagesRead,
@@ -266,6 +268,7 @@ export function createApp() {
     getAdminProduct,
     listConversations, getConversation, replyToUser, markConversationRead,
     listAdminOrders, getAdminOrder, updateAdminOrder,
+    getAnalytics,
   ))
 
   return app

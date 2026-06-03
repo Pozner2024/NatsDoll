@@ -9,6 +9,7 @@ import type {
   GetAdminProduct,
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
   ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
+  GetAnalytics,
 } from '../types'
 
 const productListQuerySchema = z.object({
@@ -49,6 +50,10 @@ const orderUpdateBodySchema = z.object({
   adminNote: z.string().nullable().optional(),
 })
 
+const analyticsQuerySchema = z.object({
+  period: z.enum(['7d', '30d', '90d', '365d']).default('7d'),
+})
+
 const replyBodySchema = z.object({
   userId: z.string().min(1),
   text: z.string().min(1).max(2000),
@@ -75,6 +80,7 @@ export function makeAdminRouter(
   listAdminOrders: ListAdminOrders,
   getAdminOrder: GetAdminOrder,
   updateAdminOrder: UpdateAdminOrder,
+  getAnalytics: GetAnalytics,
 ) {
   const router = new Hono()
 
@@ -204,6 +210,12 @@ export function makeAdminRouter(
       adminNote: adminNote ?? null,
     })
     return c.json({ ok: true })
+  })
+
+  router.get('/analytics', zValidator('query', analyticsQuerySchema), async (c) => {
+    const { period } = c.req.valid('query')
+    const data = await getAnalytics(period)
+    return c.json(data)
   })
 
   return router
