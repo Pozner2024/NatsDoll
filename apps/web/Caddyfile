@@ -14,7 +14,7 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://storage.yandexcloud.net; connect-src 'self' https://stats.natsdoll.com; script-src 'self' https://stats.natsdoll.com; frame-src https://stats.natsdoll.com; frame-ancestors 'none';"
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://storage.yandexcloud.net; connect-src 'self' https://stats.natsdoll.com; script-src 'self' https://stats.natsdoll.com; frame-ancestors 'none';"
 	}
 
 	handle_path /api/* {
