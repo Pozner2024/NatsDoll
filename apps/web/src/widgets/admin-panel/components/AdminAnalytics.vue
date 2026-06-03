@@ -106,25 +106,20 @@
         <div class="admin-panel-card">
           <div class="admin-panel-card__head">
             <span class="admin-panel-card__title">Traffic &amp; Sources</span>
+            <a
+              href="https://stats.natsdoll.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="admin-panel-card__link"
+            >Open full dashboard →</a>
           </div>
-          <div class="admin-panel-card__body">
-            <p class="admin-analytics__traffic-desc">
-              Traffic data is tracked by Plausible Analytics and Google Search Console.
-            </p>
-            <div class="admin-analytics__traffic-links">
-              <a
-                href="https://stats.natsdoll.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="admin-analytics__traffic-link"
-              >↗ Plausible Analytics</a>
-              <a
-                href="https://search.google.com/search-console"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="admin-analytics__traffic-link"
-              >↗ Google Search Console</a>
-            </div>
+          <div class="admin-panel-card__body admin-panel-card__body--flush">
+            <iframe
+              src="https://stats.natsdoll.com/share/6EYFe22hHOLS0Pw8"
+              class="admin-analytics__umami-frame"
+              frameborder="0"
+              scrolling="yes"
+            />
           </div>
         </div>
       </template>
@@ -337,37 +332,11 @@ function formatChange(value: number): string {
     font-family: var(--font-display);
   }
 
-  &__traffic-desc {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-    margin-bottom: 12px;
-    line-height: 1.5;
-  }
-
-  &__traffic-links {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  &__traffic-link {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 14px;
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    color: var(--color-accent);
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    background: var(--color-white);
-    text-decoration: none;
-    letter-spacing: 0.02em;
-
-    &:hover {
-      color: var(--color-accent-hover);
-      border-color: var(--color-accent);
-    }
+  &__umami-frame {
+    width: 100%;
+    height: 600px;
+    border: none;
+    display: block;
   }
 }
 
@@ -432,6 +401,10 @@ function formatChange(value: number): string {
 
   &__body {
     padding: 16px 20px;
+
+    &--flush {
+      padding: 0;
+    }
   }
 }
 </style>
