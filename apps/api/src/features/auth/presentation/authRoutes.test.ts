@@ -27,13 +27,16 @@ function makeNoop() {
   const googleAuth = vi.fn().mockResolvedValue(mockTokens)
   const verifyEmail = vi.fn().mockResolvedValue(mockTokens)
   const updateProfile = vi.fn().mockResolvedValue(mockUser)
-  return { register, login, refreshToken, logout, getMe, googleAuth, verifyEmail, updateProfile }
+  const requestPasswordReset = vi.fn().mockResolvedValue({ message: 'If an account exists, a reset link has been sent' })
+  const resetPassword = vi.fn().mockResolvedValue(mockTokens)
+  return { register, login, refreshToken, logout, getMe, googleAuth, verifyEmail, updateProfile, requestPasswordReset, resetPassword }
 }
 
 function makeApp(fns = makeNoop()) {
   const app = new Hono()
   const router = makeAuthRouter(
     fns.register, fns.login, fns.refreshToken, fns.logout, fns.getMe, fns.googleAuth, fns.verifyEmail, fns.updateProfile,
+    fns.requestPasswordReset, fns.resetPassword,
   )
   app.route('/api/auth', router)
   return { app, fns }

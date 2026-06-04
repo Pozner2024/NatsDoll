@@ -5,6 +5,8 @@ import { Resend } from 'resend'
 
 export type EmailService = {
   sendVerificationEmail(to: string, verificationUrl: string): Promise<void>
+  sendAccountExistsEmail(to: string, resetUrl: string): Promise<void>
+  sendPasswordResetEmail(to: string, resetUrl: string): Promise<void>
   sendMessageNotification(adminEmail: string, fromName: string, fromEmail: string, text: string, orderNumber?: number): Promise<void>
   sendTrackingNotification(to: string, name: string, orderNumber: number, trackingNumber: string): Promise<void>
 }
@@ -39,6 +41,34 @@ export function makeEmailService(): EmailService {
           <p>Please confirm your email address by clicking the link below:</p>
           <p><a href="${verificationUrl}">Confirm email</a></p>
           <p>The link expires in 24 hours.</p>
+        `,
+      })
+    },
+    async sendAccountExistsEmail(to, resetUrl) {
+      // SECURITY: только server-controlled значения в html (resetUrl — токен из crypto).
+      await getResend().emails.send({
+        from: 'noreply@natsdoll.com',
+        to,
+        subject: 'You already have an account — NatsDoll',
+        html: `
+          <p>An account already exists for this email.</p>
+          <p>Just sign in as usual. If you forgot your password, reset it here:</p>
+          <p><a href="${resetUrl}">Reset password</a></p>
+          <p>If you originally signed up with Google, use the "Continue with Google" button instead.</p>
+        `,
+      })
+    },
+    async sendPasswordResetEmail(to, resetUrl) {
+      // SECURITY: только server-controlled значения в html (resetUrl — токен из crypto).
+      await getResend().emails.send({
+        from: 'noreply@natsdoll.com',
+        to,
+        subject: 'Reset your password — NatsDoll',
+        html: `
+          <p>We received a request to reset your password.</p>
+          <p>Click the link below to choose a new one:</p>
+          <p><a href="${resetUrl}">Reset password</a></p>
+          <p>The link expires in 1 hour. If you didn't request this, ignore this email.</p>
         `,
       })
     },

@@ -1,12 +1,16 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
 import { zValidator } from '@hono/zod-validator'
+import { createRateLimiter } from '../../../shared/middleware'
 import type { GetMyMessages, CreateMessage } from '../types'
 
 const createMessageSchema = z.object({
   text: z.string().min(1).max(2000),
   orderId: z.string().optional(),
 })
+
+const ONE_HOUR_MS = 60 * 60_000
+const createMessageLimiter = createRateLimiter({ max: 10, windowMs: ONE_HOUR_MS })
 
 export function makeMessageRouter(getMyMessages: GetMyMessages, createMessage: CreateMessage) {
   const router = new Hono()
@@ -17,7 +21,7 @@ export function makeMessageRouter(getMyMessages: GetMyMessages, createMessage: C
     return c.json(messages)
   })
 
-  router.post('/', zValidator('json', createMessageSchema), async (c) => {
+  router.post('/', createMessageLimiter.middleware, zValidator('json', createMessageSchema), async (c) => {
     const { userId } = c.get('auth')
     const data = c.req.valid('json')
     await createMessage(userId, data)

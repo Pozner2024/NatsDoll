@@ -36,6 +36,13 @@ export type AuthRepository = {
   deleteEmailVerification(id: string): Promise<void>
   /** Атомарно помечает email верифицированным и удаляет verification-запись. */
   finalizeEmailVerification(userId: string, verificationId: string): Promise<void>
+  /** Транзакционно удаляет старые EmailVerification юзера и создаёт новую. */
+  replaceEmailVerification(userId: string, data: { tokenHash: string; expiresAt: Date }): Promise<void>
+  createPasswordReset(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
+  findPasswordReset(tokenHash: string): Promise<{ id: string; userId: string; expiresAt: Date } | null>
+  deletePasswordReset(id: string): Promise<void>
+  /** Атомарно: новый passwordHash + удаление reset-записи + удаление всех refresh-токенов. */
+  finalizePasswordReset(userId: string, resetId: string, passwordHash: string): Promise<void>
 }
 
 export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
@@ -150,6 +157,37 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
         prisma.user.update({ where: { id: userId }, data: { emailVerified: true } }),
         prisma.emailVerification.delete({ where: { id: verificationId } }),
       ])
+    },
+
+    replaceEmailVerification(userId, data) {
+      return prisma.$transaction(async (tx) => {
+        await tx.emailVerification.deleteMany({ where: { userId } })
+        await tx.emailVerification.create({
+          data: { userId, tokenHash: data.tokenHash, expiresAt: data.expiresAt },
+        })
+      })
+    },
+
+    async createPasswordReset(data) {
+      await prisma.passwordReset.create({ data })
+    },
+
+    findPasswordReset: (tokenHash) =>
+      prisma.passwordReset.findUnique({
+        where: { tokenHash },
+        select: { id: true, userId: true, expiresAt: true },
+      }),
+
+    async deletePasswordReset(id) {
+      await prisma.passwordReset.delete({ where: { id } })
+    },
+
+    finalizePasswordReset(userId, resetId, passwordHash) {
+      return prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: userId }, data: { passwordHash } })
+        await tx.passwordReset.delete({ where: { id: resetId } })
+        await tx.refreshToken.deleteMany({ where: { userId } })
+      })
     },
   }
 }

@@ -32,12 +32,25 @@ model User {
   reviews            Review[]
   refreshTokens      RefreshToken[]
   emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
   favorites          Favorite[]
   addresses          Address[]
   messages           Message[]
 }
 
 model EmailVerification {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordReset {
   id        String   @id @default(cuid())
   tokenHash String   @unique
   userId    String

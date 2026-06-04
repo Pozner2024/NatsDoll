@@ -33,6 +33,21 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email().max(254),
+})
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string()
+    .min(4)
+    .max(128)
+    .refine(
+      (p) => !COMMON_PASSWORDS.has(p.toLowerCase()),
+      { message: 'This password is too common, please choose a stronger one' },
+    ),
+})
+
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   password: z.string().min(4).max(128).refine(
@@ -74,6 +89,8 @@ const googleCallbackLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN
 const refreshLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 const logoutLimiter = createRateLimiter({ max: 30, windowMs: FIFTEEN_MIN_MS })
 const updateProfileLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
+const forgotPasswordLimiter = createRateLimiter({ max: 5, windowMs: ONE_HOUR_MS })
+const resetPasswordLimiter = createRateLimiter({ max: 10, windowMs: FIFTEEN_MIN_MS })
 
 type AuthUser = AuthTokensResult['user']
 
@@ -85,6 +102,8 @@ type LogoutFn = (rawToken: string) => Promise<void>
 type GetMeFn = (userId: string) => Promise<AuthUser | null>
 type GoogleAuthFn = (code: string) => Promise<AuthTokensResult>
 type UpdateProfileFn = (userId: string, data: { name?: string; password?: string; currentPassword?: string }) => Promise<{ id: string; name: string; email: string; role: string }>
+type RequestPasswordResetFn = (email: string) => Promise<{ message: string }>
+type ResetPasswordFn = (token: string, password: string) => Promise<AuthTokensResult>
 
 export function makeAuthRouter(
   register: RegisterFn,
@@ -95,6 +114,8 @@ export function makeAuthRouter(
   googleAuth: GoogleAuthFn,
   verifyEmail: VerifyEmailFn,
   updateProfile: UpdateProfileFn,
+  requestPasswordReset: RequestPasswordResetFn,
+  resetPassword: ResetPasswordFn,
 ) {
   const router = new Hono()
 
@@ -143,6 +164,19 @@ export function makeAuthRouter(
   router.post('/verify-email', verifyEmailLimiter.middleware, zValidator('json', verifyEmailSchema), async (c) => {
     const { token } = c.req.valid('json')
     const result = await verifyEmail(token)
+    setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
+    return c.json({ accessToken: result.accessToken, user: result.user })
+  })
+
+  router.post('/forgot-password', forgotPasswordLimiter.middleware, zValidator('json', forgotPasswordSchema), async (c) => {
+    const { email } = c.req.valid('json')
+    const result = await requestPasswordReset(email)
+    return c.json(result)
+  })
+
+  router.post('/reset-password', resetPasswordLimiter.middleware, zValidator('json', resetPasswordSchema), async (c) => {
+    const { token, password } = c.req.valid('json')
+    const result = await resetPassword(token, password)
     setCookie(c, COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS)
     return c.json({ accessToken: result.accessToken, user: result.user })
   })

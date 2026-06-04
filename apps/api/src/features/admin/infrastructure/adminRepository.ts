@@ -381,8 +381,8 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         where: { id: orderId },
         data: {
           status: input.status as 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED',
-          trackingNumber: input.trackingNumber,
-          adminNote: input.adminNote,
+          ...(input.trackingNumber !== undefined ? { trackingNumber: input.trackingNumber } : {}),
+          ...(input.adminNote !== undefined ? { adminNote: input.adminNote } : {}),
         },
       })
 
@@ -475,8 +475,8 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         .reduce((s, o) => s + Number(o.totalAmount), 0)
       const prevOrderCount = prevOrders.length
 
-      const revenueChange = prevStart === null || prevRevenue === 0 ? 0 : Number(((totalRevenue - prevRevenue) / prevRevenue * 100).toFixed(1))
-      const ordersChange  = prevStart === null || prevOrderCount === 0 ? 0 : Number(((totalOrders - prevOrderCount) / prevOrderCount * 100).toFixed(1))
+      const revenueChange = prevStart === null || prevRevenue === 0 ? null : Number(((totalRevenue - prevRevenue) / prevRevenue * 100).toFixed(1))
+      const ordersChange  = prevStart === null || prevOrderCount === 0 ? null : Number(((totalOrders - prevOrderCount) / prevOrderCount * 100).toFixed(1))
 
       return { revenue, orders, summary: { totalRevenue, totalOrders, revenueChange, ordersChange } }
     },

@@ -282,7 +282,14 @@
       "PowerShell(cd D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api; node --max-old-space-size=4096 ../../node_modules/typescript/bin/tsc --noEmit src/app.ts src/features/admin/index.ts 2>&1 | Where-Object { $_ -notmatch 'dist/' })",
       "PowerShell(cd \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\"; $env:DOTENV_KEY = \"\"; npx prisma migrate dev --name add_order_tracking_and_note 2>&1)",
       "Bash(grep -v \"^$\")",
-      "Bash(grep -E \"\\\\.ts$|\\\\.vue$|index\")"
+      "Bash(grep -E \"\\\\.ts$|\\\\.vue$|index\")",
+      "Read(//d/Natalia/screenshot/**)",
+      "Read(//d//**)",
+      "WebFetch(domain:umami.is)",
+      "WebFetch(domain:docs.umami.is)",
+      "PowerShell($env:DATABASE_URL=\\(Get-Content \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\.env\" | Where-Object { $_ -match '^DATABASE_URL=' } | ForEach-Object { \\($_ -split '=',2\\)[1] }\\); Set-Location \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\"; npx prisma migrate dev --name add_password_reset 2>&1)",
+      "PowerShell($raw = \\(Get-Content \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\.env\" | Where-Object { $_ -match '^DATABASE_URL=' } | ForEach-Object { \\($_ -split '=',2\\)[1] }\\); $env:DATABASE_URL = $raw.Trim\\('\"'\\); Write-Host \"URL: $env:DATABASE_URL\"; Set-Location \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\"; npx prisma migrate dev --name add_password_reset 2>&1)",
+      "Bash(PORT=3010 node --import tsx src/main.ts)"
     ]
   }
 }

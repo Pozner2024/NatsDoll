@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, readonly } from 'vue'
 
-type AuthMode = 'login' | 'register' | 'verify-pending'
+type AuthMode = 'login' | 'register' | 'forgot' | 'verify-pending'
 
 export const useAuthModal = defineStore('auth-modal', () => {
   const isOpen = ref(false)

@@ -2,117 +2,88 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { makeRegister } from './register'
 import type { AuthRepository } from '../infrastructure/authRepository'
 import type { EmailService } from '../infrastructure/emailService'
-import type { User } from '@prisma/client'
 
-vi.mock('@node-rs/argon2', () => ({
-  hash: vi.fn().mockResolvedValue('hashed_password'),
-}))
+const GENERIC = 'Check your email to verify your account'
 
-vi.mock('../../../shared/lib/tokens', () => ({
-  generateRefreshToken: vi.fn().mockReturnValue('mock_raw_token'),
-  hashToken: vi.fn().mockReturnValue('mock_token_hash'),
-  EMAIL_VERIFICATION_TTL_MS: 86400000,
-}))
-
-const mockUser: User = {
-  id: 'user1',
-  name: 'Natasha',
-  email: 'nat@test.com',
-  passwordHash: 'hashed_password',
-  googleId: null,
-  role: 'CUSTOMER',
-  emailVerified: false,
-  createdAt: new Date(),
-  updatedAt: new Date(),
+function makeEmail(): EmailService {
+  return {
+    sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+    sendAccountExistsEmail: vi.fn().mockResolvedValue(undefined),
+    sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+    sendMessageNotification: vi.fn().mockResolvedValue(undefined),
+    sendTrackingNotification: vi.fn().mockResolvedValue(undefined),
+  }
 }
 
-const mockRepo: AuthRepository = {
-  findByEmail: vi.fn(),
-  findById: vi.fn(),
-  createUser: vi.fn(),
-  createUserWithVerification: vi.fn(),
-  deleteUser: vi.fn(),
-  saveRefreshToken: vi.fn(),
-  pruneUserSessions: vi.fn(),
-  findTokenByHash: vi.fn(),
-  deleteToken: vi.fn(),
-  deleteAllUserTokens: vi.fn(),
-  revokeToken: vi.fn(),
-  rotateToken: vi.fn(),
-  findByGoogleId: vi.fn().mockResolvedValue(null),
-  linkGoogleId: vi.fn().mockResolvedValue(null),
-  createGoogleUser: vi.fn().mockResolvedValue(null),
-  replaceUnverifiedWithGoogleUser: vi.fn().mockResolvedValue(null),
-  createEmailVerification: vi.fn().mockResolvedValue(undefined),
-  findEmailVerification: vi.fn(),
-  deleteEmailVerification: vi.fn(),
-  finalizeEmailVerification: vi.fn(),
-  updateUser: vi.fn(),
+function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
+  return {
+    findByEmail: vi.fn().mockResolvedValue(null),
+    findById: vi.fn(),
+    createUser: vi.fn(),
+    createUserWithVerification: vi.fn().mockResolvedValue({ id: 'u1', email: 'a@b.com' }),
+    deleteUser: vi.fn(),
+    updateUser: vi.fn(),
+    findByGoogleId: vi.fn(),
+    linkGoogleId: vi.fn(),
+    createGoogleUser: vi.fn(),
+    replaceUnverifiedWithGoogleUser: vi.fn(),
+    saveRefreshToken: vi.fn(),
+    pruneUserSessions: vi.fn(),
+    findTokenByHash: vi.fn(),
+    deleteToken: vi.fn(),
+    revokeToken: vi.fn(),
+    deleteAllUserTokens: vi.fn(),
+    rotateToken: vi.fn(),
+    createEmailVerification: vi.fn(),
+    findEmailVerification: vi.fn(),
+    deleteEmailVerification: vi.fn(),
+    finalizeEmailVerification: vi.fn(),
+    replaceEmailVerification: vi.fn().mockResolvedValue(undefined),
+    createPasswordReset: vi.fn(),
+    findPasswordReset: vi.fn(),
+    deletePasswordReset: vi.fn(),
+    finalizePasswordReset: vi.fn(),
+    ...overrides,
+  } as AuthRepository
 }
 
-const mockEmailService: EmailService = {
-  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
-  sendMessageNotification: vi.fn().mockResolvedValue(undefined),
-  sendTrackingNotification: vi.fn().mockResolvedValue(undefined),
-}
+const data = { name: 'A', email: 'a@b.com', password: 'secret' }
 
 describe('register', () => {
-  beforeEach(() => vi.clearAllMocks())
+  let email: EmailService
+  beforeEach(() => { email = makeEmail() })
 
-  it('выбрасывает 409 если email уже занят', async () => {
-    vi.mocked(mockRepo.findByEmail).mockResolvedValue(mockUser)
-    const register = makeRegister(mockRepo, mockEmailService)
-    await expect(register({ name: 'Nat', email: 'nat@test.com', password: 'password123' }))
-      .rejects.toMatchObject({ statusCode: 409, message: 'Email already in use' })
+  it('free email → creates user + verification email, generic response', async () => {
+    const repo = makeRepo()
+    const register = makeRegister(repo, email)
+    const res = await register(data)
+    expect(res.message).toBe(GENERIC)
+    expect(repo.createUserWithVerification).toHaveBeenCalled()
+    expect(email.sendVerificationEmail).toHaveBeenCalled()
+    expect(email.sendAccountExistsEmail).not.toHaveBeenCalled()
   })
 
-  it('атомарно создаёт пользователя с верификацией', async () => {
-    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
-
-    const register = makeRegister(mockRepo, mockEmailService)
-    await register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' })
-
-    expect(mockRepo.createUserWithVerification).toHaveBeenCalledWith({
-      name: 'Natasha',
-      email: 'nat@test.com',
-      passwordHash: 'hashed_password',
-      verification: expect.objectContaining({ tokenHash: 'mock_token_hash' }),
+  it('taken + verified → account-exists email, no user created, generic response', async () => {
+    const repo = makeRepo({
+      findByEmail: vi.fn().mockResolvedValue({ id: 'u9', email: 'a@b.com', emailVerified: true, passwordHash: 'h' }),
     })
+    const register = makeRegister(repo, email)
+    const res = await register(data)
+    expect(res.message).toBe(GENERIC)
+    expect(email.sendAccountExistsEmail).toHaveBeenCalled()
+    expect(repo.createUserWithVerification).not.toHaveBeenCalled()
+    expect(repo.replaceEmailVerification).not.toHaveBeenCalled()
   })
 
-  it('отправляет письмо с ссылкой верификации', async () => {
-    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
-
-    const register = makeRegister(mockRepo, mockEmailService)
-    await register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' })
-
-    expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(
-      'nat@test.com',
-      expect.stringContaining('mock_raw_token'),
-    )
-  })
-
-  it('возвращает message без токенов', async () => {
-    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
-
-    const register = makeRegister(mockRepo, mockEmailService)
-    const result = await register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' })
-
-    expect(result).toEqual({ message: 'Check your email to verify your account' })
-  })
-
-  it('откатывает создание пользователя при сбое отправки письма', async () => {
-    vi.mocked(mockRepo.findByEmail).mockResolvedValue(null)
-    vi.mocked(mockRepo.createUserWithVerification).mockResolvedValue(mockUser)
-    vi.mocked(mockEmailService.sendVerificationEmail).mockRejectedValueOnce(new Error('SMTP down'))
-
-    const register = makeRegister(mockRepo, mockEmailService)
-    await expect(register({ name: 'Natasha', email: 'nat@test.com', password: 'password123' }))
-      .rejects.toMatchObject({ statusCode: 500 })
-
-    expect(mockRepo.deleteUser).toHaveBeenCalledWith('user1')
+  it('taken + unverified → resends verification, generic response', async () => {
+    const repo = makeRepo({
+      findByEmail: vi.fn().mockResolvedValue({ id: 'u9', email: 'a@b.com', emailVerified: false, passwordHash: 'h' }),
+    })
+    const register = makeRegister(repo, email)
+    const res = await register(data)
+    expect(res.message).toBe(GENERIC)
+    expect(repo.replaceEmailVerification).toHaveBeenCalled()
+    expect(email.sendVerificationEmail).toHaveBeenCalled()
+    expect(repo.createUserWithVerification).not.toHaveBeenCalled()
   })
 })
