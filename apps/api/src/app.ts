@@ -35,6 +35,8 @@ import {
   makeVerifyEmail,
   makeEmailService,
   makeUpdateProfile,
+  makeRequestPasswordReset,
+  makeResetPassword,
 } from './features/auth'
 import {
   makeCartRepository,
@@ -181,7 +183,9 @@ export function createApp() {
   const googleAuth = makeGoogleAuth(authRepo, getGoogleProfile)
   const verifyEmail = makeVerifyEmail(authRepo)
   const updateProfile = makeUpdateProfile(authRepo)
-  app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe, googleAuth, verifyEmail, updateProfile))
+  const requestPasswordReset = makeRequestPasswordReset(authRepo, emailService)
+  const resetPassword = makeResetPassword(authRepo)
+  app.route('/auth', makeAuthRouter(register, login, refreshToken, logout, getMe, googleAuth, verifyEmail, updateProfile, requestPasswordReset, resetPassword))
 
   // Cart
   const cartRepo = makeCartRepository(prisma)

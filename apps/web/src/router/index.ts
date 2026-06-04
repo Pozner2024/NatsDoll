@@ -97,6 +97,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/VerifyEmailPage.vue'),
   },
   {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: () => import('@/pages/ResetPasswordPage.vue'),
+  },
+  {
     path: '/shop/:category?',
     name: 'shop',
     component: () => import('@/pages/ShopPage.vue'),

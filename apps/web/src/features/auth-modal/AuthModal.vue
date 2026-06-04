@@ -92,6 +92,14 @@
           >{{ loginErrors.password }}</span>
         </div>
 
+        <button
+          type="button"
+          class="auth-modal__switch-btn auth-modal__forgot-link"
+          @click="open('forgot')"
+        >
+          Forgot password?
+        </button>
+
         <p
           v-if="submitError"
           class="auth-modal__error auth-modal__error--global"
@@ -229,7 +237,91 @@
         </p>
       </form>
 
-      <template v-if="mode !== 'verify-pending'">
+      <form
+        v-if="mode === 'forgot' && !forgotSent"
+        class="auth-modal__form"
+        novalidate
+        @submit.prevent="handleForgot"
+      >
+        <h2
+          id="auth-modal-forgot-title"
+          class="auth-modal__title"
+        >
+          Reset password
+        </h2>
+        <p class="auth-modal__verify-text">
+          Enter your email and we'll send you a link to reset your password.
+        </p>
+
+        <div class="auth-modal__field">
+          <label
+            class="auth-modal__label"
+            for="auth-forgot-email"
+          >Email</label>
+          <input
+            id="auth-forgot-email"
+            v-model="forgotForm.email"
+            class="auth-modal__input"
+            :class="{ 'auth-modal__input--error': forgotErrors.email }"
+            type="email"
+            autocomplete="email"
+          >
+          <span
+            v-if="forgotErrors.email"
+            class="auth-modal__error"
+          >{{ forgotErrors.email }}</span>
+        </div>
+
+        <p
+          v-if="submitError"
+          class="auth-modal__error auth-modal__error--global"
+        >
+          {{ submitError }}
+        </p>
+
+        <button
+          class="auth-modal__submit"
+          type="submit"
+          :disabled="isLoading"
+        >
+          {{ isLoading ? 'Sending…' : 'Send reset link' }}
+        </button>
+
+        <p class="auth-modal__switch">
+          Remembered it?
+          <button
+            type="button"
+            class="auth-modal__switch-btn"
+            @click="open('login')"
+          >
+            Sign in
+          </button>
+        </p>
+      </form>
+
+      <div
+        v-if="mode === 'forgot' && forgotSent"
+        class="auth-modal__verify"
+      >
+        <h2
+          id="auth-modal-forgot-title"
+          class="auth-modal__title"
+        >
+          Check your email
+        </h2>
+        <p class="auth-modal__verify-text">
+          If an account exists for that email, we've sent a reset link. Please check your inbox.
+        </p>
+        <button
+          type="button"
+          class="auth-modal__switch-btn"
+          @click="open('login')"
+        >
+          Back to sign in
+        </button>
+      </div>
+
+      <template v-if="mode === 'login' || mode === 'register'">
         <div class="auth-modal__divider">
           <span>or</span>
         </div>
@@ -294,9 +386,14 @@ const loginErrors = reactive({ email: '', password: '' })
 const registerForm = reactive({ name: '', email: '', password: '' })
 const registerErrors = reactive({ name: '', email: '', password: '' })
 
+const forgotForm = reactive({ email: '' })
+const forgotErrors = reactive({ email: '' })
+const forgotSent = ref(false)
+
 const labelledBy = computed(() => {
   if (mode.value === 'login') return 'auth-modal-login-title'
   if (mode.value === 'register') return 'auth-modal-register-title'
+  if (mode.value === 'forgot') return 'auth-modal-forgot-title'
   return 'auth-modal-verify-title'
 })
 
@@ -315,6 +412,9 @@ function resetForms() {
   registerErrors.name = ''
   registerErrors.email = ''
   registerErrors.password = ''
+  forgotForm.email = ''
+  forgotErrors.email = ''
+  forgotSent.value = false
   submitError.value = ''
   isLoading.value = false
   showLoginPassword.value = false
@@ -362,6 +462,25 @@ async function handleRegister() {
     const { pathname, search, hash } = window.location
     sessionStorage.setItem('auth_redirect', pathname + search + hash)
     showVerifyPending()
+  } catch (err) {
+    submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function validateForgot(): boolean {
+  forgotErrors.email = validateEmail(forgotForm.email)
+  return !forgotErrors.email
+}
+
+async function handleForgot() {
+  if (!validateForgot()) return
+  isLoading.value = true
+  submitError.value = ''
+  try {
+    await authStore.requestPasswordReset(forgotForm.email)
+    forgotSent.value = true
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
   } finally {
@@ -568,6 +687,12 @@ function handleGoogle() {
     font-size: inherit;
     color: var(--color-accent);
     text-decoration: underline;
+  }
+
+  &__forgot-link {
+    align-self: flex-end;
+    font-size: var(--fs-xs);
+    margin-top: -0.4rem;
   }
 }
 </style>

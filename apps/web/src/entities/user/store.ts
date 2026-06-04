@@ -82,6 +82,18 @@ export const useAuthStore = defineStore('auth', () => {
     setAuth(body.accessToken, body.user)
   }
 
+  async function requestPasswordReset(email: string): Promise<void> {
+    const res = await apiFetch('/auth/forgot-password', { method: 'POST', json: { email } })
+    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Request failed'))
+  }
+
+  async function resetPassword(token: string, password: string): Promise<void> {
+    const res = await apiFetch('/auth/reset-password', { method: 'POST', json: { token, password } })
+    if (!res.ok) throw new Error(await apiErrorMessage(res, 'Reset failed'))
+    const body = authResponseSchema.parse(await res.json())
+    setAuth(body.accessToken, body.user)
+  }
+
   async function logout(): Promise<void> {
     try {
       await apiFetch('/auth/logout', { method: 'POST', accessToken: accessToken.value ?? undefined })
@@ -156,6 +168,8 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     verifyEmail,
+    requestPasswordReset,
+    resetPassword,
     logout,
     clearState,
     initAuth,
