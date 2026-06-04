@@ -171,9 +171,17 @@ function barColors(count: number): string[] {
   return Array.from({ length: count }, (_, i) => (i === count - 1 ? COLOR_ACCENT : COLOR_BORDER))
 }
 
+function formatLabel(date: string): string {
+  if (period.value === 'today' || period.value === 'yesterday') {
+    // "YYYY-MM-DD HH:00" → "HH:00"
+    return date.slice(11)
+  }
+  return date
+}
+
 const revenueChartData = computed(() => {
   if (!data.value) return null
-  const labels = data.value.revenue.map(r => r.date)
+  const labels = data.value.revenue.map(r => formatLabel(r.date))
   return {
     labels,
     datasets: [{
@@ -186,7 +194,7 @@ const revenueChartData = computed(() => {
 
 const ordersChartData = computed(() => {
   if (!data.value) return null
-  const labels = data.value.orders.map(o => o.date)
+  const labels = data.value.orders.map(o => formatLabel(o.date))
   return {
     labels,
     datasets: [{
