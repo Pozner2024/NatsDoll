@@ -111,7 +111,7 @@ export type AdminRepository = {
   updateSale(id: string, input: SaleInput): Promise<void>
   deleteSale(id: string): Promise<void>
   listSales(): Promise<SaleRecord[]>
-  getActiveSale(): Promise<ActiveSale>
+  getActiveSale(): Promise<ActiveSale | null>
   countProductsInSale(input: Pick<SaleInput, 'scope' | 'categoryIds' | 'productIds'>): Promise<number>
 }
 
@@ -265,9 +265,9 @@ export type SaleScope = 'ALL' | 'CATEGORIES' | 'PRODUCTS'
 
 export type SaleInput = {
   name: string
-  discount: number        // 1–99
-  startsAt: string        // ISO date string
-  endsAt: string          // ISO date string
+  discount: number
+  startsAt: string
+  endsAt: string
   scope: SaleScope
   categoryIds: string[]
   productIds: string[]
@@ -290,11 +290,11 @@ export type ActiveSale = {
   scope: SaleScope
   categoryIds: string[]
   productIds: string[]
-} | null
+}
 
 export type CreateSale = (input: SaleInput) => Promise<{ id: string }>
 export type UpdateSale = (id: string, input: SaleInput) => Promise<void>
 export type DeleteSale = (id: string) => Promise<void>
 export type ListSales = () => Promise<SaleRecord[]>
-export type GetActiveSale = () => Promise<ActiveSale>
+export type GetActiveSale = () => Promise<ActiveSale | null>
 export type CountProductsInSale = (input: Pick<SaleInput, 'scope' | 'categoryIds' | 'productIds'>) => Promise<number>
