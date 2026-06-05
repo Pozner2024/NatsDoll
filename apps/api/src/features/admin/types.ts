@@ -106,6 +106,13 @@ export type AdminRepository = {
   updateCategory(id: string, name: string, slug: string): Promise<void>
   deleteCategory(id: string): Promise<void>
   getProduct(id: string): Promise<AdminProductDetail | null>
+  // sales
+  createSale(input: SaleInput): Promise<{ id: string }>
+  updateSale(id: string, input: SaleInput): Promise<void>
+  deleteSale(id: string): Promise<void>
+  listSales(): Promise<SaleRecord[]>
+  getActiveSale(): Promise<ActiveSale>
+  countProductsInSale(input: Pick<SaleInput, 'scope' | 'categoryIds' | 'productIds'>): Promise<number>
 }
 
 export type ListAdminProducts = (params: AdminProductListParams) => Promise<AdminProductListResponse>
@@ -251,3 +258,43 @@ export type AnalyticsResponse = {
 }
 
 export type GetAnalytics = (period: AnalyticsPeriod) => Promise<AnalyticsResponse>
+
+// ── Sales ─────────────────────────────────────────────────────
+
+export type SaleScope = 'ALL' | 'CATEGORIES' | 'PRODUCTS'
+
+export type SaleInput = {
+  name: string
+  discount: number        // 1–99
+  startsAt: string        // ISO date string
+  endsAt: string          // ISO date string
+  scope: SaleScope
+  categoryIds: string[]
+  productIds: string[]
+}
+
+export type SaleRecord = {
+  id: string
+  name: string
+  discount: number
+  startsAt: string
+  endsAt: string
+  scope: SaleScope
+  categoryIds: string[]
+  productIds: string[]
+  createdAt: string
+}
+
+export type ActiveSale = {
+  discount: number
+  scope: SaleScope
+  categoryIds: string[]
+  productIds: string[]
+} | null
+
+export type CreateSale = (input: SaleInput) => Promise<{ id: string }>
+export type UpdateSale = (id: string, input: SaleInput) => Promise<void>
+export type DeleteSale = (id: string) => Promise<void>
+export type ListSales = () => Promise<SaleRecord[]>
+export type GetActiveSale = () => Promise<ActiveSale>
+export type CountProductsInSale = (input: Pick<SaleInput, 'scope' | 'categoryIds' | 'productIds'>) => Promise<number>
