@@ -42,6 +42,7 @@ export type ProductDetail = {
   salePercent?: number
   images: string[]
   stock: number
+  categoryId: string
   category: string
   categorySlug: string
   messageOptions: string[]
