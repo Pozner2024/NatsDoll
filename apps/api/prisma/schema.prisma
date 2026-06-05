@@ -305,3 +305,25 @@ model Message {
   @@index([userId])
   @@index([orderId])
 }
+
+// ─── Sales ────────────────────────────────────────────
+
+enum SaleScope {
+  ALL
+  CATEGORIES
+  PRODUCTS
+}
+
+model Sale {
+  id          String    @id @default(cuid())
+  name        String
+  discount    Int
+  startsAt    DateTime
+  endsAt      DateTime
+  scope       SaleScope
+  categoryIds String[]  @default([])
+  productIds  String[]  @default([])
+  createdAt   DateTime  @default(now())
+
+  @@index([startsAt, endsAt])
+}
