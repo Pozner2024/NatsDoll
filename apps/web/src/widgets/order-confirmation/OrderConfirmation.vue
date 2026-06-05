@@ -57,9 +57,6 @@
                 >
                   "{{ item.message }}"
                 </p>
-                <p class="order-confirmation__item-meta">
-                  {{ item.quantity }} × {{ formatPrice(item.price) }}
-                </p>
               </div>
               <div class="order-confirmation__item-price-group">
                 <span
@@ -244,12 +241,6 @@ onMounted(() => {
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
     font-style: italic;
-    margin: 0.2rem 0 0;
-  }
-
-  &__item-meta {
-    font-size: var(--fs-sm);
-    color: var(--color-text-muted);
     margin: 0.2rem 0 0;
   }
 
