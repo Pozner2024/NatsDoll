@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput, AnalyticsPeriod, AnalyticsResponse } from '../types'
+import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput, AnalyticsPeriod, AnalyticsResponse, SaleInput, SaleRecord, ActiveSale, SaleScope } from '../types'
 import type { ShippingAddress } from '../../orders/types'
 import { AppError } from '../../../shared/errors'
 
@@ -616,6 +616,79 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       })
       if (!row) return null
       return { ...row, price: row.price.toNumber() }
+    },
+
+    async createSale(input: SaleInput): Promise<{ id: string }> {
+      const sale = await prisma.sale.create({
+        data: {
+          name: input.name,
+          discount: input.discount,
+          startsAt: new Date(input.startsAt),
+          endsAt: new Date(input.endsAt),
+          scope: input.scope,
+          categoryIds: input.categoryIds,
+          productIds: input.productIds,
+        },
+      })
+      return { id: sale.id }
+    },
+
+    async updateSale(id: string, input: SaleInput): Promise<void> {
+      await prisma.sale.update({
+        where: { id },
+        data: {
+          name: input.name,
+          discount: input.discount,
+          startsAt: new Date(input.startsAt),
+          endsAt: new Date(input.endsAt),
+          scope: input.scope,
+          categoryIds: input.categoryIds,
+          productIds: input.productIds,
+        },
+      })
+    },
+
+    async deleteSale(id: string): Promise<void> {
+      await prisma.sale.delete({ where: { id } })
+    },
+
+    async listSales(): Promise<SaleRecord[]> {
+      const rows = await prisma.sale.findMany({ orderBy: { startsAt: 'desc' } })
+      return rows.map((s) => ({
+        id: s.id,
+        name: s.name,
+        discount: s.discount,
+        startsAt: s.startsAt.toISOString(),
+        endsAt: s.endsAt.toISOString(),
+        scope: s.scope as SaleScope,
+        categoryIds: s.categoryIds,
+        productIds: s.productIds,
+        createdAt: s.createdAt.toISOString(),
+      }))
+    },
+
+    async getActiveSale(): Promise<ActiveSale | null> {
+      const now = new Date()
+      const sale = await prisma.sale.findFirst({
+        where: { startsAt: { lte: now }, endsAt: { gte: now } },
+      })
+      if (!sale) return null
+      return {
+        discount: sale.discount,
+        scope: sale.scope as SaleScope,
+        categoryIds: sale.categoryIds,
+        productIds: sale.productIds,
+      }
+    },
+
+    async countProductsInSale(input: Pick<SaleInput, 'scope' | 'categoryIds' | 'productIds'>): Promise<number> {
+      if (input.scope === 'ALL') {
+        return prisma.product.count({ where: { isPublished: true, deletedAt: null } })
+      }
+      if (input.scope === 'CATEGORIES') {
+        return prisma.product.count({ where: { isPublished: true, deletedAt: null, categoryId: { in: input.categoryIds } } })
+      }
+      return input.productIds.length
     },
   }
 }
