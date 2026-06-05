@@ -8,7 +8,7 @@ declare module 'vue-router' {
   }
 }
 import { useAuthStore } from '@/entities/user'
-import { useAuthModal } from '@/features/auth-modal'
+import { useAuthModal } from '@/shared'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -155,6 +155,16 @@ const routes: RouteRecordRaw[] = [
         path: 'sales',
         name: 'admin-sales',
         component: () => import('@/widgets/admin-panel/components/AdminSales.vue'),
+      },
+      {
+        path: 'sales/new',
+        name: 'admin-sales-new',
+        component: () => import('@/pages/AdminSaleFormPage.vue'),
+      },
+      {
+        path: 'sales/:id',
+        name: 'admin-sales-edit',
+        component: () => import('@/pages/AdminSaleFormPage.vue'),
       },
       {
         path: 'finances',
