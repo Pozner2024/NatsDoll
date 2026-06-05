@@ -4,9 +4,17 @@
       <h1 class="product-info__name">
         {{ product.name }}
       </h1>
-      <p class="product-info__price">
-        {{ formatPrice(product.price) }}
-      </p>
+      <div class="product-info__price-group">
+        <p
+          v-if="product.salePrice"
+          class="product-info__price-original"
+        >
+          {{ formatPrice(product.price) }}
+        </p>
+        <p class="product-info__price">
+          {{ formatPrice(product.salePrice ?? product.price) }}
+        </p>
+      </div>
     </div>
 
     <MessageSelector
@@ -212,6 +220,21 @@ defineExpose({ resetAdding: () => { isAdding.value = false } })
     @include desktop {
       font-size: 1.6rem;
     }
+  }
+
+  &__price-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    gap: 2px;
+  }
+
+  &__price-original {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    text-decoration: line-through;
   }
 
   &__price {
