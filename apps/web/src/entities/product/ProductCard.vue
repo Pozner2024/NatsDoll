@@ -24,6 +24,10 @@
             v-if="product.stock === 0"
             class="product-card__badge"
           >Sold out</span>
+          <span
+            v-if="product.salePrice && product.stock > 0"
+            class="product-card__badge product-card__badge--sale"
+          >SALE</span>
         </div>
         <div
           class="product-card__corner product-card__corner--tl"
@@ -56,7 +60,13 @@
             {{ product.name }}
           </h3>
         </RouterLink>
-        <span class="product-card__price">{{ formatPrice(product.price) }}</span>
+        <div class="product-card__price-group">
+          <span
+            v-if="product.salePrice"
+            class="product-card__price-original"
+          >{{ formatPrice(product.price) }}</span>
+          <span class="product-card__price">{{ formatPrice(product.salePrice ?? product.price) }}</span>
+        </div>
       </div>
 
       <hr class="product-card__divider">
@@ -79,7 +89,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
-import { useAuthModal } from '@/features/auth-modal'
+import { useAuthModal } from '@/shared'
 import type { Product } from './types'
 
 const props = defineProps<{ product: Product; hideButton?: boolean }>()
@@ -171,6 +181,11 @@ async function onAdd() {
     text-transform: uppercase;
     padding: 0.3rem 0.6rem;
     border-radius: 2px;
+
+    &--sale {
+      background: var(--color-accent);
+      backdrop-filter: none;
+    }
   }
 
   &__corner {
@@ -229,12 +244,25 @@ async function onAdd() {
     }
   }
 
+  &__price-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  &__price-original {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+    line-height: 1.2;
+  }
+
   &__price {
     font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--color-accent);
     white-space: nowrap;
-    flex-shrink: 0;
   }
 
   &__divider {

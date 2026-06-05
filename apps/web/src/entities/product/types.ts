@@ -5,6 +5,8 @@ export type Product = {
   slug: string
   name: string
   price: number
+  salePrice?: number
+  salePercent?: number
   image: string | null
   stock: number
 }
@@ -29,6 +31,8 @@ export type ProductDetail = {
   name: string
   description: string
   price: number
+  salePrice?: number
+  salePercent?: number
   images: string[]
   stock: number
   category: string

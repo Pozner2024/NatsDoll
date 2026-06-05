@@ -7,6 +7,8 @@ const ProductSchema = z.object({
   slug: z.string(),
   name: z.string(),
   price: z.number(),
+  salePrice: z.number().optional(),
+  salePercent: z.number().optional(),
   image: z.string().nullable(),
   stock: z.number().int().min(0),
 }) satisfies z.ZodType<Product>
@@ -24,6 +26,8 @@ const ProductDetailSchema = z.object({
   name: z.string(),
   description: z.string(),
   price: z.number(),
+  salePrice: z.number().optional(),
+  salePercent: z.number().optional(),
   images: z.array(z.string()),
   stock: z.number().int().min(0),
   category: z.string(),
