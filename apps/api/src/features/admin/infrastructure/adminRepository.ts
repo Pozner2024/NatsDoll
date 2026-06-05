@@ -655,7 +655,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
 
     async listSales(): Promise<SaleRecord[]> {
       const rows = await prisma.sale.findMany({ orderBy: { startsAt: 'desc' } })
-      return rows.map((s) => ({
+      return rows.map((s: { id: string; name: string; discount: number; startsAt: Date; endsAt: Date; scope: string; categoryIds: string[]; productIds: string[]; createdAt: Date }) => ({
         id: s.id,
         name: s.name,
         discount: s.discount,

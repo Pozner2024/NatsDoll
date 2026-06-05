@@ -12,6 +12,7 @@ import type {
   ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
   AdminOrderListResponse, AdminOrderDetail,
   GetAnalytics,
+  CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale,
 } from '../types'
 
 const mockDashboard: DashboardResponse = {
@@ -48,6 +49,12 @@ function makeApp(overrides: {
   getAdminOrder?: GetAdminOrder
   updateAdminOrder?: UpdateAdminOrder
   getAnalytics?: GetAnalytics
+  createSale?: CreateSale
+  updateSale?: UpdateSale
+  deleteSale?: DeleteSale
+  listSales?: ListSales
+  getActiveSale?: GetActiveSale
+  countProductsInSale?: CountProductsInSale
 } = {}) {
   const app = new Hono()
   app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'ADMIN' }); await next() })
@@ -72,6 +79,12 @@ function makeApp(overrides: {
     overrides.getAdminOrder ?? vi.fn().mockResolvedValue(null),
     overrides.updateAdminOrder ?? vi.fn().mockResolvedValue(undefined),
     overrides.getAnalytics ?? vi.fn().mockResolvedValue({ dataPoints: [], totalRevenue: 0, totalOrders: 0, avgOrderValue: 0 }),
+    overrides.createSale ?? vi.fn().mockResolvedValue({ id: 's1' }),
+    overrides.updateSale ?? vi.fn().mockResolvedValue(undefined),
+    overrides.deleteSale ?? vi.fn().mockResolvedValue(undefined),
+    overrides.listSales ?? vi.fn().mockResolvedValue([]),
+    overrides.getActiveSale ?? vi.fn().mockResolvedValue(null),
+    overrides.countProductsInSale ?? vi.fn().mockResolvedValue(0),
   ))
   return app
 }
@@ -89,7 +102,7 @@ describe('GET /admin/dashboard', () => {
     const app = new Hono()
     app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'CUSTOMER' }); await next() })
     app.route('/admin', makeAdminRouter(
-      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
+      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
     ))
     const res = await app.request('/admin/dashboard')
     expect(res.status).toBe(403)

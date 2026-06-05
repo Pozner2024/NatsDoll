@@ -9,7 +9,7 @@ export type ProductListItem = {
   salePercent?: number
   image: string | null
   stock: number
-  categoryId: string
+  categoryId?: string
 }
 
 export type ProductListResponse = {
@@ -42,7 +42,7 @@ export type ProductDetail = {
   salePercent?: number
   images: string[]
   stock: number
-  categoryId: string
+  categoryId?: string
   category: string
   categorySlug: string
   messageOptions: string[]

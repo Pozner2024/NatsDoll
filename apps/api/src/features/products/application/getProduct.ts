@@ -9,7 +9,7 @@ export function makeGetProduct(repo: ProductRepository, getActiveSale: GetActive
 
     const applies =
       sale.scope === 'ALL' ||
-      (sale.scope === 'CATEGORIES' && sale.categoryIds.includes(product.categoryId)) ||
+      (sale.scope === 'CATEGORIES' && !!product.categoryId && sale.categoryIds.includes(product.categoryId)) ||
       (sale.scope === 'PRODUCTS' && sale.productIds.includes(product.id))
     if (!applies) return product
 

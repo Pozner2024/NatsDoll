@@ -2,13 +2,13 @@ import type { ProductListParams, ProductListResponse, ProductRepository } from '
 import type { GetActiveSale } from '../../admin/types'
 
 function applySaleToItem(
-  item: { id: string; price: number; categoryId: string },
+  item: { id: string; price: number; categoryId?: string },
   sale: Awaited<ReturnType<GetActiveSale>>,
 ): { salePrice?: number; salePercent?: number } {
   if (!sale) return {}
   const applies =
     sale.scope === 'ALL' ||
-    (sale.scope === 'CATEGORIES' && sale.categoryIds.includes(item.categoryId)) ||
+    (sale.scope === 'CATEGORIES' && !!item.categoryId && sale.categoryIds.includes(item.categoryId)) ||
     (sale.scope === 'PRODUCTS' && sale.productIds.includes(item.id))
   if (!applies) return {}
   return {

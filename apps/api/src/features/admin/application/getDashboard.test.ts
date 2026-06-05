@@ -24,6 +24,12 @@ function makeRepo(): AdminRepository {
     getAdminOrder: vi.fn(),
     updateAdminOrder: vi.fn(),
     getAnalyticsData: vi.fn(),
+    createSale: vi.fn(),
+    updateSale: vi.fn(),
+    deleteSale: vi.fn(),
+    listSales: vi.fn().mockResolvedValue([]),
+    getActiveSale: vi.fn().mockResolvedValue(null),
+    countProductsInSale: vi.fn().mockResolvedValue(0),
   }
 }
 
