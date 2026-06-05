@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { makeCreateOrder } from './createOrder'
 import type { OrderRepository, ShippingAddress } from '../types'
+import type { GetActiveSale } from '../../admin/types'
+
+const noSale: GetActiveSale = async () => null
 
 const address: ShippingAddress = {
   fullName: 'Natasha',
@@ -28,34 +31,34 @@ describe('createOrder', () => {
 
   it('throws 400 when cart is empty', async () => {
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue([])
-    const createOrder = makeCreateOrder(repo)
+    const createOrder = makeCreateOrder(repo, noSale)
     await expect(createOrder('u1', address)).rejects.toMatchObject({ statusCode: 400 })
   })
 
   it('throws 409 when a product is unavailable', async () => {
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue([
       { id: 'ci-1', productId: 'p1', productName: 'Doll', productImage: null,
-        productPrice: 10, productStock: 5, productIsAvailable: false, quantity: 1, message: null },
+        productPrice: 10, productStock: 5, productIsAvailable: false, quantity: 1, message: null, categoryId: 'cat1' },
     ])
-    const createOrder = makeCreateOrder(repo)
+    const createOrder = makeCreateOrder(repo, noSale)
     await expect(createOrder('u1', address)).rejects.toMatchObject({ statusCode: 409 })
   })
 
   it('throws 409 when stock is insufficient', async () => {
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue([
       { id: 'ci-1', productId: 'p1', productName: 'Doll', productImage: null,
-        productPrice: 10, productStock: 2, productIsAvailable: true, quantity: 5, message: null },
+        productPrice: 10, productStock: 2, productIsAvailable: true, quantity: 5, message: null, categoryId: 'cat1' },
     ])
-    const createOrder = makeCreateOrder(repo)
+    const createOrder = makeCreateOrder(repo, noSale)
     await expect(createOrder('u1', address)).rejects.toMatchObject({ statusCode: 409 })
   })
 
-  it('calls createOrderFromCart with totalAmount = subtotal + shipping', async () => {
+  it('passes computed shippingCost to createOrderFromCart', async () => {
     const items = [
       { id: 'ci-1', productId: 'p1', productName: 'A', productImage: null,
-        productPrice: 15, productStock: 10, productIsAvailable: true, quantity: 2, message: null },
+        productPrice: 15, productStock: 10, productIsAvailable: true, quantity: 2, message: null, categoryId: 'cat1' },
       { id: 'ci-2', productId: 'p2', productName: 'B', productImage: null,
-        productPrice: 20, productStock: 5, productIsAvailable: true, quantity: 1, message: 'Hi' },
+        productPrice: 20, productStock: 5, productIsAvailable: true, quantity: 1, message: 'Hi', categoryId: 'cat2' },
     ]
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue(items)
     vi.mocked(repo.createOrderFromCart).mockResolvedValue({
@@ -63,16 +66,16 @@ describe('createOrder', () => {
       totalAmount: 64, shippingCost: 14, trackingNumber: null,
       shippingAddress: address, createdAt: new Date().toISOString(), items: [],
     })
-    const createOrder = makeCreateOrder(repo)
+    const createOrder = makeCreateOrder(repo, noSale)
     await createOrder('u1', address)
-    // subtotal = 15*2 + 20*1 = 50, totalItemCount = 3, shipping = 12 + 2 = 14, total = 64
-    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 64, 14, address)
+    // totalItemCount = 3, shipping = 12 + 2 = 14 (total пересчитывается в репозитории внутри транзакции)
+    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 14, address)
   })
 
   it('calculates shipping correctly for 1 item', async () => {
     const items = [
       { id: 'ci-1', productId: 'p1', productName: 'A', productImage: null,
-        productPrice: 10, productStock: 5, productIsAvailable: true, quantity: 1, message: null },
+        productPrice: 10, productStock: 5, productIsAvailable: true, quantity: 1, message: null, categoryId: 'cat1' },
     ]
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue(items)
     vi.mocked(repo.createOrderFromCart).mockResolvedValue({
@@ -80,9 +83,9 @@ describe('createOrder', () => {
       totalAmount: 22, shippingCost: 12, trackingNumber: null,
       shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', items: [],
     })
-    const createOrder = makeCreateOrder(repo)
+    const createOrder = makeCreateOrder(repo, noSale)
     await createOrder('u1', address)
-    // subtotal = 10, shipping = 12, total = 22
-    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 22, 12, address)
+    // shipping = 12 (total пересчитывается в репозитории внутри транзакции)
+    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 12, address)
   })
 })

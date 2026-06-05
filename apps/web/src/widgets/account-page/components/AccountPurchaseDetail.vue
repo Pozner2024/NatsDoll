@@ -79,9 +79,15 @@
               Qty: {{ item.quantity }}
             </p>
           </div>
-          <p class="purchase-detail__item-subtotal">
-            {{ formatPrice(item.subtotal) }}
-          </p>
+          <div class="purchase-detail__item-price-group">
+            <span
+              v-if="item.originalPrice"
+              class="purchase-detail__item-subtotal-original"
+            >{{ formatPrice(item.originalPrice * item.quantity) }}</span>
+            <p class="purchase-detail__item-subtotal">
+              {{ formatPrice(item.subtotal) }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -119,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { formatPrice, formatDate } from '@/shared'
 import { useOrderStore } from '@/entities/order'
@@ -127,14 +133,22 @@ import { useOrderStore } from '@/entities/order'
 const route = useRoute()
 const orderStore = useOrderStore()
 
-const order = computed(() => orderStore.currentOrder)
+// Показываем заказ только если он соответствует текущему URL — иначе при переходе
+// между заказами на экране мелькнул бы предыдущий currentOrder (чужой адрес/состав).
+const order = computed(() => {
+  const current = orderStore.currentOrder
+  return current && current.id === route.params.id ? current : null
+})
 const loading = computed(() => orderStore.loading)
 const error = computed(() => orderStore.error)
 
-
-onMounted(() => {
-  orderStore.loadOrder(route.params.id as string)
-})
+watch(
+  () => route.params.id,
+  (id) => {
+    if (id) orderStore.loadOrder(id as string)
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped lang="scss">
@@ -291,11 +305,26 @@ onMounted(() => {
     color: var(--color-text-muted);
   }
 
+  &__item-price-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    gap: 1px;
+  }
+
+  &__item-subtotal-original {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+  }
+
   &__item-subtotal {
     font-size: 1rem;
     font-weight: 600;
     color: var(--color-text);
     flex-shrink: 0;
+    margin: 0;
   }
 
   &__footer {

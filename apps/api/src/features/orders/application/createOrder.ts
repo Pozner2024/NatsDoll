@@ -1,10 +1,18 @@
 import { AppError } from '../../../shared/errors'
 import { calcShipping } from '../../../shared/lib'
 import type { OrderRepository, CreateOrder, ShippingAddress } from '../types'
+import type { GetActiveSale } from '../../admin/types'
 
-export function makeCreateOrder(repo: OrderRepository): CreateOrder {
+function applyDiscount(price: number, discount: number): number {
+  return Math.round(price * (1 - discount / 100) * 100) / 100
+}
+
+export function makeCreateOrder(repo: OrderRepository, getActiveSale: GetActiveSale): CreateOrder {
   return async function createOrder(userId: string, shippingAddress: ShippingAddress) {
-    const items = await repo.getCartItemsForCheckout(userId)
+    const [items, sale] = await Promise.all([
+      repo.getCartItemsForCheckout(userId),
+      getActiveSale(),
+    ])
 
     if (items.length === 0) {
       throw new AppError(400, 'Cart is empty')
@@ -19,11 +27,21 @@ export function makeCreateOrder(repo: OrderRepository): CreateOrder {
       }
     }
 
-    const subtotal = items.reduce((sum, item) => sum + item.productPrice * item.quantity, 0)
-    const totalItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
-    const shippingCost = calcShipping(totalItemCount)
-    const totalAmount = subtotal + shippingCost
+    const itemsWithSale = sale
+      ? items.map((item) => {
+          const applies =
+            sale.scope === 'ALL' ||
+            (sale.scope === 'CATEGORIES' && sale.categoryIds.includes(item.categoryId)) ||
+            (sale.scope === 'PRODUCTS' && sale.productIds.includes(item.productId))
+          return applies
+            ? { ...item, salePrice: applyDiscount(item.productPrice, sale.discount) }
+            : item
+        })
+      : items
 
-    return repo.createOrderFromCart(userId, items, totalAmount, shippingCost, shippingAddress)
+    const totalItemCount = itemsWithSale.reduce((sum, item) => sum + item.quantity, 0)
+    const shippingCost = calcShipping(totalItemCount)
+
+    return repo.createOrderFromCart(userId, itemsWithSale, shippingCost, shippingAddress)
   }
 }

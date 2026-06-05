@@ -58,10 +58,20 @@
                   "{{ item.message }}"
                 </p>
                 <p class="order-confirmation__item-meta">
+                  <span
+                    v-if="item.originalPrice"
+                    class="order-confirmation__item-original-price"
+                  >{{ item.quantity }} × {{ formatPrice(item.originalPrice) }}</span>
                   {{ item.quantity }} × {{ formatPrice(item.price) }}
                 </p>
               </div>
-              <span class="order-confirmation__item-subtotal">{{ formatPrice(item.subtotal) }}</span>
+              <div class="order-confirmation__item-price-group">
+                <span
+                  v-if="item.originalPrice"
+                  class="order-confirmation__item-subtotal-original"
+                >{{ formatPrice(item.originalPrice * item.quantity) }}</span>
+                <span class="order-confirmation__item-subtotal">{{ formatPrice(item.subtotal) }}</span>
+              </div>
             </li>
           </ul>
         </section>
@@ -245,6 +255,28 @@ onMounted(() => {
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
     margin: 0.2rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  &__item-original-price {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+
+  &__item-price-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    gap: 1px;
+  }
+
+  &__item-subtotal-original {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    text-decoration: line-through;
   }
 
   &__item-subtotal {

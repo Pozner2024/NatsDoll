@@ -15,6 +15,7 @@ export type OrderItemView = {
   productImage: string | null
   quantity: number
   price: number
+  originalPrice: number | null
   subtotal: number
   message: string | null
 }
@@ -52,6 +53,8 @@ export type CartItemForCheckout = {
   productIsAvailable: boolean
   quantity: number
   message: string | null
+  categoryId: string
+  salePrice?: number
 }
 
 export type CreateOrder = (userId: string, shippingAddress: ShippingAddress) => Promise<OrderDetail>
@@ -63,7 +66,6 @@ export interface OrderRepository {
   createOrderFromCart(
     userId: string,
     items: CartItemForCheckout[],
-    totalAmount: number,
     shippingCost: number,
     shippingAddress: ShippingAddress,
   ): Promise<OrderDetail>

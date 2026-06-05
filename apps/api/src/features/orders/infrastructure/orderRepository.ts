@@ -23,6 +23,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
                   stock: true,
                   isPublished: true,
                   deletedAt: true,
+                  categoryId: true,
                 },
               },
             },
@@ -40,13 +41,13 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
         productIsAvailable: item.product.isPublished && item.product.deletedAt === null,
         quantity: item.quantity,
         message: item.message,
+        categoryId: item.product.categoryId,
       }))
     },
 
     async createOrderFromCart(
       userId: string,
       items: CartItemForCheckout[],
-      totalAmount: number,
       shippingCost: number,
       shippingAddress: ShippingAddress,
     ): Promise<OrderDetail> {
@@ -71,6 +72,30 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           }
         }
 
+        const products = await tx.product.findMany({
+          where: { id: { in: items.map((i) => i.productId) } },
+          select: { id: true, price: true },
+        })
+        const priceById = new Map(products.map((p) => [p.id, p.price.toNumber()]))
+
+        const orderItems = items.map((item) => {
+          const originalPrice = priceById.get(item.productId)
+          if (originalPrice === undefined) {
+            throw new AppError(409, `"${item.productName}" is no longer available`)
+          }
+          const salePrice = item.salePrice
+          return {
+            productId: item.productId,
+            quantity: item.quantity,
+            price: salePrice ?? originalPrice,
+            originalPrice: salePrice !== undefined ? originalPrice : null,
+            message: item.message,
+          }
+        })
+
+        const subtotal = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0)
+        const totalAmount = subtotal + shippingCost
+
         const created = await tx.order.create({
           data: {
             userId,
@@ -78,12 +103,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
             shippingCost,
             shippingAddress: shippingAddress as object,
             items: {
-              create: items.map((item) => ({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.productPrice,
-                message: item.message,
-              })),
+              create: orderItems,
             },
           },
           select: {
@@ -101,6 +121,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
                 id: true,
                 quantity: true,
                 price: true,
+                originalPrice: true,
                 message: true,
                 product: { select: { id: true, slug: true, name: true, images: true } },
               },
@@ -166,6 +187,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
               id: true,
               quantity: true,
               price: true,
+              originalPrice: true,
               message: true,
               product: { select: { id: true, slug: true, name: true, images: true } },
             },
@@ -192,6 +214,7 @@ type OrderRow = {
     id: string
     quantity: number
     price: { toNumber(): number }
+    originalPrice: { toNumber(): number } | null
     message: string | null
     product: { id: string; slug: string; name: string; images: string[] }
   }>
@@ -208,6 +231,7 @@ function toOrderDetail(order: OrderRow): OrderDetail {
       productImage: item.product.images[0] ?? null,
       quantity: item.quantity,
       price,
+      originalPrice: item.originalPrice?.toNumber() ?? null,
       subtotal: price * item.quantity,
       message: item.message,
     }

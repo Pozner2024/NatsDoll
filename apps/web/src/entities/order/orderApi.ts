@@ -10,6 +10,7 @@ const orderItemSchema = z.object({
   productImage: z.string().nullable(),
   quantity: z.number(),
   price: z.number(),
+  originalPrice: z.number().nullable(),
   subtotal: z.number(),
   message: z.string().nullable(),
 })

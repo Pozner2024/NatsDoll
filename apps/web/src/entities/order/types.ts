@@ -15,6 +15,7 @@ export type OrderItemView = {
   productImage: string | null
   quantity: number
   price: number
+  originalPrice: number | null
   subtotal: number
   message: string | null
 }
