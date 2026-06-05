@@ -58,10 +58,6 @@
                   "{{ item.message }}"
                 </p>
                 <p class="order-confirmation__item-meta">
-                  <span
-                    v-if="item.originalPrice"
-                    class="order-confirmation__item-original-price"
-                  >{{ item.quantity }} × {{ formatPrice(item.originalPrice) }}</span>
                   {{ item.quantity }} × {{ formatPrice(item.price) }}
                 </p>
               </div>
@@ -255,14 +251,6 @@ onMounted(() => {
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
     margin: 0.2rem 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-
-  &__item-original-price {
-    text-decoration: line-through;
-    opacity: 0.6;
   }
 
   &__item-price-group {
