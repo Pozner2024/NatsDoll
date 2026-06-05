@@ -183,11 +183,15 @@ export function createApp() {
   const submit = makeSubmit(contactRepo, emailService)
   app.route('/contact', makeContactRouter(submit))
 
-  // Products
+  // Admin repo and sale lookup — created early so Products can use getActiveSale
+  const adminRepo = makeAdminRepository(prisma)
+  const getActiveSale = makeGetActiveSale(adminRepo)
+
+  // Products — getActiveSale injected to enrich responses with sale prices
   const productRepo = makeProductRepository(prisma)
-  const listProducts = makeListProducts(productRepo)
+  const listProducts = makeListProducts(productRepo, getActiveSale)
   const listCategories = makeListCategories(productRepo)
-  const getProduct = makeGetProduct(productRepo)
+  const getProduct = makeGetProduct(productRepo, getActiveSale)
   app.route('/', makeProductsRouter(listProducts, listCategories, getProduct))
 
   // Auth
@@ -261,7 +265,6 @@ export function createApp() {
   app.route('/me/messages', makeMessageRouter(getMyMessages, createMessage))
 
   // Admin
-  const adminRepo = makeAdminRepository(prisma)
   const getDashboard = makeGetDashboard(adminRepo)
   const markAllMessagesRead = makeMarkAllMessagesRead(adminRepo)
   const listAdminProducts = makeListAdminProducts(adminRepo)
@@ -286,7 +289,6 @@ export function createApp() {
   const updateSale = makeUpdateSale(adminRepo)
   const deleteSale = makeDeleteSale(adminRepo)
   const listSales = makeListSales(adminRepo)
-  const getActiveSale = makeGetActiveSale(adminRepo)
   const countProductsInSale = makeCountProductsInSale(adminRepo)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
