@@ -9,6 +9,7 @@ const CartItemSchema = z.object({
   productName: z.string(),
   productImage: z.string().nullable(),
   unitPrice: z.number(),
+  originalUnitPrice: z.number().optional(),
   quantity: z.number().int().min(1),
   subtotal: z.number(),
   message: z.string().nullable(),

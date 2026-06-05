@@ -48,9 +48,15 @@
           </button>
         </div>
 
-        <p class="cart-line__subtotal">
-          {{ formatPrice(item.subtotal) }}
-        </p>
+        <div class="cart-line__price-group">
+          <span
+            v-if="item.originalUnitPrice"
+            class="cart-line__price-original"
+          >{{ formatPrice(item.originalUnitPrice * item.quantity) }}</span>
+          <p class="cart-line__subtotal">
+            {{ formatPrice(item.subtotal) }}
+          </p>
+        </div>
       </div>
 
       <button
@@ -183,6 +189,19 @@ function onRemoveClick(): void {
     border-left: 1px solid var(--color-border);
     border-right: 1px solid var(--color-border);
     line-height: 30px;
+  }
+
+  &__price-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
+  &__price-original {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    text-decoration: line-through;
   }
 
   &__subtotal {

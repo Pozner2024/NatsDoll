@@ -11,8 +11,9 @@ export function applySaleToCart(cart: CartView, sale: ActiveSale | null): CartVi
       (sale.scope === 'PRODUCTS' && sale.productIds.includes(item.productId))
     if (!applies) return item
 
-    const unitPrice = Math.round(item.unitPrice * (1 - sale.discount / 100) * 100) / 100
-    return { ...item, unitPrice, subtotal: Math.round(unitPrice * item.quantity * 100) / 100 }
+    const originalUnitPrice = item.unitPrice
+    const unitPrice = Math.round(originalUnitPrice * (1 - sale.discount / 100) * 100) / 100
+    return { ...item, originalUnitPrice, unitPrice, subtotal: Math.round(unitPrice * item.quantity * 100) / 100 }
   })
 
   const totalAmount = Math.round(items.reduce((sum, it) => sum + it.subtotal, 0) * 100) / 100

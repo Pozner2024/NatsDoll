@@ -5,6 +5,7 @@ export type CartItem = {
   productName: string
   productImage: string | null
   unitPrice: number
+  originalUnitPrice?: number
   quantity: number
   subtotal: number
   message: string | null

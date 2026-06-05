@@ -20,6 +20,16 @@ export const useCartStore = defineStore('cart', () => {
   const totalAmount = computed(() => cart.value.totalAmount)
   const items = computed(() => cart.value.items)
 
+  // Сериализуем мутации корзины, чтобы параллельные клики (+/-/удаление)
+  // применялись строго по порядку и ответы не приходили вразнобой.
+  let mutationChain: Promise<unknown> = Promise.resolve()
+
+  function enqueue<T>(op: () => Promise<T>): Promise<T> {
+    const run = mutationChain.then(op, op)
+    mutationChain = run.catch(() => {})
+    return run
+  }
+
   async function load(force = false): Promise<void> {
     if (loaded && !force) return
     loading.value = true
@@ -35,16 +45,16 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   async function add(input: { productId: string; quantity: number; message: string | null }): Promise<void> {
-    cart.value = await addCartItem(input)
+    cart.value = await enqueue(() => addCartItem(input))
     loaded = true
   }
 
   async function update(itemId: string, quantity: number): Promise<void> {
-    cart.value = await updateCartItem(itemId, quantity)
+    cart.value = await enqueue(() => updateCartItem(itemId, quantity))
   }
 
   async function remove(itemId: string): Promise<void> {
-    cart.value = await removeCartItem(itemId)
+    cart.value = await enqueue(() => removeCartItem(itemId))
   }
 
   function reset(): void {
