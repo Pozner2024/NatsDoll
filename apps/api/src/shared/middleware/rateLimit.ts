@@ -1,6 +1,7 @@
 // Мидлвар ограничивает количество запросов с одного IP.
 // Хранит счётчики в памяти (Map). При превышении лимита возвращает 429.
 import type { MiddlewareHandler } from 'hono'
+import { getConnInfo } from '@hono/node-server/conninfo'
 
 
 type RateLimitOptions = {
@@ -13,7 +14,7 @@ type Entry = { count: number; resetAt: number }
 // X-Real-IP — приоритет, его выставляет nginx из $remote_addr (клиент подделать не может).
 // X-Forwarded-For — клиент может прислать произвольный заголовок, nginx добавляет к нему свой IP справа,
 // поэтому доверяем только последнему элементу списка.
-function extractClientIp(realIp: string | undefined, forwardedFor: string | undefined): string {
+function extractClientIp(realIp: string | undefined, forwardedFor: string | undefined): string | undefined {
   const real = realIp?.trim()
   if (real) return real
 
@@ -21,7 +22,17 @@ function extractClientIp(realIp: string | undefined, forwardedFor: string | unde
     const ips = forwardedFor.split(',').map((s) => s.trim()).filter(Boolean)
     if (ips.length > 0) return ips[ips.length - 1]
   }
-  return 'unknown'
+  return undefined
+}
+
+// getConnInfo доступен только под реальным Node-сервером; в тест-харнессе
+// (app.request без сокета) он бросает — тогда откатываемся на 'unknown'.
+function socketAddress(c: Parameters<MiddlewareHandler>[0]): string | undefined {
+  try {
+    return getConnInfo(c).remote.address
+  } catch {
+    return undefined
+  }
 }
 
 export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
@@ -38,7 +49,10 @@ export function createRateLimiter({ max, windowMs }: RateLimitOptions) {
   cleanupTimer.unref()
 
   const middleware: MiddlewareHandler = async (c, next) => {
-    const ip = extractClientIp(c.req.header('x-real-ip'), c.req.header('x-forwarded-for'))
+    const ip =
+      extractClientIp(c.req.header('x-real-ip'), c.req.header('x-forwarded-for')) ??
+      socketAddress(c) ??
+      'unknown'
     const now = Date.now()
     const entry = hits.get(ip)
 

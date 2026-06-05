@@ -12,6 +12,7 @@ function makeEmail(): EmailService {
     sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
     sendMessageNotification: vi.fn().mockResolvedValue(undefined),
     sendTrackingNotification: vi.fn().mockResolvedValue(undefined),
+    sendContactNotification: vi.fn().mockResolvedValue(undefined),
   }
 }
 

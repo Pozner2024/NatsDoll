@@ -15,6 +15,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { resolveSafeRedirect } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 
 const router = useRouter()
@@ -32,7 +33,7 @@ onMounted(async () => {
     await authStore.verifyEmail(token)
     const redirect = sessionStorage.getItem('auth_redirect')
     sessionStorage.removeItem('auth_redirect')
-    router.replace(redirect || '/')
+    router.replace(resolveSafeRedirect(redirect))
   } catch {
     failed.value = true
   }

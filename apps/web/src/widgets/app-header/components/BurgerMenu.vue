@@ -147,7 +147,7 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 import { navItems, staticShopItems, homeItem, type NavItem } from "../navigationConfig";
 import CartLink from './CartLink.vue'
 import { useContactModal } from '@/features/contact-modal'
-import { useAuthModal } from '@/features/auth-modal'
+import { useAuthModal } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 import { useCategoryStore } from '@/entities/category'
 

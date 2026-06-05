@@ -149,8 +149,7 @@ export function useAdminOrderDetail(orderId: Ref<string | null>) {
 export async function updateAdminOrder(id: string, payload: UpdateOrderInput): Promise<void> {
   const res = await authFetch(`/admin/orders/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    json: payload,
   })
   if (!res.ok) {
     const msg = await apiErrorMessage(res, 'Failed to update order')

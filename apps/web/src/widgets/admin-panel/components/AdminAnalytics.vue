@@ -138,6 +138,7 @@ import {
   LinearScale,
   BarElement,
   Tooltip,
+  type TooltipItem,
 } from 'chart.js'
 import AdminTopbar from './AdminTopbar.vue'
 import { useAnalytics } from '../adminAnalyticsApi'
@@ -223,7 +224,7 @@ const revenueChartOptions = {
     ...baseChartOptions.plugins,
     tooltip: {
       callbacks: {
-        label: (ctx: { parsed: { y: number } }) => `$${ctx.parsed.y.toFixed(2)}`,
+        label: (ctx: TooltipItem<'bar'>) => `$${(ctx.parsed.y ?? 0).toFixed(2)}`,
       },
     },
   },
@@ -235,7 +236,7 @@ const ordersChartOptions = {
     ...baseChartOptions.plugins,
     tooltip: {
       callbacks: {
-        label: (ctx: { parsed: { y: number } }) => `${ctx.parsed.y} orders`,
+        label: (ctx: TooltipItem<'bar'>) => `${ctx.parsed.y ?? 0} orders`,
       },
     },
   },

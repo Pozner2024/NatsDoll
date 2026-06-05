@@ -175,8 +175,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { authFetch, apiErrorMessage, RichTextEditor } from '@/shared'
-import { useAdminCategories } from '@/widgets/admin-panel/adminCategoriesApi'
-import type { AdminProductInput } from '@/widgets/admin-panel/adminListingsApi'
+import { useAdminCategories, type AdminProductInput } from '@/widgets/admin-panel'
 
 const router = useRouter()
 const route = useRoute()

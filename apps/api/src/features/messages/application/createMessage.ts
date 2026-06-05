@@ -10,9 +10,13 @@ export function makeCreateMessage(repo: MessageRepository, emailService: EmailSe
 
     const adminEmail = process.env.ADMIN_EMAIL
     if (adminEmail) {
-      await emailService.sendMessageNotification(
-        adminEmail, userName, userEmail, message.text, message.orderNumber ?? undefined,
-      )
+      try {
+        await emailService.sendMessageNotification(
+          adminEmail, userName, userEmail, message.text, message.orderNumber ?? undefined,
+        )
+      } catch (err) {
+        console.error('Failed to send message notification:', err)
+      }
     }
   }
 }

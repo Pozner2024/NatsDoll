@@ -163,7 +163,7 @@
       <AppButton
         type="submit"
         class="account-profile__submit"
-        :disabled="passwordMismatch || saving || (password && !currentPassword)"
+        :disabled="passwordMismatch || saving || Boolean(password && !currentPassword)"
       >
         {{ saving ? 'Saving…' : 'Save changes' }}
       </AppButton>
@@ -172,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { AppButton, IconEye } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 
@@ -181,6 +181,12 @@ const user = computed(() => authStore.user)
 
 const editing = ref(false)
 const name = ref(user.value?.name ?? '')
+
+// Пользователь может догрузиться асинхронно уже после монтирования — подхватываем
+// его имя, но не затираем то, что юзер уже печатает в режиме редактирования.
+watch(user, (u) => {
+  if (!editing.value) name.value = u?.name ?? ''
+})
 const password = ref('')
 const passwordConfirm = ref('')
 const currentPassword = ref('')

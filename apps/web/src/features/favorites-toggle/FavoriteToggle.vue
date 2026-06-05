@@ -13,7 +13,7 @@ import { computed } from 'vue'
 import { HeartButton } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 import { useFavoritesStore } from '@/entities/favorites'
-import { useAuthModal } from '@/features/auth-modal'
+import { useAuthModal } from '@/shared'
 import type { Product } from '@/entities/product'
 
 const props = withDefaults(defineProps<{

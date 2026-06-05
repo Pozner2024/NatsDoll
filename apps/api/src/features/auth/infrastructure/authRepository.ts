@@ -184,7 +184,7 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
 
     finalizePasswordReset(userId, resetId, passwordHash) {
       return prisma.$transaction(async (tx) => {
-        await tx.user.update({ where: { id: userId }, data: { passwordHash } })
+        await tx.user.update({ where: { id: userId }, data: { passwordHash, emailVerified: true } })
         await tx.passwordReset.delete({ where: { id: resetId } })
         await tx.refreshToken.deleteMany({ where: { userId } })
       })

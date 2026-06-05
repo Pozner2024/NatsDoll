@@ -290,7 +290,10 @@
       "PowerShell($env:DATABASE_URL=\\(Get-Content \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\.env\" | Where-Object { $_ -match '^DATABASE_URL=' } | ForEach-Object { \\($_ -split '=',2\\)[1] }\\); Set-Location \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\"; npx prisma migrate dev --name add_password_reset 2>&1)",
       "PowerShell($raw = \\(Get-Content \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\.env\" | Where-Object { $_ -match '^DATABASE_URL=' } | ForEach-Object { \\($_ -split '=',2\\)[1] }\\); $env:DATABASE_URL = $raw.Trim\\('\"'\\); Write-Host \"URL: $env:DATABASE_URL\"; Set-Location \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\"; npx prisma migrate dev --name add_password_reset 2>&1)",
       "Bash(PORT=3010 node --import tsx src/main.ts)",
-      "Bash(gh pr create --title feat/auth-enumeration-password-reset --body ' *)"
+      "Bash(gh pr create --title feat/auth-enumeration-password-reset --body ' *)",
+      "Bash(Get-Content \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\prisma\\\\schema.prisma\")",
+      "Bash(Select-Object -Last 40)",
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api; node --max-old-space-size=8192 ..\\\\..\\\\node_modules\\\\typescript\\\\bin\\\\tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"TS6305\" } | Where-Object { $_ -match \"error TS\" } | Select-Object -First 30)"
     ]
   }
 }

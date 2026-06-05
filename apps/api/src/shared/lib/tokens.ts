@@ -46,7 +46,7 @@ export async function signAccessToken(payload: AccessTokenPayload): Promise<stri
 
 export async function verifyAccessToken(token: string): Promise<AccessTokenPayload> {
   try {
-    const { payload } = await jwtVerify(token, getJwtSecret())
+    const { payload } = await jwtVerify(token, getJwtSecret(), { algorithms: ['HS256'] })
     const sub = payload.sub
     const role = payload.role as string | undefined
     if (typeof sub !== 'string' || typeof role !== 'string') {

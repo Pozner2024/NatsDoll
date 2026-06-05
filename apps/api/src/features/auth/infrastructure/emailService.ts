@@ -9,6 +9,7 @@ export type EmailService = {
   sendPasswordResetEmail(to: string, resetUrl: string): Promise<void>
   sendMessageNotification(adminEmail: string, fromName: string, fromEmail: string, text: string, orderNumber?: number): Promise<void>
   sendTrackingNotification(to: string, name: string, orderNumber: number, trackingNumber: string): Promise<void>
+  sendContactNotification(adminEmail: string, fromName: string, fromEmail: string, message: string): Promise<void>
 }
 
 export function makeEmailService(): EmailService {
@@ -84,6 +85,17 @@ export function makeEmailService(): EmailService {
           <p><strong>${escapeHtml(fromName)}</strong> (${escapeHtml(fromEmail)}) sent a message:</p>
           ${orderNumber ? `<p>Re: Order #${orderNumber}</p>` : ''}
           <p>${escapeHtml(text)}</p>
+        `,
+      })
+    },
+    async sendContactNotification(adminEmail, fromName, fromEmail, message) {
+      await getResend().emails.send({
+        from: 'noreply@natsdoll.com',
+        to: adminEmail,
+        subject: `New contact form submission from ${fromName} — NatsDoll`,
+        html: `
+          <p><strong>${escapeHtml(fromName)}</strong> (${escapeHtml(fromEmail)}) submitted the contact form:</p>
+          <p>${escapeHtml(message)}</p>
         `,
       })
     },

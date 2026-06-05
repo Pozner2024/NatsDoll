@@ -4,6 +4,13 @@
       Your cart
     </h1>
 
+    <p
+      v-if="actionError"
+      class="cart-page__action-error"
+    >
+      {{ actionError }}
+    </p>
+
     <div
       v-if="loading"
       class="cart-page__loading"
@@ -81,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { AppButton, formatPrice, calcShipping } from '@/shared'
 import { useCartStore } from '@/entities/cart'
@@ -100,6 +107,7 @@ const shippingCost = computed(() => calcShipping(totalItemCount.value))
 const grandTotal = computed(() => subtotal.value + shippingCost.value)
 const loading = computed(() => cartStore.loading)
 const error = computed(() => cartStore.error)
+const actionError = ref<string | null>(null)
 
 onMounted(async () => {
   if (!authStore.authReady) await authStore.initAuth()
@@ -107,11 +115,23 @@ onMounted(async () => {
 })
 
 async function onUpdate(itemId: string, quantity: number): Promise<void> {
-  await cartStore.update(itemId, quantity)
+  actionError.value = null
+  try {
+    await cartStore.update(itemId, quantity)
+  } catch (e) {
+    actionError.value = e instanceof Error ? e.message : 'Could not update the cart'
+    await cartStore.load(true)
+  }
 }
 
 async function onRemove(itemId: string): Promise<void> {
-  await cartStore.remove(itemId)
+  actionError.value = null
+  try {
+    await cartStore.remove(itemId)
+  } catch (e) {
+    actionError.value = e instanceof Error ? e.message : 'Could not update the cart'
+    await cartStore.load(true)
+  }
 }
 </script>
 
@@ -151,6 +171,15 @@ async function onRemove(itemId: string): Promise<void> {
     margin-top: 0.75rem;
     color: var(--color-accent);
     text-decoration: underline;
+  }
+
+  &__action-error {
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    background: rgb(180 30 30 / 0.08);
+    color: rgb(180 30 30 / 1);
+    font-size: var(--fs-sm);
   }
 
   &__layout {

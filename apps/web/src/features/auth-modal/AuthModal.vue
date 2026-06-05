@@ -365,7 +365,7 @@
 import { reactive, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { useAuthModal } from './useAuthModal'
+import { useAuthModal } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 import { BaseModal, IconEye, validateEmail } from '@/shared'
 
