@@ -74,6 +74,9 @@ const saleBodySchema = z.object({
   scope: z.enum(['ALL', 'CATEGORIES', 'PRODUCTS']),
   categoryIds: z.array(z.string()).default([]),
   productIds: z.array(z.string()).default([]),
+}).refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
+  message: 'endsAt must be after startsAt',
+  path: ['endsAt'],
 })
 
 const previewCountQuerySchema = z.object({
@@ -267,7 +270,7 @@ export function makeAdminRouter(
   router.post('/sales', zValidator('json', saleBodySchema, (result, c) => {
     if (!result.success) return c.json({ error: 'Validation failed' }, 422)
   }), async (c) => {
-    const input = c.req.valid('json') as SaleInput
+    const input = c.req.valid('json')
     const result = await createSale(input)
     return c.json(result, 201)
   })
@@ -276,7 +279,7 @@ export function makeAdminRouter(
     if (!result.success) return c.json({ error: 'Validation failed' }, 422)
   }), async (c) => {
     const id = c.req.param('id')
-    const input = c.req.valid('json') as SaleInput
+    const input = c.req.valid('json')
     await updateSale(id, input)
     return c.json({ ok: true })
   })
