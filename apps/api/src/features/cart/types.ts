@@ -1,6 +1,7 @@
 export type CartItemView = {
   id: string
   productId: string
+  productCategoryId: string
   productSlug: string
   productName: string
   productImage: string | null

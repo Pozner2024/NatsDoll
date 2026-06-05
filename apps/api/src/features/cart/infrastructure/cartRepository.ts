@@ -86,6 +86,7 @@ export function makeCartRepository(prisma: PrismaClient): CartRepository {
                   name: true,
                   images: true,
                   price: true,
+                  categoryId: true,
                 },
               },
             },
@@ -99,6 +100,7 @@ export function makeCartRepository(prisma: PrismaClient): CartRepository {
         return {
           id: row.id,
           productId: row.product.id,
+          productCategoryId: row.product.categoryId,
           productSlug: row.product.slug,
           productName: row.product.name,
           productImage: row.product.images[0] ?? null,

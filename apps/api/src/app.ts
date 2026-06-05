@@ -211,9 +211,9 @@ export function createApp() {
 
   // Cart
   const cartRepo = makeCartRepository(prisma)
-  const addToCart = makeAddToCart(cartRepo)
-  const getCart = makeGetCart(cartRepo)
-  const updateQuantity = makeUpdateQuantity(cartRepo)
+  const addToCart = makeAddToCart(cartRepo, getActiveSale)
+  const getCart = makeGetCart(cartRepo, getActiveSale)
+  const updateQuantity = makeUpdateQuantity(cartRepo, getActiveSale)
   const removeFromCart = makeRemoveFromCart(cartRepo)
   app.use('/cart/*', requireAuth)
   app.route('/cart', makeCartRouter(addToCart, getCart, updateQuantity, removeFromCart))

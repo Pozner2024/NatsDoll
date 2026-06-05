@@ -1,7 +1,9 @@
 import { AppError } from '../../../shared/errors'
 import type { CartRepository, UpdateQuantity, UpdateQuantityParams, CartView } from '../types'
+import type { GetActiveSale } from '../../admin/types'
+import { applySaleToCart } from './applySaleToCart'
 
-export function makeUpdateQuantity(repo: CartRepository): UpdateQuantity {
+export function makeUpdateQuantity(repo: CartRepository, getActiveSale: GetActiveSale): UpdateQuantity {
   return async function updateQuantity(params: UpdateQuantityParams): Promise<CartView> {
     const { userId, itemId, quantity } = params
 
@@ -14,11 +16,15 @@ export function makeUpdateQuantity(repo: CartRepository): UpdateQuantity {
     if (item.cartId !== cartId) throw new AppError(403, 'Forbidden')
 
     const product = await repo.findProductForCart(item.productId)
-    if (product && quantity > product.stock) {
+    if (!product || !product.isAvailable) {
+      throw new AppError(409, 'Product is no longer available')
+    }
+    if (quantity > product.stock) {
       throw new AppError(409, 'Not enough stock')
     }
 
     await repo.updateCartItemQuantity(itemId, quantity)
-    return repo.getCartView(userId)
+    const [cart, sale] = await Promise.all([repo.getCartView(userId), getActiveSale()])
+    return applySaleToCart(cart, sale)
   }
 }

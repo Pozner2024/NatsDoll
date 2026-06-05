@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { makeGetCart } from './getCart'
 import type { CartRepository } from '../types'
+import type { GetActiveSale } from '../../admin/types'
+
+const noSale: GetActiveSale = async () => null
 
 function makeRepo(): CartRepository {
   return {
@@ -19,7 +22,7 @@ describe('getCart', () => {
   it('delegates to repository.getCartView and returns the result', async () => {
     const repo = makeRepo()
     vi.mocked(repo.getCartView).mockResolvedValue({ items: [], totalAmount: 0, itemCount: 0 })
-    const getCart = makeGetCart(repo)
+    const getCart = makeGetCart(repo, noSale)
     const result = await getCart('user-1')
     expect(repo.getCartView).toHaveBeenCalledWith('user-1')
     expect(result.items).toEqual([])
@@ -34,7 +37,7 @@ describe('getCart', () => {
       totalAmount: 20,
       itemCount: 2,
     })
-    const getCart = makeGetCart(repo)
+    const getCart = makeGetCart(repo, noSale)
     const result = await getCart('user-1')
     expect(result.totalAmount).toBe(20)
     expect(result.items[0].message).toBe('Hi')

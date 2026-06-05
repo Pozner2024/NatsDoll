@@ -1,9 +1,11 @@
 import { AppError } from '../../../shared/errors'
 import type { CartRepository, AddToCart, AddToCartParams, CartView } from '../types'
+import type { GetActiveSale } from '../../admin/types'
+import { applySaleToCart } from './applySaleToCart'
 
 const MAX_MESSAGE_LENGTH = 100
 
-export function makeAddToCart(repo: CartRepository): AddToCart {
+export function makeAddToCart(repo: CartRepository, getActiveSale: GetActiveSale): AddToCart {
   return async function addToCart(params: AddToCartParams): Promise<CartView> {
     const { userId, productId, quantity } = params
     const message = params.message?.length ? params.message : null
@@ -39,6 +41,7 @@ export function makeAddToCart(repo: CartRepository): AddToCart {
       await repo.createCartItem(cartId, productId, quantity, message)
     }
 
-    return repo.getCartView(userId)
+    const [cart, sale] = await Promise.all([repo.getCartView(userId), getActiveSale()])
+    return applySaleToCart(cart, sale)
   }
 }
