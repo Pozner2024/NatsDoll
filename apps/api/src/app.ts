@@ -104,6 +104,12 @@ import {
   makeGetAdminOrder,
   makeUpdateAdminOrder,
   makeGetAnalytics,
+  makeCreateSale,
+  makeUpdateSale,
+  makeDeleteSale,
+  makeListSales,
+  makeGetActiveSale,
+  makeCountProductsInSale,
   makeAdminRouter,
 } from './features/admin'
 import { requireAuth } from './shared/middleware'
@@ -128,10 +134,20 @@ export function createApp() {
     if (err instanceof AppError) {
       return c.json({ error: err.message }, err.statusCode)
     }
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError ||
-      err instanceof Prisma.PrismaClientUnknownRequestError
-    ) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        return c.json({ error: 'Resource already exists' }, 409)
+      }
+      if (err.code === 'P2025') {
+        return c.json({ error: 'Resource not found' }, 404)
+      }
+      if (err.code === 'P2003') {
+        return c.json({ error: 'Operation not allowed due to related records' }, 409)
+      }
+      console.error('Prisma error:', err)
+      return c.json({ error: 'Database error' }, 500)
+    }
+    if (err instanceof Prisma.PrismaClientUnknownRequestError) {
       console.error('Prisma error:', err)
       return c.json({ error: 'Database error' }, 500)
     }
@@ -148,6 +164,9 @@ export function createApp() {
     }
   })
 
+  // Shared services
+  const emailService = makeEmailService()
+
   // Gallery
   const galleryRepo = makeGalleryRepository(prisma)
   const getHomeGallery = makeGetHomeGallery(galleryRepo)
@@ -161,7 +180,7 @@ export function createApp() {
 
   // Contact
   const contactRepo = makeContactRepository(prisma)
-  const submit = makeSubmit(contactRepo)
+  const submit = makeSubmit(contactRepo, emailService)
   app.route('/contact', makeContactRouter(submit))
 
   // Products
@@ -173,7 +192,6 @@ export function createApp() {
 
   // Auth
   const authRepo = makeAuthRepository(prisma)
-  const emailService = makeEmailService()
   const register = makeRegister(authRepo, emailService)
   const login = makeLogin(authRepo)
   const refreshToken = makeRefreshToken(authRepo)
@@ -264,6 +282,12 @@ export function createApp() {
   const getAdminOrder = makeGetAdminOrder(adminRepo)
   const updateAdminOrder = makeUpdateAdminOrder(adminRepo, emailService)
   const getAnalytics = makeGetAnalytics(adminRepo)
+  const createSale = makeCreateSale(adminRepo)
+  const updateSale = makeUpdateSale(adminRepo)
+  const deleteSale = makeDeleteSale(adminRepo)
+  const listSales = makeListSales(adminRepo)
+  const getActiveSale = makeGetActiveSale(adminRepo)
+  const countProductsInSale = makeCountProductsInSale(adminRepo)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
     getDashboard, markAllMessagesRead,
@@ -273,6 +297,7 @@ export function createApp() {
     listConversations, getConversation, replyToUser, markConversationRead,
     listAdminOrders, getAdminOrder, updateAdminOrder,
     getAnalytics,
+    createSale, updateSale, deleteSale, listSales, getActiveSale, countProductsInSale,
   ))
 
   return app

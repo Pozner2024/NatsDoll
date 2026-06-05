@@ -10,6 +10,7 @@ import type {
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
   ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
   GetAnalytics,
+  CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale, SaleInput,
 } from '../types'
 
 const productListQuerySchema = z.object({
@@ -20,6 +21,11 @@ const productListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(48).default(12),
 })
 
+const imageUrlSchema = z
+  .string()
+  .url()
+  .refine((u) => u.startsWith('http://') || u.startsWith('https://'), 'Image must be an http(s) URL')
+
 const productBodySchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
@@ -27,7 +33,7 @@ const productBodySchema = z.object({
   price: z.number().positive(),
   stock: z.number().int().min(0),
   categoryId: z.string().min(1),
-  images: z.array(z.string()),
+  images: z.array(imageUrlSchema).max(10),
   messageOptions: z.array(z.string()).max(10),
   isPublished: z.boolean(),
 })
@@ -60,6 +66,22 @@ const replyBodySchema = z.object({
   orderId: z.string().optional(),
 })
 
+const saleBodySchema = z.object({
+  name: z.string().min(1).max(100),
+  discount: z.number().int().min(1).max(99),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime(),
+  scope: z.enum(['ALL', 'CATEGORIES', 'PRODUCTS']),
+  categoryIds: z.array(z.string()).default([]),
+  productIds: z.array(z.string()).default([]),
+})
+
+const previewCountQuerySchema = z.object({
+  scope: z.enum(['ALL', 'CATEGORIES', 'PRODUCTS']),
+  categoryIds: z.string().optional(),
+  productIds: z.string().optional(),
+})
+
 export function makeAdminRouter(
   getDashboard: GetDashboard,
   markAllMessagesRead: MarkAllMessagesRead,
@@ -81,6 +103,12 @@ export function makeAdminRouter(
   getAdminOrder: GetAdminOrder,
   updateAdminOrder: UpdateAdminOrder,
   getAnalytics: GetAnalytics,
+  createSale: CreateSale,
+  updateSale: UpdateSale,
+  deleteSale: DeleteSale,
+  listSales: ListSales,
+  getActiveSale: GetActiveSale,
+  countProductsInSale: CountProductsInSale,
 ) {
   const router = new Hono()
 
@@ -212,6 +240,51 @@ export function makeAdminRouter(
     const { period } = c.req.valid('query')
     const data = await getAnalytics(period)
     return c.json(data)
+  })
+
+  router.get('/sales', async (c) => {
+    const data = await listSales()
+    return c.json(data)
+  })
+
+  router.get('/sales/active', async (c) => {
+    const data = await getActiveSale()
+    return c.json(data)
+  })
+
+  router.get('/sales/preview-count', zValidator('query', previewCountQuerySchema, (result, c) => {
+    if (!result.success) return c.json({ error: 'Validation failed' }, 422)
+  }), async (c) => {
+    const { scope, categoryIds, productIds } = c.req.valid('query')
+    const count = await countProductsInSale({
+      scope,
+      categoryIds: categoryIds ? categoryIds.split(',').filter(Boolean) : [],
+      productIds: productIds ? productIds.split(',').filter(Boolean) : [],
+    })
+    return c.json({ count })
+  })
+
+  router.post('/sales', zValidator('json', saleBodySchema, (result, c) => {
+    if (!result.success) return c.json({ error: 'Validation failed' }, 422)
+  }), async (c) => {
+    const input = c.req.valid('json') as SaleInput
+    const result = await createSale(input)
+    return c.json(result, 201)
+  })
+
+  router.put('/sales/:id', zValidator('json', saleBodySchema, (result, c) => {
+    if (!result.success) return c.json({ error: 'Validation failed' }, 422)
+  }), async (c) => {
+    const id = c.req.param('id')
+    const input = c.req.valid('json') as SaleInput
+    await updateSale(id, input)
+    return c.json({ ok: true })
+  })
+
+  router.delete('/sales/:id', async (c) => {
+    const id = c.req.param('id')
+    await deleteSale(id)
+    return c.json({ ok: true })
   })
 
   return router
