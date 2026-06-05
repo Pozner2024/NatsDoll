@@ -629,6 +629,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
           categoryIds: input.categoryIds,
           productIds: input.productIds,
         },
+        select: { id: true },
       })
       return { id: sale.id }
     },
@@ -688,7 +689,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       if (input.scope === 'CATEGORIES') {
         return prisma.product.count({ where: { isPublished: true, deletedAt: null, categoryId: { in: input.categoryIds } } })
       }
-      return input.productIds.length
+      return prisma.product.count({ where: { isPublished: true, deletedAt: null, id: { in: input.productIds } } })
     },
   }
 }
