@@ -293,7 +293,11 @@
       "Bash(gh pr create --title feat/auth-enumeration-password-reset --body ' *)",
       "Bash(Get-Content \"D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api\\\\prisma\\\\schema.prisma\")",
       "Bash(Select-Object -Last 40)",
-      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api; node --max-old-space-size=8192 ..\\\\..\\\\node_modules\\\\typescript\\\\bin\\\\tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"TS6305\" } | Where-Object { $_ -match \"error TS\" } | Select-Object -First 30)"
+      "PowerShell(cd D:\\\\Natalia\\\\NatsDoll\\\\apps\\\\api; node --max-old-space-size=8192 ..\\\\..\\\\node_modules\\\\typescript\\\\bin\\\\tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"TS6305\" } | Where-Object { $_ -match \"error TS\" } | Select-Object -First 30)",
+      "Bash(grep -n 'rotateToken\\\\|deleteAllUserTokens\\\\|findTokenByHash\\\\|revokedAt\\\\|updateMany\\\\|$transaction\\\\|MAX_ACTIVE_SESSIONS' apps/api/src/features/auth/infrastructure/authRepository.ts)",
+      "Bash(grep -n \"cursor: pointer\\\\|rgba\\(\\\\|: any\\\\|as any\\\\|\\\\/\\\\*\\\\|\\\\/\\\\/\" apps/web/src/widgets/admin-panel/components/AdminImageUploader.vue)",
+      "Bash(echo \"API_TSC_EXIT=$?\")",
+      "Bash(echo \"=== EXIT $? ===\")"
     ]
   }
 }
