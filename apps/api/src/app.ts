@@ -110,9 +110,11 @@ import {
   makeListSales,
   makeGetActiveSale,
   makeCountProductsInSale,
+  makeUploadProductImage,
   makeAdminRouter,
 } from './features/admin'
 import { requireAuth } from './shared/middleware'
+import { uploadToS3 } from './shared/lib'
 
 export function createApp() {
   const app = new Hono()
@@ -220,7 +222,7 @@ export function createApp() {
 
   // Orders
   const orderRepo = makeOrderRepository(prisma)
-  const createOrder = makeCreateOrder(orderRepo, getActiveSale)
+  const createOrder = makeCreateOrder(orderRepo)
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
   app.use('/orders', requireAuth)
@@ -290,6 +292,7 @@ export function createApp() {
   const deleteSale = makeDeleteSale(adminRepo)
   const listSales = makeListSales(adminRepo)
   const countProductsInSale = makeCountProductsInSale(adminRepo)
+  const uploadProductImage = makeUploadProductImage(uploadToS3)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
     getDashboard, markAllMessagesRead,
@@ -300,6 +303,7 @@ export function createApp() {
     listAdminOrders, getAdminOrder, updateAdminOrder,
     getAnalytics,
     createSale, updateSale, deleteSale, listSales, getActiveSale, countProductsInSale,
+    uploadProductImage,
   ))
 
   return app

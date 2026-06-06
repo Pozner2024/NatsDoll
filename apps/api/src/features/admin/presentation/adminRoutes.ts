@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { z } from 'zod/v3'
 import { zValidator } from '@hono/zod-validator'
 import { requireAdmin } from '../../../shared/middleware'
@@ -11,6 +12,7 @@ import type {
   ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
   GetAnalytics,
   CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale, SaleInput,
+  UploadProductImage,
 } from '../types'
 
 const productListQuerySchema = z.object({
@@ -18,7 +20,7 @@ const productListQuerySchema = z.object({
   categoryId: z.string().optional(),
   status: z.enum(['published', 'draft']).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(48).default(12),
+  limit: z.coerce.number().int().min(1).max(200).default(12),
 })
 
 const imageUrlSchema = z
@@ -85,6 +87,8 @@ const previewCountQuerySchema = z.object({
   productIds: z.string().optional(),
 })
 
+const MAX_UPLOAD_BODY_BYTES = 7 * 1024 * 1024
+
 export function makeAdminRouter(
   getDashboard: GetDashboard,
   markAllMessagesRead: MarkAllMessagesRead,
@@ -112,6 +116,7 @@ export function makeAdminRouter(
   listSales: ListSales,
   getActiveSale: GetActiveSale,
   countProductsInSale: CountProductsInSale,
+  uploadProductImage: UploadProductImage,
 ) {
   const router = new Hono()
 
@@ -164,6 +169,18 @@ export function makeAdminRouter(
   }), async (c) => {
     const input = c.req.valid('json')
     const result = await createProduct(input)
+    return c.json(result, 201)
+  })
+
+  router.post('/products/images', bodyLimit({
+    maxSize: MAX_UPLOAD_BODY_BYTES,
+    onError: (c) => c.json({ error: 'File too large' }, 413),
+  }), async (c) => {
+    const body = await c.req.parseBody()
+    const file = body['file']
+    if (!(file instanceof File)) return c.json({ error: 'No file provided' }, 422)
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const result = await uploadProductImage({ bytes, contentType: file.type })
     return c.json(result, 201)
   })
 

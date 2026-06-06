@@ -32,7 +32,7 @@ describe('getCart', () => {
     const repo = makeRepo()
     vi.mocked(repo.getCartView).mockResolvedValue({
       items: [
-        { id: 'ci-1', productId: 'p1', productSlug: 'p', productName: 'P', productImage: null, unitPrice: 10, quantity: 2, subtotal: 20, message: 'Hi' },
+        { id: 'ci-1', productId: 'p1', productCategoryId: 'cat1', productSlug: 'p', productName: 'P', productImage: null, unitPrice: 10, quantity: 2, subtotal: 20, message: 'Hi' },
       ],
       totalAmount: 20,
       itemCount: 2,

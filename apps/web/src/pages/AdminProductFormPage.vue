@@ -126,16 +126,13 @@
         </div>
       </div>
 
-      <label class="product-form-page__label">
-        Images (URLs, one per line)
-        <textarea
-          :value="form.images.join('\n')"
-          class="product-form-page__textarea"
-          rows="3"
-          placeholder="https://..."
-          @input="form.images = ($event.target as HTMLTextAreaElement).value.split('\n').map(s => s.trim()).filter(Boolean)"
+      <div class="product-form-page__label">
+        Images
+        <AdminImageUploader
+          v-model="form.images"
+          v-model:uploading="isUploading"
         />
-      </label>
+      </div>
 
       <label class="product-form-page__checkbox-label">
         <input
@@ -162,7 +159,7 @@
         <button
           type="submit"
           class="product-form-page__save"
-          :disabled="isSaving"
+          :disabled="isSaving || isUploading"
         >
           {{ isSaving ? 'Saving…' : 'Save' }}
         </button>
@@ -175,7 +172,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { authFetch, apiErrorMessage, RichTextEditor } from '@/shared'
-import { useAdminCategories, type AdminProductInput } from '@/widgets/admin-panel'
+import { useAdminCategories, AdminImageUploader, type AdminProductInput } from '@/widgets/admin-panel'
 
 const router = useRouter()
 const route = useRoute()
@@ -185,6 +182,7 @@ const isEdit = computed(() => !!route.params.id)
 const loadError = ref<string | null>(null)
 const submitError = ref<string | null>(null)
 const isSaving = ref(false)
+const isUploading = ref(false)
 const newMessageOption = ref('')
 
 const form = ref<AdminProductInput>({

@@ -116,7 +116,7 @@
                 class="admin-analytics__traffic-link"
               >↗ Umami Analytics</a>
               <a
-                href="https://search.google.com/search-console/welcome"
+                href="https://search.google.com/search-console"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="admin-analytics__traffic-link"

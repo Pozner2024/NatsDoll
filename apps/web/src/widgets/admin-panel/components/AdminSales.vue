@@ -30,37 +30,41 @@
 
     <template v-else>
       <div class="admin-sales__active-section">
-        <template v-if="activeSale">
-          <div class="admin-sales__active-card">
+        <template v-if="activeSales.length">
+          <div
+            v-for="sale in activeSales"
+            :key="sale.id"
+            class="admin-sales__active-card"
+          >
             <div class="admin-sales__card-header">
               <span
                 class="admin-sales__status-dot"
-                :class="`admin-sales__status-dot--${saleStatus(activeSale)}`"
+                :class="`admin-sales__status-dot--${saleStatus(sale)}`"
               />
               <span class="admin-sales__status-label">
-                {{ saleStatus(activeSale) === 'active' ? 'Active' : 'Scheduled' }}
+                {{ saleStatus(sale) === 'active' ? 'Active' : 'Scheduled' }}
               </span>
-              <span class="admin-sales__card-name">{{ activeSale.name }}</span>
+              <span class="admin-sales__card-name">{{ sale.name }}</span>
               <div class="admin-sales__card-actions">
                 <RouterLink
-                  :to="`/admin/sales/${activeSale.id}`"
+                  :to="`/admin/sales/${sale.id}`"
                   class="admin-sales__btn admin-sales__btn--secondary"
                 >
                   Edit
                 </RouterLink>
                 <button
                   class="admin-sales__btn admin-sales__btn--danger"
-                  @click="handleDelete(activeSale.id)"
+                  @click="handleDelete(sale.id)"
                 >
                   End
                 </button>
               </div>
             </div>
             <div class="admin-sales__card-meta">
-              <span class="admin-sales__badge">-{{ activeSale.discount }}%</span>
-              <span class="admin-sales__meta-item">{{ formatPeriod(activeSale) }}</span>
-              <span class="admin-sales__meta-item">{{ formatScope(activeSale) }}</span>
-              <span class="admin-sales__meta-item admin-sales__meta-item--muted">{{ timeLabel(activeSale) }}</span>
+              <span class="admin-sales__badge">-{{ sale.discount }}%</span>
+              <span class="admin-sales__meta-item">{{ formatPeriod(sale) }}</span>
+              <span class="admin-sales__meta-item">{{ formatScope(sale) }}</span>
+              <span class="admin-sales__meta-item admin-sales__meta-item--muted">{{ timeLabel(sale) }}</span>
             </div>
           </div>
         </template>
@@ -112,8 +116,8 @@ import type { SaleRecord } from '../adminSalesApi'
 
 const { sales, isLoading, error, deleteSale } = useAdminSales()
 
-const activeSale = computed(() =>
-  sales.value.find((s) => saleStatus(s) === 'active' || saleStatus(s) === 'scheduled') ?? null,
+const activeSales = computed(() =>
+  sales.value.filter((s) => saleStatus(s) === 'active' || saleStatus(s) === 'scheduled'),
 )
 const pastSales = computed(() => sales.value.filter((s) => saleStatus(s) === 'ended'))
 

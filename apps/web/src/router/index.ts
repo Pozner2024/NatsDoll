@@ -166,11 +166,6 @@ const routes: RouteRecordRaw[] = [
         name: 'admin-sales-edit',
         component: () => import('@/pages/AdminSaleFormPage.vue'),
       },
-      {
-        path: 'finances',
-        name: 'admin-finances',
-        component: () => import('@/widgets/admin-panel/components/AdminFinances.vue'),
-      },
     ],
   },
 ]

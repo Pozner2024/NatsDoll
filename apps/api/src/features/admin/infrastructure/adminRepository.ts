@@ -336,6 +336,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
               id: true,
               quantity: true,
               price: true,
+              originalPrice: true,
               message: true,
               product: { select: { id: true, slug: true, name: true, images: true } },
             },
@@ -364,6 +365,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
           productImage: item.product.images[0] ?? null,
           quantity: item.quantity,
           price: Number(item.price),
+          originalPrice: item.originalPrice !== null ? Number(item.originalPrice) : null,
           subtotal: Number(item.price) * item.quantity,
           message: item.message,
         })),
@@ -672,6 +674,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       const now = new Date()
       const sale = await prisma.sale.findFirst({
         where: { startsAt: { lte: now }, endsAt: { gte: now } },
+        orderBy: [{ discount: 'desc' }, { createdAt: 'desc' }],
       })
       if (!sale) return null
       return {

@@ -140,6 +140,8 @@ export type AdminProductDetail = {
 
 export type GetAdminProduct = (id: string) => Promise<AdminProductDetail | null>
 
+export type UploadProductImage = (input: { bytes: Uint8Array; contentType: string }) => Promise<{ url: string }>
+
 // ── Admin Conversations ───────────────────────────────────────
 
 export type ConversationPreview = {

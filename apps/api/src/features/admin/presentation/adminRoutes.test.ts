@@ -13,6 +13,7 @@ import type {
   AdminOrderListResponse, AdminOrderDetail,
   GetAnalytics,
   CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale,
+  UploadProductImage,
 } from '../types'
 
 const mockDashboard: DashboardResponse = {
@@ -55,6 +56,7 @@ function makeApp(overrides: {
   listSales?: ListSales
   getActiveSale?: GetActiveSale
   countProductsInSale?: CountProductsInSale
+  uploadProductImage?: UploadProductImage
 } = {}) {
   const app = new Hono()
   app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'ADMIN' }); await next() })
@@ -85,6 +87,7 @@ function makeApp(overrides: {
     overrides.listSales ?? vi.fn().mockResolvedValue([]),
     overrides.getActiveSale ?? vi.fn().mockResolvedValue(null),
     overrides.countProductsInSale ?? vi.fn().mockResolvedValue(0),
+    overrides.uploadProductImage ?? vi.fn().mockResolvedValue({ url: 'https://s3/items/new/x.jpg' }),
   ))
   return app
 }
@@ -102,7 +105,7 @@ describe('GET /admin/dashboard', () => {
     const app = new Hono()
     app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'CUSTOMER' }); await next() })
     app.route('/admin', makeAdminRouter(
-      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
+      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
     ))
     const res = await app.request('/admin/dashboard')
     expect(res.status).toBe(403)
@@ -338,5 +341,149 @@ describe('PATCH /admin/orders/:id', () => {
       body: JSON.stringify({ status: 'INVALID_STATUS' }),
     })
     expect(res.status).toBe(422)
+  })
+})
+
+describe('GET /admin/sales', () => {
+  it('returns sales list', async () => {
+    const mockSale = {
+      id: 's1', name: 'Summer Sale', discount: 20,
+      startsAt: '2026-06-01T00:00:00.000Z', endsAt: '2026-06-30T23:59:59.999Z',
+      scope: 'ALL' as const, categoryIds: [], productIds: [], createdAt: '2026-05-01T00:00:00.000Z',
+    }
+    const app = makeApp({ listSales: vi.fn().mockResolvedValue([mockSale]) })
+    const res = await app.request('/admin/sales')
+    expect(res.status).toBe(200)
+    const body = await res.json() as typeof mockSale[]
+    expect(body).toHaveLength(1)
+    expect(body[0].name).toBe('Summer Sale')
+  })
+})
+
+describe('GET /admin/sales/active', () => {
+  it('returns null when no active sale', async () => {
+    const app = makeApp({ getActiveSale: vi.fn().mockResolvedValue(null) })
+    const res = await app.request('/admin/sales/active')
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toBeNull()
+  })
+})
+
+describe('POST /admin/sales', () => {
+  const validBody = {
+    name: 'Summer Sale', discount: 20,
+    startsAt: '2026-06-01T00:00:00.000Z', endsAt: '2026-06-30T23:59:59.999Z',
+    scope: 'ALL', categoryIds: [], productIds: [],
+  }
+
+  it('creates sale and returns 201', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 's1' })
+    const app = makeApp({ createSale: create })
+    const res = await app.request('/admin/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validBody),
+    })
+    expect(res.status).toBe(201)
+    const body = await res.json() as { id: string }
+    expect(body.id).toBe('s1')
+  })
+
+  it('returns 422 when name is missing', async () => {
+    const app = makeApp()
+    const res = await app.request('/admin/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ discount: 20, startsAt: '2026-06-01T00:00:00.000Z', endsAt: '2026-06-30T23:59:59.999Z', scope: 'ALL' }),
+    })
+    expect(res.status).toBe(422)
+  })
+
+  it('returns 422 when endsAt is before startsAt', async () => {
+    const app = makeApp()
+    const res = await app.request('/admin/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...validBody, endsAt: '2026-05-01T00:00:00.000Z' }),
+    })
+    expect(res.status).toBe(422)
+  })
+})
+
+describe('PUT /admin/sales/:id', () => {
+  const validBody = {
+    name: 'Updated Sale', discount: 30,
+    startsAt: '2026-07-01T00:00:00.000Z', endsAt: '2026-07-31T23:59:59.999Z',
+    scope: 'ALL', categoryIds: [], productIds: [],
+  }
+
+  it('calls updateSale and returns ok', async () => {
+    const update = vi.fn().mockResolvedValue(undefined)
+    const app = makeApp({ updateSale: update })
+    const res = await app.request('/admin/sales/s1', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validBody),
+    })
+    expect(res.status).toBe(200)
+    expect(update).toHaveBeenCalledWith('s1', expect.objectContaining({ name: 'Updated Sale', discount: 30 }))
+  })
+})
+
+describe('DELETE /admin/sales/:id', () => {
+  it('calls deleteSale and returns ok', async () => {
+    const del = vi.fn().mockResolvedValue(undefined)
+    const app = makeApp({ deleteSale: del })
+    const res = await app.request('/admin/sales/s1', { method: 'DELETE' })
+    expect(res.status).toBe(200)
+    expect(del).toHaveBeenCalledWith('s1')
+  })
+})
+
+describe('GET /admin/sales/preview-count', () => {
+  it('returns count for ALL scope', async () => {
+    const count = vi.fn().mockResolvedValue(42)
+    const app = makeApp({ countProductsInSale: count })
+    const res = await app.request('/admin/sales/preview-count?scope=ALL')
+    expect(res.status).toBe(200)
+    const body = await res.json() as { count: number }
+    expect(body.count).toBe(42)
+  })
+
+  it('returns 422 when scope is missing', async () => {
+    const app = makeApp()
+    const res = await app.request('/admin/sales/preview-count')
+    expect(res.status).toBe(422)
+  })
+})
+
+describe('POST /admin/products/images', () => {
+  it('загружает файл и возвращает url (201)', async () => {
+    const upload = vi.fn().mockResolvedValue({ url: 'https://s3/items/new/abc.png' })
+    const app = makeApp({ uploadProductImage: upload })
+    const form = new FormData()
+    form.append('file', new File([new Uint8Array([1, 2, 3])], 'pic.png', { type: 'image/png' }))
+    const res = await app.request('/admin/products/images', { method: 'POST', body: form })
+    expect(res.status).toBe(201)
+    const body = await res.json() as { url: string }
+    expect(body.url).toBe('https://s3/items/new/abc.png')
+    const arg = upload.mock.calls[0]![0] as { bytes: Uint8Array; contentType: string }
+    expect(arg.contentType).toBe('image/png')
+    expect(arg.bytes).toBeInstanceOf(Uint8Array)
+  })
+
+  it('возвращает 422 если файл не передан', async () => {
+    const app = makeApp()
+    const res = await app.request('/admin/products/images', { method: 'POST', body: new FormData() })
+    expect(res.status).toBe(422)
+  })
+
+  it('возвращает 413 если тело превышает лимит', async () => {
+    const app = makeApp()
+    const form = new FormData()
+    form.append('file', new File([new Uint8Array(8 * 1024 * 1024)], 'big.png', { type: 'image/png' }))
+    const res = await app.request('/admin/products/images', { method: 'POST', body: form })
+    expect(res.status).toBe(413)
   })
 })

@@ -78,6 +78,8 @@ onBeforeUnmount(() => {
   background: var(--color-white);
   display: flex;
   flex-direction: column;
+  text-transform: none;
+  letter-spacing: normal;
 
   &__toolbar {
     display: flex;
@@ -111,6 +113,7 @@ onBeforeUnmount(() => {
   &__content {
     padding: 8px 10px;
     font-size: 0.85rem;
+    font-weight: normal;
     line-height: 1.6;
     color: var(--color-text);
     min-height: 240px;

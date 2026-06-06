@@ -54,7 +54,6 @@ export type CartItemForCheckout = {
   quantity: number
   message: string | null
   categoryId: string
-  salePrice?: number
 }
 
 export type CreateOrder = (userId: string, shippingAddress: ShippingAddress) => Promise<OrderDetail>

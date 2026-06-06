@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import { AppError } from '../../../shared/errors'
+import { saleApplies, applyDiscount } from '../../../shared/lib'
 import type { OrderRepository, CartItemForCheckout, OrderDetail, OrderSummary, ShippingAddress, OrderItemView } from '../types'
 
 export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
@@ -72,10 +73,16 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           }
         }
 
-        const products = await tx.product.findMany({
-          where: { id: { in: items.map((i) => i.productId) } },
-          select: { id: true, price: true },
-        })
+        const [products, sale] = await Promise.all([
+          tx.product.findMany({
+            where: { id: { in: items.map((i) => i.productId) } },
+            select: { id: true, price: true },
+          }),
+          tx.sale.findFirst({
+            where: { startsAt: { lte: new Date() }, endsAt: { gte: new Date() } },
+            orderBy: [{ discount: 'desc' }, { createdAt: 'desc' }],
+          }),
+        ])
         const priceById = new Map(products.map((p) => [p.id, p.price.toNumber()]))
 
         const orderItems = items.map((item) => {
@@ -83,7 +90,10 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           if (originalPrice === undefined) {
             throw new AppError(409, `"${item.productName}" is no longer available`)
           }
-          const salePrice = item.salePrice
+          let salePrice: number | undefined
+          if (sale && saleApplies(sale, item.productId, item.categoryId)) {
+            salePrice = applyDiscount(originalPrice, sale.discount)
+          }
           return {
             productId: item.productId,
             quantity: item.quantity,

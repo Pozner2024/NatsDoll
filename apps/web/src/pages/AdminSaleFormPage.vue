@@ -61,6 +61,9 @@
             required
           />
         </label>
+        <p class="sale-form-page__tz-hint">
+          Dates are UTC: start = 00:00 UTC, end = 23:59 UTC
+        </p>
       </div>
 
       <div class="sale-form-page__field">
@@ -191,6 +194,16 @@
               :checked="form.productIds.includes(product.id)"
               @change="toggleProduct(product.id)"
             />
+            <img
+              v-if="product.image"
+              :src="product.image"
+              class="sale-form-page__picker-thumb"
+              alt=""
+            />
+            <span
+              v-else
+              class="sale-form-page__picker-thumb sale-form-page__picker-thumb--empty"
+            />
             {{ product.name }}
           </label>
         </div>
@@ -224,7 +237,7 @@ const form = reactive({
 })
 
 const categories = ref<{ id: string; name: string }[]>([])
-const allProducts = ref<{ id: string; name: string }[]>([])
+const allProducts = ref<{ id: string; name: string; image: string | null }[]>([])
 const pickerSearch = ref('')
 const showPicker = ref(false)
 const previewCount = ref<number | null>(null)
@@ -246,7 +259,7 @@ async function loadCategories() {
 async function loadAllProducts() {
   const res = await authFetch('/admin/products?limit=200&page=1&status=published')
   if (!res.ok) return
-  const data = await res.json() as { items: { id: string; name: string }[] }
+  const data = await res.json() as { items: { id: string; name: string; image: string | null }[] }
   allProducts.value = data.items
 }
 
@@ -465,6 +478,14 @@ onMounted(async () => {
     color: var(--color-text);
   }
 
+  &__tz-hint {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    align-self: flex-end;
+    margin: 0;
+    flex-basis: 100%;
+  }
+
   &__preview {
     font-size: 0.8rem;
     color: var(--color-text-muted);
@@ -530,17 +551,17 @@ onMounted(async () => {
     background: var(--color-white);
     border-radius: 12px 12px 0 0;
     width: 100%;
-    max-height: 70vh;
+    max-height: 85vh;
     overflow-y: auto;
-    padding: 16px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 
     @include tablet {
       border-radius: 8px;
-      width: 420px;
-      max-height: 60vh;
+      width: 620px;
+      max-height: 75vh;
     }
   }
 
@@ -563,9 +584,9 @@ onMounted(async () => {
   &__picker-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     overflow-y: auto;
-    max-height: 40vh;
+    max-height: 55vh;
   }
 
   &__picker-item {
@@ -575,6 +596,19 @@ onMounted(async () => {
     font-size: 0.82rem;
     color: var(--color-text);
     padding: 4px 0;
+  }
+
+  &__picker-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+
+    &--empty {
+      background: var(--color-bg);
+    }
   }
 }
 </style>

@@ -1,18 +1,15 @@
 import type { CartView } from '../types'
 import type { ActiveSale } from '../../admin/types'
+import { saleApplies, applyDiscount } from '../../../shared/lib'
 
 export function applySaleToCart(cart: CartView, sale: ActiveSale | null): CartView {
   if (!sale) return cart
 
   const items = cart.items.map((item) => {
-    const applies =
-      sale.scope === 'ALL' ||
-      (sale.scope === 'CATEGORIES' && sale.categoryIds.includes(item.productCategoryId)) ||
-      (sale.scope === 'PRODUCTS' && sale.productIds.includes(item.productId))
-    if (!applies) return item
+    if (!saleApplies(sale, item.productId, item.productCategoryId)) return item
 
     const originalUnitPrice = item.unitPrice
-    const unitPrice = Math.round(originalUnitPrice * (1 - sale.discount / 100) * 100) / 100
+    const unitPrice = applyDiscount(originalUnitPrice, sale.discount)
     return { ...item, originalUnitPrice, unitPrice, subtotal: Math.round(unitPrice * item.quantity * 100) / 100 }
   })
 

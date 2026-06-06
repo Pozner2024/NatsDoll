@@ -43,7 +43,6 @@ import IconMessages from './icons/IconMessages.vue'
 import IconOrders from './icons/IconOrders.vue'
 import IconAnalytics from './icons/IconAnalytics.vue'
 import IconSales from './icons/IconSales.vue'
-import IconFinances from './icons/IconFinances.vue'
 
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
@@ -63,7 +62,6 @@ const navItems: NavItem[] = [
   { to: '/admin/orders',    label: 'Orders',            icon: IconOrders,     exact: false },
   { to: '/admin/analytics', label: 'Analytics',         icon: IconAnalytics,  exact: false },
   { to: '/admin/sales',     label: 'Sales & Discounts', icon: IconSales,      exact: false },
-  { to: '/admin/finances',  label: 'Finances',          icon: IconFinances,   exact: false },
 ]
 </script>
 
