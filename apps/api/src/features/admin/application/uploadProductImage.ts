@@ -8,7 +8,6 @@ const SUPPORTED_TYPES = new Set([
   'image/png',
   'image/webp',
   'image/avif',
-  'image/gif',
 ])
 
 type UploadFn = (key: string, body: Uint8Array, contentType: string) => Promise<string>
