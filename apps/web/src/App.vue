@@ -1,8 +1,12 @@
 <!-- apps/web/src/App.vue -->
 <template>
   <div id="app">
+    <a
+      class="skip-link"
+      href="#main"
+    >Skip to content</a>
     <AppHeader />
-    <main>
+    <main id="main">
       <RouterView v-slot="{ Component }">
         <Transition
           name="page"
@@ -36,6 +40,21 @@ onMounted(() => { authStore.initAuth() })
 <style>
 main {
   min-height: calc(100dvh - var(--header-height));
+}
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: var(--z-lightbox);
+  padding: 0.5rem 1rem;
+  background: var(--color-text);
+  color: var(--color-bg);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 0;
 }
 
 .page-enter-active {

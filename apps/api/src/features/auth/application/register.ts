@@ -8,7 +8,6 @@ import {
   EMAIL_VERIFICATION_TTL_MS,
   FRONTEND_URL,
 } from '../../../shared/lib'
-import { AppError } from '../../../shared/errors'
 
 type RegisterData = { name: string; email: string; password: string }
 type RegisterResult = { message: string }
@@ -25,14 +24,18 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
 
     if (existing) {
       await hash(data.password).catch(() => undefined)
-      if (existing.emailVerified) {
-        await emailService.sendAccountExistsEmail(existing.email, `${FRONTEND_URL}/reset-password`)
-      } else {
-        const rawToken = generateRefreshToken()
-        const tokenHash = hashToken(rawToken)
-        const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS)
-        await repo.replaceEmailVerification(existing.id, { tokenHash, expiresAt })
-        await emailService.sendVerificationEmail(existing.email, verificationUrl(rawToken))
+      try {
+        if (existing.emailVerified) {
+          await emailService.sendAccountExistsEmail(existing.email, `${FRONTEND_URL}/reset-password`)
+        } else {
+          const rawToken = generateRefreshToken()
+          const tokenHash = hashToken(rawToken)
+          const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS)
+          await repo.replaceEmailVerification(existing.id, { tokenHash, expiresAt })
+          await emailService.sendVerificationEmail(existing.email, verificationUrl(rawToken))
+        }
+      } catch (err) {
+        console.error('[register] failed to send email for existing account:', err)
       }
       return { message: GENERIC_MESSAGE }
     }
@@ -62,13 +65,6 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       console.error('Failed to send verification email', { userId: user.id, message })
-      try {
-        await repo.deleteUser(user.id)
-      } catch (deleteErr) {
-        const deleteMessage = deleteErr instanceof Error ? deleteErr.message : String(deleteErr)
-        console.error('Failed to cleanup user after email send failure', { userId: user.id, message: deleteMessage })
-      }
-      throw new AppError(500, 'Failed to send verification email. Please try again later.')
     }
 
     return { message: GENERIC_MESSAGE }

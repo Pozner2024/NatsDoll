@@ -44,11 +44,6 @@ defineProps<{
     gap: 1.25rem;
   }
 
-  @include tablet {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-  }
-
   @include desktop {
     grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;

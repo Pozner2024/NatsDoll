@@ -24,7 +24,7 @@
         Choose files
       </button>
       <span class="image-uploader__hint">
-        or drag &amp; drop · up to {{ MAX_IMAGES }} · max 5MB each
+        or drag &amp; drop · up to {{ MAX_IMAGES }} · max {{ MAX_MB }}MB each
       </span>
     </div>
 
@@ -89,8 +89,9 @@ const emit = defineEmits<{
 }>()
 
 const MAX_IMAGES = 10
-const MAX_BYTES = 5 * 1024 * 1024
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
+const MAX_MB = 25
+const MAX_BYTES = MAX_MB * 1024 * 1024
+const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const isOver = ref(false)

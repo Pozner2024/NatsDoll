@@ -24,7 +24,11 @@ export function makeRequestPasswordReset(repo: AuthRepository, emailService: Ema
 
     if (!user.passwordHash) {
       await hash(`${DUMMY_HASH}${Date.now()}`).catch(() => undefined)
-      await emailService.sendAccountExistsEmail(user.email, `${FRONTEND_URL}/reset-password`)
+      try {
+        await emailService.sendAccountExistsEmail(user.email, `${FRONTEND_URL}/reset-password`)
+      } catch (err) {
+        console.error('[requestPasswordReset] failed to send account-exists email:', err)
+      }
       return { message: GENERIC_MESSAGE }
     }
 
@@ -33,7 +37,11 @@ export function makeRequestPasswordReset(repo: AuthRepository, emailService: Ema
     const tokenHash = hashToken(rawToken)
     const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS)
     await repo.createPasswordReset({ userId: user.id, tokenHash, expiresAt })
-    await emailService.sendPasswordResetEmail(user.email, `${FRONTEND_URL}/reset-password?token=${rawToken}`)
+    try {
+      await emailService.sendPasswordResetEmail(user.email, `${FRONTEND_URL}/reset-password?token=${rawToken}`)
+    } catch (err) {
+      console.error('[requestPasswordReset] failed to send reset email:', err)
+    }
     return { message: GENERIC_MESSAGE }
   }
 }

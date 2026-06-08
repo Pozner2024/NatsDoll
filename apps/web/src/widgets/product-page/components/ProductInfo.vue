@@ -122,7 +122,7 @@
             r="1.5"
           />
         </svg>
-        Delivery cost €12
+        Delivery cost {{ formatPrice(SHIPPING_BASE) }}
       </li>
     </ul>
 
@@ -138,7 +138,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import DOMPurify from 'dompurify'
-import { AppButton, formatPrice } from '@/shared'
+import { AppButton, formatPrice, SHIPPING_BASE } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
 import MessageSelector from './MessageSelector.vue'
 

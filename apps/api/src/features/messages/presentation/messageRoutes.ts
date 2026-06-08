@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
-import { zValidator } from '@hono/zod-validator'
+import { zValidator } from '../../../shared/lib/zValidator'
 import { createRateLimiter } from '../../../shared/middleware'
 import type { GetMyMessages, CreateMessage } from '../types'
 

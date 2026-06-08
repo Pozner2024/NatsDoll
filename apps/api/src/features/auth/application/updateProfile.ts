@@ -10,7 +10,7 @@ type UpdateProfileData = {
 
 type UpdateProfileResult = { id: string; name: string; email: string; role: string }
 
-export function makeUpdateProfile(repo: Pick<AuthRepository, 'findById' | 'updateUser'>) {
+export function makeUpdateProfile(repo: Pick<AuthRepository, 'findById' | 'updateUser' | 'deleteAllUserTokens'>) {
   return async function updateProfile(userId: string, data: UpdateProfileData): Promise<UpdateProfileResult> {
     if (!data.name && !data.password) {
       throw new AppError(400, 'At least one field must be provided')
@@ -43,6 +43,11 @@ export function makeUpdateProfile(repo: Pick<AuthRepository, 'findById' | 'updat
     }
 
     const updated = await repo.updateUser(userId, updates)
+
+    if (updates.passwordHash) {
+      await repo.deleteAllUserTokens(userId)
+    }
+
     return { id: updated.id, name: updated.name, email: updated.email, role: updated.role }
   }
 }

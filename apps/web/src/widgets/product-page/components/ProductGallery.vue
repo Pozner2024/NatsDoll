@@ -14,12 +14,15 @@
           :class="{ 'product-gallery__slide--active': i === currentIndex }"
           :src="img"
           :alt="`${name} ${i + 1}`"
+          :loading="i === 0 ? 'eager' : 'lazy'"
+          :fetchpriority="i === 0 ? 'high' : 'auto'"
+          decoding="async"
         >
         <template v-if="images.length > 1">
           <button
             type="button"
             class="product-gallery__arrow product-gallery__arrow--prev"
-            aria-label="Предыдущее фото"
+            aria-label="Previous photo"
             @click="prev"
           >
             <svg
@@ -41,7 +44,7 @@
           <button
             type="button"
             class="product-gallery__arrow product-gallery__arrow--next"
-            aria-label="Следующее фото"
+            aria-label="Next photo"
             @click="next"
           >
             <svg
@@ -78,7 +81,7 @@
           type="button"
           class="product-gallery__dot"
           :class="{ 'product-gallery__dot--active': i === currentIndex }"
-          :aria-label="`Фото ${i + 1}`"
+          :aria-label="`Photo ${i + 1}`"
           @click="goTo(i)"
         />
       </div>
@@ -99,6 +102,8 @@
             :src="img"
             :alt="`${name} ${i + 1}`"
             class="product-gallery__thumb-img"
+            loading="lazy"
+            decoding="async"
           >
         </button>
       </div>
@@ -112,7 +117,7 @@
           <button
             type="button"
             class="product-gallery__arrow product-gallery__arrow--prev"
-            aria-label="Предыдущее фото"
+            aria-label="Previous photo"
             @click="activeIndex = (activeIndex - 1 + images.length) % images.length"
           >
             <svg
@@ -134,7 +139,7 @@
           <button
             type="button"
             class="product-gallery__arrow product-gallery__arrow--next"
-            aria-label="Следующее фото"
+            aria-label="Next photo"
             @click="activeIndex = (activeIndex + 1) % images.length"
           >
             <svg
@@ -350,7 +355,7 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 2;
+    z-index: var(--z-card-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -375,7 +380,7 @@ const activeImage = computed(() => props.images[activeIndex.value] ?? '')
     position: absolute;
     top: 0.6rem;
     right: 0.6rem;
-    z-index: 2;
+    z-index: var(--z-card-overlay);
   }
 }
 </style>

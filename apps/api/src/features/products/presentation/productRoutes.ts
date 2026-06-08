@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
-import { zValidator } from '@hono/zod-validator'
+import { zValidator } from '../../../shared/lib/zValidator'
 import type { ProductListParams, ProductListResponse, CategoryListItem, GetProduct } from '../types'
 
 type ListProducts = (params: ProductListParams) => Promise<ProductListResponse>

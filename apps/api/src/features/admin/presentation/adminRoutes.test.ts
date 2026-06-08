@@ -482,7 +482,7 @@ describe('POST /admin/products/images', () => {
   it('возвращает 413 если тело превышает лимит', async () => {
     const app = makeApp()
     const form = new FormData()
-    form.append('file', new File([new Uint8Array(8 * 1024 * 1024)], 'big.png', { type: 'image/png' }))
+    form.append('file', new File([new Uint8Array(26 * 1024 * 1024)], 'big.png', { type: 'image/png' }))
     const res = await app.request('/admin/products/images', { method: 'POST', body: form })
     expect(res.status).toBe(413)
   })

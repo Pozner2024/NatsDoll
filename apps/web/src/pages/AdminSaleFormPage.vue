@@ -140,6 +140,7 @@
       <div
         v-if="saveError"
         class="sale-form-page__save-error"
+        role="alert"
       >
         {{ saveError }}
       </div>
@@ -217,8 +218,8 @@ import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { z } from 'zod'
 import { authFetch } from '@/shared'
-import { saveSale, fetchSalePreviewCount, SaleRecordSchema } from '@/widgets/admin-panel/adminSalesApi'
-import type { SaleScope } from '@/widgets/admin-panel/adminSalesApi'
+import { saveSale, fetchSalePreviewCount, SaleRecordSchema } from '@/widgets/admin-panel'
+import type { SaleScope } from '@/widgets/admin-panel'
 
 const route = useRoute()
 const router = useRouter()
@@ -226,9 +227,16 @@ const router = useRouter()
 const id = computed(() => (route.params.id as string) || null)
 const isEdit = computed(() => !!id.value)
 
+const DEFAULT_DISCOUNT = 20
+const MIN_DISCOUNT = 1
+const MAX_DISCOUNT = 99
+const NAME_MAX_LENGTH = 100
+const DAY_START = 'T00:00:00.000Z'
+const DAY_END = 'T23:59:59.999Z'
+
 const form = reactive({
   name: '',
-  discount: 20,
+  discount: DEFAULT_DISCOUNT,
   startsAt: '',
   endsAt: '',
   scope: 'ALL' as SaleScope,
@@ -300,16 +308,40 @@ async function refreshPreviewCount() {
   previewCount.value = count
 }
 
-watch(() => [form.scope, form.categoryIds.length, form.productIds.length], refreshPreviewCount)
+watch(
+  () => [form.scope, [...form.categoryIds], [...form.productIds]],
+  refreshPreviewCount,
+  { deep: true },
+)
+
+function validate(): string | null {
+  if (!form.name.trim()) return 'Name is required'
+  if (form.name.length > NAME_MAX_LENGTH) return `Name must be at most ${NAME_MAX_LENGTH} characters`
+  if (!Number.isInteger(form.discount) || form.discount < MIN_DISCOUNT || form.discount > MAX_DISCOUNT) {
+    return `Discount must be an integer between ${MIN_DISCOUNT} and ${MAX_DISCOUNT}`
+  }
+  if (!form.startsAt || !form.endsAt) return 'Start and end dates are required'
+  if (new Date(form.startsAt + DAY_START) >= new Date(form.endsAt + DAY_END)) {
+    return 'End date must be after start date'
+  }
+  if (form.scope === 'CATEGORIES' && form.categoryIds.length === 0) return 'Select at least one category'
+  if (form.scope === 'PRODUCTS' && form.productIds.length === 0) return 'Select at least one product'
+  return null
+}
 
 async function handleSubmit() {
+  const validationError = validate()
+  if (validationError) {
+    saveError.value = validationError
+    return
+  }
   isSaving.value = true
   saveError.value = null
   const result = await saveSale(id.value, {
     name: form.name,
     discount: form.discount,
-    startsAt: form.startsAt + 'T00:00:00.000Z',
-    endsAt: form.endsAt + 'T23:59:59.999Z',
+    startsAt: form.startsAt + DAY_START,
+    endsAt: form.endsAt + DAY_END,
     scope: form.scope,
     categoryIds: form.categoryIds,
     productIds: form.productIds,
@@ -537,7 +569,7 @@ onMounted(async () => {
     position: fixed;
     inset: 0;
     background: rgb(0 0 0 / 0.4);
-    z-index: 200;
+    z-index: var(--z-admin-overlay);
     display: flex;
     align-items: flex-end;
 

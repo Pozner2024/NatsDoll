@@ -103,6 +103,7 @@
         <p
           v-if="submitError"
           class="auth-modal__error auth-modal__error--global"
+          role="alert"
         >
           {{ submitError }}
         </p>
@@ -213,6 +214,7 @@
         <p
           v-if="submitError"
           class="auth-modal__error auth-modal__error--global"
+          role="alert"
         >
           {{ submitError }}
         </p>
@@ -275,6 +277,7 @@
         <p
           v-if="submitError"
           class="auth-modal__error auth-modal__error--global"
+          role="alert"
         >
           {{ submitError }}
         </p>

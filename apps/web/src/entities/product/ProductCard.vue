@@ -14,6 +14,8 @@
             :src="product.image"
             :alt="product.name"
             class="product-card__img"
+            loading="lazy"
+            decoding="async"
           >
           <div
             v-else
@@ -139,7 +141,7 @@ async function onAdd() {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
-    z-index: 2;
+    z-index: var(--z-card-overlay);
   }
 
   &__image {

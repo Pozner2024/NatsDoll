@@ -122,6 +122,7 @@
     <p
       v-if="submitError"
       class="checkout-form__error checkout-form__error--global"
+      role="alert"
     >
       {{ submitError }}
     </p>

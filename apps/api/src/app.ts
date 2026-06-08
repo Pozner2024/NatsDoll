@@ -146,11 +146,11 @@ export function createApp() {
       if (err.code === 'P2003') {
         return c.json({ error: 'Operation not allowed due to related records' }, 409)
       }
-      console.error('Prisma error:', err)
+      console.error('Prisma known error:', { code: err.code, message: err.message })
       return c.json({ error: 'Database error' }, 500)
     }
     if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-      console.error('Prisma error:', err)
+      console.error('Prisma unknown error:', { message: err.message })
       return c.json({ error: 'Database error' }, 500)
     }
     console.error('Unhandled error:', err)

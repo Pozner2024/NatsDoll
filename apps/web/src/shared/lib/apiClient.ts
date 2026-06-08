@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 const API_BASE = '/api'
+const REQUEST_TIMEOUT_MS = 15000
 
 const refreshSchema = z.object({ accessToken: z.string() })
 
@@ -21,10 +22,13 @@ export async function apiFetch(path: string, init: ApiRequestInit = {}): Promise
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...(headers as Record<string, string> | undefined),
   }
+  const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  const signal = rest.signal ? AbortSignal.any([rest.signal, timeoutSignal]) : timeoutSignal
   return fetch(`${API_BASE}${path}`, {
     ...rest,
     credentials: 'include',
     headers: mergedHeaders,
+    signal,
     body: json !== undefined ? JSON.stringify(json) : (rest as RequestInit).body,
   })
 }

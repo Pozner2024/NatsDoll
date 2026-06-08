@@ -141,7 +141,7 @@ const currentTitle = computed(() => {
     display: flex;
     align-items: stretch;
     border-top: 1px solid rgb(236 221 213 / 0.12);
-    z-index: 100;
+    z-index: var(--z-admin-mobile-nav);
 
     @include tablet {
       display: none;

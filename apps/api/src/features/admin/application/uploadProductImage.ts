@@ -10,14 +10,24 @@ const SUPPORTED_TYPES = new Set([
   'image/avif',
 ])
 
+const MAX_IMAGE_WIDTH = 1200
+const MAX_IMAGE_HEIGHT = 800
+const WEBP_QUALITY = 85
+const MAX_INPUT_PIXELS = 50_000_000
+
 type UploadFn = (key: string, body: Uint8Array, contentType: string) => Promise<string>
 
 async function processImage(bytes: Uint8Array): Promise<Uint8Array> {
-  const buffer = await sharp(bytes)
-    .resize(1200, 800, { fit: 'inside', withoutEnlargement: true })
-    .webp({ quality: 85 })
-    .toBuffer()
-  return new Uint8Array(buffer)
+  try {
+    const buffer = await sharp(bytes, { animated: true, limitInputPixels: MAX_INPUT_PIXELS })
+      .rotate()
+      .resize(MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: WEBP_QUALITY })
+      .toBuffer()
+    return new Uint8Array(buffer)
+  } catch {
+    throw new AppError(400, 'Invalid or corrupted image file')
+  }
 }
 
 export function makeUploadProductImage(upload: UploadFn): UploadProductImage {
