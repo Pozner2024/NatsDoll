@@ -1,7 +1,11 @@
 <template>
   <section class="home-stub">
-    <h1 class="home-stub__title">NatsDoll</h1>
-    <p class="home-stub__note">Nuxt skeleton — SSR works</p>
+    <h1 class="home-stub__title">
+      NatsDoll
+    </h1>
+    <p class="home-stub__note">
+      Nuxt skeleton — SSR works
+    </p>
   </section>
 </template>
 

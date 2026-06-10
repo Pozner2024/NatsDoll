@@ -72,4 +72,9 @@ export default [
       ...deepImportRule,
     },
   },
+
+  {
+    files: ["apps/web/app/**/*.vue"],
+    rules: { "vue/multi-word-component-names": "off" },
+  },
 ];

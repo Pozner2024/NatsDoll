@@ -32,6 +32,7 @@ export default defineNuxtConfig({
     tsConfig: {
       compilerOptions: {
         types: ['vitest/globals'],
+        noUncheckedIndexedAccess: false,
       },
       include: ['../src/**/*', '../vitest-env.d.ts'],
     },

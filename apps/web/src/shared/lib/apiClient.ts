@@ -5,7 +5,7 @@ const REQUEST_TIMEOUT_MS = 15000
 
 const refreshSchema = z.object({ accessToken: z.string() })
 
-type ApiRequestInit = Omit<RequestInit, 'body'> & {
+type ApiRequestInit = RequestInit & {
   json?: unknown
   accessToken?: string
   // Таймаут запроса в мс. null отключает таймаут (например, для больших загрузок).
