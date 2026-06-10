@@ -21,13 +21,13 @@
 
 **Files:** нет изменений файлов.
 
-- [ ] **Step 1: Создать ветку от текущего HEAD**
+- [x] **Step 1: Создать ветку от текущего HEAD**
 
 ```bash
 git checkout -b feat/nuxt-skeleton
 ```
 
-- [ ] **Step 2: Проверить чистоту рабочего дерева**
+- [x] **Step 2: Проверить чистоту рабочего дерева**
 
 Run: `git status --short`
 Expected: пустой вывод.
@@ -37,7 +37,7 @@ Expected: пустой вывод.
 **Files:**
 - Modify: `apps/web/package.json`
 
-- [ ] **Step 1: Заменить содержимое `apps/web/package.json`**
+- [x] **Step 1: Заменить содержимое `apps/web/package.json`**
 
 ```json
 {
@@ -83,12 +83,12 @@ Expected: пустой вывод.
 
 Что изменилось относительно старого файла: scripts `dev`/`build`/`preview` → nuxt, добавлен `postinstall: nuxt prepare`, lint покрывает `src` и `app`; добавлены `nuxt`, `@pinia/nuxt`; `pinia` поднята `^2.1.7` → `^3.0.0` (требование @pinia/nuxt ≥0.10; vue 3.5 уже в дереве); удалены прямые зависимости `vue`, `vue-router`, `vite` — их предоставляет Nuxt (vitest несёт собственный vite). `@vitejs/plugin-vue` оставлен — нужен vitest для компиляции `.vue` в тестах.
 
-- [ ] **Step 2: Установить зависимости**
+- [x] **Step 2: Установить зависимости**
 
 Run: `npm install`
 Expected: завершение без ошибок. Предупреждение `postinstall: nuxt prepare` может упасть, пока нет `nuxt.config.ts`, — если `npm install` из-за этого вернул ошибку, игнорировать до Task 3, Step 3.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/package.json package-lock.json
@@ -101,7 +101,7 @@ git commit -m "feat(web): nuxt 4 dependencies and scripts"
 - Create: `apps/web/nuxt.config.ts`
 - Modify: `.gitignore`
 
-- [ ] **Step 1: Создать `apps/web/nuxt.config.ts`**
+- [x] **Step 1: Создать `apps/web/nuxt.config.ts`**
 
 ```ts
 import { fileURLToPath } from 'node:url'
@@ -174,7 +174,7 @@ export default defineNuxtConfig({
 - `typescript.tsConfig` мёржится в генерируемый `.nuxt/tsconfig.app.json`; `include` указан относительно каталога `.nuxt/` — поэтому `../src/**/*`. Без него typecheck не увидит ФСД-код.
 - `devServer.host: '0.0.0.0'` нужен для dev-режима в Docker (порт 5173 проброшен в `docker-compose.yml`).
 
-- [ ] **Step 2: Добавить в корневой `.gitignore` артефакты Nuxt**
+- [x] **Step 2: Добавить в корневой `.gitignore` артефакты Nuxt**
 
 В секцию `# Production` после строки `/build` добавить:
 
@@ -183,12 +183,12 @@ export default defineNuxtConfig({
 .output/
 ```
 
-- [ ] **Step 3: Проверить, что Nuxt видит конфиг**
+- [x] **Step 3: Проверить, что Nuxt видит конфиг**
 
 Run: `npx -w apps/web nuxt prepare`
 Expected: завершение без ошибок, появился каталог `apps/web/.nuxt` с `tsconfig.app.json` внутри.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/nuxt.config.ts .gitignore
@@ -202,7 +202,7 @@ git commit -m "feat(web): nuxt config with FSD alias and dev proxy"
 - Create: `apps/web/app/layouts/default.vue`
 - Create: `apps/web/app/pages/index.vue`
 
-- [ ] **Step 1: Создать `apps/web/app/app.vue`**
+- [x] **Step 1: Создать `apps/web/app/app.vue`**
 
 ```vue
 <template>
@@ -212,7 +212,7 @@ git commit -m "feat(web): nuxt config with FSD alias and dev proxy"
 </template>
 ```
 
-- [ ] **Step 2: Создать `apps/web/app/layouts/default.vue`**
+- [x] **Step 2: Создать `apps/web/app/layouts/default.vue`**
 
 ```vue
 <template>
@@ -220,7 +220,7 @@ git commit -m "feat(web): nuxt config with FSD alias and dev proxy"
 </template>
 ```
 
-- [ ] **Step 3: Создать `apps/web/app/pages/index.vue`**
+- [x] **Step 3: Создать `apps/web/app/pages/index.vue`**
 
 Заглушка проверяет три вещи разом: SSR-рендер, CSS-переменные из global.scss и SCSS-миксины breakpoints (критерий приёмки 5). Будет заменена реальной главной в спеке 2.
 
@@ -256,7 +256,7 @@ git commit -m "feat(web): nuxt config with FSD alias and dev proxy"
 </style>
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/app
@@ -269,7 +269,7 @@ git commit -m "feat(web): nuxt app layer with stub home page"
 - Modify: `apps/web/src/assets/styles/global.scss`
 - Delete: `apps/web/index.html`
 
-- [ ] **Step 1: Добавить блок `:root` в начало `global.scss`**
+- [x] **Step 1: Добавить блок `:root` в начало `global.scss`**
 
 В самое начало файла `apps/web/src/assets/styles/global.scss` (перед `*,`) вставить блок `:root { ... }`, скопированный ИЗ `apps/web/index.html` (строки 16–59 внутри тега `<style>`) дословно, включая комментарий про button gradient channels:
 
@@ -320,7 +320,7 @@ git commit -m "feat(web): nuxt app layer with stub home page"
 }
 ```
 
-- [ ] **Step 2: Удалить `apps/web/index.html`**
+- [x] **Step 2: Удалить `apps/web/index.html`**
 
 Всё его содержимое уже перенесено: head → `nuxt.config.ts` (Task 3), CSS-переменные → `global.scss` (Step 1). Точка входа `<div id="app">` Nuxt'у не нужна.
 
@@ -328,7 +328,7 @@ git commit -m "feat(web): nuxt app layer with stub home page"
 git rm apps/web/index.html
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/src/assets/styles/global.scss
@@ -342,7 +342,7 @@ git commit -m "feat(web): move root css variables to global.scss, drop index.htm
 - Modify: `apps/web/tsconfig.json` (полная замена)
 - Delete: `apps/web/vite.config.ts`, `apps/web/src/main.ts`, `apps/web/tsconfig.app.json`, `apps/web/tsconfig.vitest.json`
 
-- [ ] **Step 1: Создать `apps/web/vitest.config.ts`**
+- [x] **Step 1: Создать `apps/web/vitest.config.ts`**
 
 Переносит vitest-секцию и алиас из старого `vite.config.ts` один в один; dev-server-секция не нужна (ею теперь владеет Nuxt):
 
@@ -368,7 +368,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 2: Заменить содержимое `apps/web/tsconfig.json`**
+- [x] **Step 2: Заменить содержимое `apps/web/tsconfig.json`**
 
 Nuxt генерирует project references в `.nuxt/`; ручные `tsconfig.app.json` / `tsconfig.vitest.json` больше не нужны (покрытие `src/**` и типы vitest обеспечивает `typescript.tsConfig` из `nuxt.config.ts`):
 
@@ -384,7 +384,7 @@ Nuxt генерирует project references в `.nuxt/`; ручные `tsconfig
 }
 ```
 
-- [ ] **Step 3: Удалить устаревшие файлы**
+- [x] **Step 3: Удалить устаревшие файлы**
 
 `src/main.ts` заменён Nuxt-bootstrap'ом: Pinia подключает модуль `@pinia/nuxt`, `setupAuthInterceptor` по спеку переезжает в client-плагин в спеке 4 (до тех пор auth в Nuxt-приложении не используется).
 
@@ -392,7 +392,7 @@ Nuxt генерирует project references в `.nuxt/`; ручные `tsconfig
 git rm apps/web/vite.config.ts apps/web/src/main.ts apps/web/tsconfig.app.json apps/web/tsconfig.vitest.json
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/vitest.config.ts apps/web/tsconfig.json
@@ -403,12 +403,12 @@ git commit -m "feat(web): standalone vitest config, nuxt project references tsco
 
 **Files:** нет изменений файлов.
 
-- [ ] **Step 1: Запустить dev-сервер в фоне**
+- [x] **Step 1: Запустить dev-сервер в фоне**
 
 Run (background): `npm run dev -w apps/web`
 Expected: в логе строка с `http://localhost:5173`. Локальный API запускать не нужно — заглушка данных не запрашивает.
 
-- [ ] **Step 2: Проверить, что разметка приходит с сервера (без выполнения JS)**
+- [x] **Step 2: Проверить, что разметка приходит с сервера (без выполнения JS)**
 
 Run: `curl -s http://localhost:5173/ | grep -c "Nuxt skeleton — SSR works"`
 Expected: `1` (или больше). Если `0` — SSR не работает, разбираться, не идти дальше.
@@ -418,7 +418,7 @@ Expected: `1` (или больше). Если `0` — SSR не работает,
 Run: `curl -s http://localhost:5173/ | grep -c "stats.natsdoll.com/script.js"`
 Expected: `1`.
 
-- [ ] **Step 3: Остановить dev-сервер**
+- [x] **Step 3: Остановить dev-сервер**
 
 Остановить фоновый процесс из Step 1.
 
@@ -426,14 +426,14 @@ Expected: `1`.
 
 **Files:** нет изменений файлов (если тесты зелёные).
 
-- [ ] **Step 1: Запустить unit-тесты web**
+- [x] **Step 1: Запустить unit-тесты web**
 
 Run (из корня репо): `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic`
 Expected: все тестовые файлы (33 шт.) проходят, exit code 0.
 
 Известная ловушка проекта: без `--root apps/web` не подхватится `@vitejs/plugin-vue` и `.vue`-тесты упадут с ложной ошибкой парсинга.
 
-- [ ] **Step 2: Если есть падения из-за pinia 3**
+- [x] **Step 2: Если есть падения из-за pinia 3**
 
 Ожидаемых падений нет (pinia 3 не меняет API `defineStore`/`setActivePinia`). Если тест падает с ошибкой импорта из `pinia` — зафиксировать вывод и остановиться для ревью, НЕ переписывать тесты (правило проекта: не трогать рабочие тесты).
 
@@ -441,14 +441,14 @@ Expected: все тестовые файлы (33 шт.) проходят, exit c
 
 **Files:** нет изменений файлов (если проверки зелёные).
 
-- [ ] **Step 1: Typecheck**
+- [x] **Step 1: Typecheck**
 
 Run: `cd apps/web && NODE_OPTIONS=--max-old-space-size=4096 npx nuxt typecheck; cd ../..`
 Expected: exit code 0. Перед запуском убедиться, что `apps/web/.nuxt` существует (иначе `npx -w apps/web nuxt prepare`).
 
 Проверка полноты: команда должна type-проверять и `src/**` (например, временно добавить заведомую ошибку типов в любой файл `src/shared/` — typecheck обязан её увидеть; затем убрать). Если `src/**` не проверяется — `include` в `typescript.tsConfig` из Task 3 настроен неверно, исправить там.
 
-- [ ] **Step 2: Lint**
+- [x] **Step 2: Lint**
 
 Run: `npm run lint -w apps/web`
 Expected: exit code 0. Если eslint ругается на новые файлы `app/**` правилом `vue/multi-word-component-names` (имена `app.vue`/`index.vue`/`default.vue` диктует Nuxt), добавить в конец массива конфигураций корневого `eslint.config.js` отдельный блок — не отключать правило глобально:
@@ -460,12 +460,12 @@ Expected: exit code 0. Если eslint ругается на новые файл
 }
 ```
 
-- [ ] **Step 3: Production build**
+- [x] **Step 3: Production build**
 
 Run: `npm run build -w apps/web`
 Expected: exit code 0, создан каталог `apps/web/.output` с `server/index.mjs`.
 
-- [ ] **Step 4: Commit (если были правки eslint.config.js)**
+- [x] **Step 4: Commit (если были правки eslint.config.js)**
 
 ```bash
 git add eslint.config.js
@@ -478,7 +478,7 @@ git commit -m "chore: eslint override for nuxt app layer"
 - Modify: `docker-compose.yml:54`
 - Modify: `CLAUDE.md` (секция «Локальные проверки»)
 
-- [ ] **Step 1: Переименовать переменную прокси в dev-compose**
+- [x] **Step 1: Переименовать переменную прокси в dev-compose**
 
 В `docker-compose.yml` в сервисе `web` заменить:
 
@@ -494,7 +494,7 @@ git commit -m "chore: eslint override for nuxt app layer"
       NUXT_DEV_PROXY_TARGET: http://api:3000
 ```
 
-- [ ] **Step 2: Обновить команду typecheck web в CLAUDE.md**
+- [x] **Step 2: Обновить команду typecheck web в CLAUDE.md**
 
 В секции «Локальные проверки» заменить строки:
 
@@ -510,7 +510,7 @@ node --max-old-space-size=4096 ./node_modules/vue-tsc/bin/vue-tsc.js --noEmit
 cd apps/web && NODE_OPTIONS=--max-old-space-size=4096 npx nuxt typecheck
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docker-compose.yml CLAUDE.md
@@ -521,7 +521,7 @@ git commit -m "chore: rename dev proxy env var for nuxt, update typecheck docs"
 
 **Files:** нет изменений файлов.
 
-- [ ] **Step 1: Пройтись по критериям приёмки**
+- [x] **Step 1: Пройтись по критериям приёмки**
 
 1. `npm run build -w apps/web` — без ошибок (Task 9, Step 3).
 2. `curl http://localhost:5173/` содержит разметку заглушки (Task 7, Step 2).
@@ -530,7 +530,7 @@ git commit -m "chore: rename dev proxy env var for nuxt, update typecheck docs"
 5. SCSS-миксин `tablet` работает в заглушке (Task 4 + сборка в Task 9).
 6. Lint проходит (Task 9, Step 2).
 
-- [ ] **Step 2: Итоговый статус**
+- [x] **Step 2: Итоговый статус**
 
 Run: `git log --oneline main..HEAD` и `git status --short`
 Expected: серия коммитов задач 2–10, чистое дерево. Доложить пользователю результат по каждому критерию.
