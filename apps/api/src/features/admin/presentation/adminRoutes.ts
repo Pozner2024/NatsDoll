@@ -87,7 +87,9 @@ const previewCountQuerySchema = z.object({
   productIds: z.string().optional(),
 })
 
-const MAX_UPLOAD_BODY_BYTES = 25 * 1024 * 1024
+// 25 МБ на файл (как в клиенте) + запас на multipart-обвязку (boundary, заголовки части),
+// чтобы файл ровно на лимите не отлетал с 413.
+const MAX_UPLOAD_BODY_BYTES = 25 * 1024 * 1024 + 64 * 1024
 
 export function makeAdminRouter(
   getDashboard: GetDashboard,

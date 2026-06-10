@@ -5,7 +5,7 @@ import { AppError } from '../errors'
 type S3Bundle = { client: S3Client; bucket: string; endpoint: string }
 
 const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif'])
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 const KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9/_.-]*$/
 const S3_CONNECTION_TIMEOUT_MS = 3000
 const S3_REQUEST_TIMEOUT_MS = 10000

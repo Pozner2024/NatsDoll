@@ -25,7 +25,8 @@ async function processImage(bytes: Uint8Array): Promise<Uint8Array> {
       .webp({ quality: WEBP_QUALITY })
       .toBuffer()
     return new Uint8Array(buffer)
-  } catch {
+  } catch (err) {
+    console.error('[uploadProductImage] sharp failed:', err)
     throw new AppError(400, 'Invalid or corrupted image file')
   }
 }

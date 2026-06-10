@@ -11,6 +11,7 @@ export { apiFetch, apiErrorMessage, apiPost, authFetch, setupAuthInterceptor } f
 export { lockScroll, unlockScroll } from './lib/useBodyScrollLock'
 export { useClickOutside } from './lib/useClickOutside'
 export { useAuthModal } from './lib/useAuthModal'
+export { useCartPrompt } from './lib/useCartPrompt'
 export { MEDIA } from './lib/breakpoints'
 export { emailSchema, validateEmail } from './lib/validation'
 export { resolveSafeRedirect } from './lib/safeRedirect'

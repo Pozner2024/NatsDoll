@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AppError } from '../../../shared/errors'
 import { saleApplies, applyDiscount } from '../../../shared/lib'
 import type { OrderRepository, CartItemForCheckout, OrderDetail, OrderSummary, ShippingAddress, OrderItemView } from '../types'
+import type { ActiveSale } from '../../admin/types'
 
 export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
   return {
@@ -51,6 +52,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
       items: CartItemForCheckout[],
       shippingCost: number,
       shippingAddress: ShippingAddress,
+      sale: ActiveSale | null,
     ): Promise<OrderDetail> {
       const cartItemIds = items.map((i) => i.id)
 
@@ -73,16 +75,13 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           }
         }
 
-        const [products, sale] = await Promise.all([
-          tx.product.findMany({
-            where: { id: { in: items.map((i) => i.productId) } },
-            select: { id: true, price: true },
-          }),
-          tx.sale.findFirst({
-            where: { startsAt: { lte: new Date() }, endsAt: { gte: new Date() } },
-            orderBy: [{ discount: 'desc' }, { createdAt: 'desc' }],
-          }),
-        ])
+        // Цены перечитываются внутри транзакции (источник истины на момент оформления),
+        // а активная распродажа приходит параметром из application-слоя (getActiveSale) —
+        // тем же путём, что и для корзины, без дублирования запроса Sale здесь.
+        const products = await tx.product.findMany({
+          where: { id: { in: items.map((i) => i.productId) } },
+          select: { id: true, price: true },
+        })
         const priceById = new Map(products.map((p) => [p.id, p.price.toNumber()]))
 
         const orderItems = items.map((item) => {

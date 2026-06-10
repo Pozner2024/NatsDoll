@@ -297,7 +297,25 @@
       "Bash(grep -n 'rotateToken\\\\|deleteAllUserTokens\\\\|findTokenByHash\\\\|revokedAt\\\\|updateMany\\\\|$transaction\\\\|MAX_ACTIVE_SESSIONS' apps/api/src/features/auth/infrastructure/authRepository.ts)",
       "Bash(grep -n \"cursor: pointer\\\\|rgba\\(\\\\|: any\\\\|as any\\\\|\\\\/\\\\*\\\\|\\\\/\\\\/\" apps/web/src/widgets/admin-panel/components/AdminImageUploader.vue)",
       "Bash(echo \"API_TSC_EXIT=$?\")",
-      "Bash(echo \"=== EXIT $? ===\")"
+      "Bash(echo \"=== EXIT $? ===\")",
+      "Bash(Select-String -Pattern \"Test Files|Tests|FAIL|✗|failed\")",
+      "PowerShell(node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit; if \\($?\\) { \"TYPECHECK OK\" })",
+      "PowerShell(node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit -p apps/api/tsconfig.json; if \\($?\\) { \"API TYPECHECK OK\" })",
+      "Bash(echo \"API_TSC_EXIT: $?\")",
+      "Bash(echo \"API_TEST_EXIT: $?\")",
+      "Bash(echo \"=== EXIT: $? ===\")",
+      "Bash(claude update *)",
+      "Bash(grep -iE \"\\\\.env|secret|credential|\\\\.pem|\\\\.key$\")",
+      "Bash(grep -iE \"\\\\.env$|\\\\.env\\\\.|secret|\\\\.pem|\\\\.key$\")",
+      "Bash(git ls-files *)",
+      "Bash(rm -f \"D:/Natalia/NatsDoll-review.zip\")",
+      "Bash(tar -a -cf \"D:/Natalia/NatsDoll-review.zip\" -T /tmp/nats_filelist.txt)",
+      "Bash(rm -f \"../NatsDoll-review.zip\")",
+      "Bash(tar -a -cf \"../NatsDoll-review.zip\" -T /tmp/nats_filelist.txt)",
+      "Bash(unzip -l \"../NatsDoll-review.zip\")",
+      "Bash(grep -iE \"\\\\.env$|node_modules|\\\\.git/\")",
+      "Bash(grep -n '\\\\$queryRaw\\\\|\\\\$executeRaw\\\\|Prisma.raw\\\\|Prisma.sql' apps/api/src -r)",
+      "Bash(docker version *)"
     ]
   }
 }

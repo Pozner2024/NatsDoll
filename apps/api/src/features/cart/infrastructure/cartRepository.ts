@@ -38,10 +38,24 @@ export function makeCartRepository(prisma: PrismaClient): CartRepository {
       }
     },
 
-    async findCartItem(cartId, productId, message) {
-      return prisma.cartItem.findFirst({
-        where: { cartId, productId, message },
-        select: { id: true, quantity: true },
+    // Чтение текущего количества, проверка лимита и запись — в одной транзакции,
+    // чтобы два параллельных добавления одного товара не прошли проверку оба и не
+    // положили в корзину больше стока. Авторитетная защита от оверселла — CAS при
+    // checkout (orderRepository.createOrderFromCart); здесь сужаем окно гонки.
+    async addCartItemRespectingStock({ cartId, productId, message, addQuantity, stockLimit }) {
+      return prisma.$transaction(async (tx) => {
+        const existing = await tx.cartItem.findFirst({
+          where: { cartId, productId, message },
+          select: { id: true, quantity: true },
+        })
+        const nextQuantity = (existing?.quantity ?? 0) + addQuantity
+        if (nextQuantity > stockLimit) return { added: false }
+        if (existing) {
+          await tx.cartItem.update({ where: { id: existing.id }, data: { quantity: nextQuantity } })
+        } else {
+          await tx.cartItem.create({ data: { cartId, productId, quantity: addQuantity, message } })
+        }
+        return { added: true }
       })
     },
 
@@ -49,12 +63,6 @@ export function makeCartRepository(prisma: PrismaClient): CartRepository {
       return prisma.cartItem.findUnique({
         where: { id: itemId },
         select: { id: true, cartId: true, productId: true },
-      })
-    },
-
-    async createCartItem(cartId, productId, quantity, message) {
-      await prisma.cartItem.create({
-        data: { cartId, productId, quantity, message },
       })
     },
 

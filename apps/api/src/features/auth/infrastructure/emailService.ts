@@ -107,7 +107,7 @@ export function makeEmailService(): EmailService {
       await send({
         from: 'noreply@natsdoll.com',
         to: adminEmail,
-        subject: `New contact form submission from ${escapeHtml(fromName)} — NatsDoll`,
+        subject: `New contact form submission from ${fromName} — NatsDoll`,
         html: `
           <p><strong>${escapeHtml(fromName)}</strong> (${escapeHtml(fromEmail)}) submitted the contact form:</p>
           <p>${escapeHtml(message)}</p>

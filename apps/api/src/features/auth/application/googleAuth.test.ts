@@ -40,6 +40,7 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     deletePasswordReset: vi.fn(),
     finalizePasswordReset: vi.fn(),
     updateUser: vi.fn(),
+    updateUserAndInvalidateSessions: vi.fn(),
     ...overrides,
   }
 }

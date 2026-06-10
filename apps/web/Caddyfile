@@ -18,7 +18,12 @@
 	}
 
 	handle_path /api/* {
-		reverse_proxy api:3000
+		reverse_proxy api:3000 {
+			# Перезаписываем X-Real-IP реальным адресом TCP-пира (Caddy — edge-прокси).
+			# Без этого клиент мог бы прислать произвольный X-Real-IP и обойти rate limiter,
+			# который доверяет этому заголовку (см. apps/api/src/shared/middleware/rateLimit.ts).
+			header_up X-Real-IP {remote_host}
+		}
 	}
 
 	handle {

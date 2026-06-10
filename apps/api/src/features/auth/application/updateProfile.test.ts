@@ -22,7 +22,7 @@ const mockUser = {
 const repo = {
   findById: vi.fn(),
   updateUser: vi.fn(),
-  deleteAllUserTokens: vi.fn(),
+  updateUserAndInvalidateSessions: vi.fn(),
 }
 
 beforeEach(() => vi.clearAllMocks())
@@ -37,7 +37,7 @@ describe('updateProfile', () => {
 
     expect(repo.updateUser).toHaveBeenCalledWith('u1', { name: 'Bob' })
     expect(result.name).toBe('Bob')
-    expect(repo.deleteAllUserTokens).not.toHaveBeenCalled()
+    expect(repo.updateUserAndInvalidateSessions).not.toHaveBeenCalled()
   })
 
   it('throws 400 when no fields provided', async () => {
@@ -64,11 +64,15 @@ describe('updateProfile', () => {
     vi.mocked(verify).mockResolvedValue(true)
     vi.mocked(hash).mockResolvedValue('$argon2id$v=19$new-hash')
     repo.findById.mockResolvedValue(mockUser)
-    repo.updateUser.mockResolvedValue(mockUser)
+    repo.updateUserAndInvalidateSessions.mockResolvedValue(mockUser)
 
     const updateProfile = makeUpdateProfile(repo as any)
     await updateProfile('u1', { password: 'newpassword', currentPassword: 'oldpassword' })
 
-    expect(repo.deleteAllUserTokens).toHaveBeenCalledWith('u1')
+    expect(repo.updateUserAndInvalidateSessions).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ passwordHash: '$argon2id$v=19$new-hash' }),
+    )
+    expect(repo.updateUser).not.toHaveBeenCalled()
   })
 })

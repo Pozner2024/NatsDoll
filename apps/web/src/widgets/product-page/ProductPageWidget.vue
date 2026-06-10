@@ -61,11 +61,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onScopeDispose } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
-import { useAuthModal } from '@/shared'
+import { useAuthModal, useCartPrompt } from '@/shared'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -97,10 +97,10 @@ const productForFavorite = computed<Product | undefined>(() => {
   }
 })
 
-const router = useRouter()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
 const authModal = useAuthModal()
+const cartPrompt = useCartPrompt()
 const productInfoRef = ref<{ resetAdding: () => void } | null>(null)
 
 let currentController: AbortController | null = null
@@ -179,7 +179,7 @@ async function onAddToCart(payload: { quantity: number; message: string | null }
       quantity: payload.quantity,
       message: payload.message,
     })
-    await router.push({ name: 'cart' })
+    cartPrompt.open()
   } catch (e) {
     console.error('Failed to add to cart', e)
   } finally {

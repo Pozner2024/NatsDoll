@@ -28,17 +28,15 @@ export function makeAddToCart(repo: CartRepository, getActiveSale: GetActiveSale
     }
 
     const cartId = await repo.getOrCreateCartId(userId)
-    const existing = await repo.findCartItem(cartId, productId, message)
-
-    const nextQuantity = (existing?.quantity ?? 0) + quantity
-    if (nextQuantity > product.stock) {
+    const { added } = await repo.addCartItemRespectingStock({
+      cartId,
+      productId,
+      message,
+      addQuantity: quantity,
+      stockLimit: product.stock,
+    })
+    if (!added) {
       throw new AppError(409, 'Not enough stock')
-    }
-
-    if (existing) {
-      await repo.updateCartItemQuantity(existing.id, nextQuantity)
-    } else {
-      await repo.createCartItem(cartId, productId, quantity, message)
     }
 
     const [cart, sale] = await Promise.all([repo.getCartView(userId), getActiveSale()])

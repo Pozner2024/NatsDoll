@@ -6,7 +6,10 @@
       href="#main"
     >Skip to content</a>
     <AppHeader />
-    <main id="main">
+    <main
+      id="main"
+      tabindex="-1"
+    >
       <RouterView v-slot="{ Component }">
         <Transition
           name="page"
@@ -22,6 +25,7 @@
     <AppFooter />
     <ContactModal />
     <AuthModal />
+    <CartPromptModal />
   </div>
 </template>
 
@@ -31,6 +35,7 @@ import { AppHeader } from '@/widgets/app-header'
 import { AppFooter } from '@/widgets/app-footer'
 import { ContactModal } from '@/features/contact-modal'
 import { AuthModal } from '@/features/auth-modal'
+import { CartPromptModal } from '@/features/cart-prompt-modal'
 import { useAuthStore } from '@/entities/user'
 
 const authStore = useAuthStore()

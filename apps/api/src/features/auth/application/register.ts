@@ -24,18 +24,22 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
 
     if (existing) {
       await hash(data.password).catch(() => undefined)
-      try {
-        if (existing.emailVerified) {
+      if (existing.emailVerified) {
+        try {
           await emailService.sendAccountExistsEmail(existing.email, `${FRONTEND_URL}/reset-password`)
-        } else {
-          const rawToken = generateRefreshToken()
-          const tokenHash = hashToken(rawToken)
-          const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS)
-          await repo.replaceEmailVerification(existing.id, { tokenHash, expiresAt })
-          await emailService.sendVerificationEmail(existing.email, verificationUrl(rawToken))
+        } catch (err) {
+          console.error('[register] failed to send account-exists email:', err)
         }
-      } catch (err) {
-        console.error('[register] failed to send email for existing account:', err)
+      } else {
+        const rawToken = generateRefreshToken()
+        const tokenHash = hashToken(rawToken)
+        const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS)
+        await repo.replaceEmailVerification(existing.id, { tokenHash, expiresAt })
+        try {
+          await emailService.sendVerificationEmail(existing.email, verificationUrl(rawToken))
+        } catch (err) {
+          console.error('[register] failed to send verification email:', err)
+        }
       }
       return { message: GENERIC_MESSAGE }
     }

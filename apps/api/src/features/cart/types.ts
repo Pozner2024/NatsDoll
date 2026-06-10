@@ -47,9 +47,14 @@ export type ProductSnapshot = {
 export interface CartRepository {
   getOrCreateCartId(userId: string): Promise<string>
   findProductForCart(productId: string): Promise<ProductSnapshot | null>
-  findCartItem(cartId: string, productId: string, message: string | null): Promise<{ id: string; quantity: number } | null>
   findCartItemById(itemId: string): Promise<{ id: string; cartId: string; productId: string } | null>
-  createCartItem(cartId: string, productId: string, quantity: number, message: string | null): Promise<void>
+  addCartItemRespectingStock(input: {
+    cartId: string
+    productId: string
+    message: string | null
+    addQuantity: number
+    stockLimit: number
+  }): Promise<{ added: boolean }>
   updateCartItemQuantity(itemId: string, quantity: number): Promise<void>
   deleteCartItem(itemId: string): Promise<void>
   getCartView(userId: string): Promise<CartView>

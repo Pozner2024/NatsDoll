@@ -141,7 +141,7 @@ async function uploadOne(file: File): Promise<string | null> {
   try {
     const formData = new FormData()
     formData.append('file', file)
-    const res = await authFetch('/admin/products/images', { method: 'POST', body: formData })
+    const res = await authFetch('/admin/products/images', { method: 'POST', body: formData, timeoutMs: null })
     if (!res.ok) {
       error.value = await apiErrorMessage(res, `Failed to upload ${file.name}`)
       return null

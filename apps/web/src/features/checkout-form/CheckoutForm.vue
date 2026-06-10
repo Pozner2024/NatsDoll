@@ -1,5 +1,6 @@
 <template>
   <form
+    id="checkout-form"
     class="checkout-form"
     novalidate
     @submit.prevent="handleSubmit"
@@ -126,26 +127,18 @@
     >
       {{ submitError }}
     </p>
-
-    <AppButton
-      type="submit"
-      :disabled="isSubmitting"
-      class="checkout-form__submit"
-    >
-      {{ isSubmitting ? 'Placing order…' : 'Place order' }}
-    </AppButton>
   </form>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
-import { AppButton } from '@/shared'
+import { reactive, ref, onMounted, watch } from 'vue'
 import { useOrderStore } from '@/entities/order'
 import type { ShippingAddress } from '@/entities/order'
 import { useAddressStore } from '@/entities/address'
 
 const emit = defineEmits<{
   success: [orderId: string]
+  'loading-change': [value: boolean]
 }>()
 
 const orderStore = useOrderStore()
@@ -183,6 +176,8 @@ const errors = reactive({
 
 const isSubmitting = ref(false)
 const submitError = ref('')
+
+watch(isSubmitting, (value) => emit('loading-change', value))
 
 function validate(): boolean {
   errors.fullName = form.fullName.trim() ? '' : 'Required'
@@ -285,11 +280,6 @@ async function handleSubmit() {
     &--global {
       text-align: center;
     }
-  }
-
-  &__submit {
-    align-self: flex-start;
-    margin-top: 0.5rem;
   }
 
 }

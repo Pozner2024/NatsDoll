@@ -1,8 +1,9 @@
 import { AppError } from '../../../shared/errors'
 import { calcShipping } from '../../../shared/lib'
 import type { OrderRepository, CreateOrder, ShippingAddress } from '../types'
+import type { GetActiveSale } from '../../admin/types'
 
-export function makeCreateOrder(repo: OrderRepository): CreateOrder {
+export function makeCreateOrder(repo: OrderRepository, getActiveSale: GetActiveSale): CreateOrder {
   return async function createOrder(userId: string, shippingAddress: ShippingAddress) {
     const items = await repo.getCartItemsForCheckout(userId)
 
@@ -21,7 +22,8 @@ export function makeCreateOrder(repo: OrderRepository): CreateOrder {
 
     const totalItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
     const shippingCost = calcShipping(totalItemCount)
+    const sale = await getActiveSale()
 
-    return repo.createOrderFromCart(userId, items, shippingCost, shippingAddress)
+    return repo.createOrderFromCart(userId, items, shippingCost, shippingAddress, sale)
   }
 }

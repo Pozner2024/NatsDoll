@@ -76,9 +76,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/checkout',
-    name: 'checkout',
-    component: () => import('@/pages/CheckoutPage.vue'),
-    meta: { requiresAuth: true },
+    redirect: { name: 'cart' },
   },
   {
     path: '/orders/:id',

@@ -222,7 +222,7 @@ export function createApp() {
 
   // Orders
   const orderRepo = makeOrderRepository(prisma)
-  const createOrder = makeCreateOrder(orderRepo)
+  const createOrder = makeCreateOrder(orderRepo, getActiveSale)
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
   app.use('/orders', requireAuth)
