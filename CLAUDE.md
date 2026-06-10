@@ -100,8 +100,8 @@ shared/
 ```bash
 # typecheck api (большая кодовая база — 8GB)
 node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit
-# typecheck web
-node --max-old-space-size=4096 ./node_modules/vue-tsc/bin/vue-tsc.js --noEmit
+# typecheck web (Nuxt)
+cd apps/web && NODE_OPTIONS=--max-old-space-size=4096 npx nuxt typecheck
 # tests
 node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --reporter=basic
 ```
