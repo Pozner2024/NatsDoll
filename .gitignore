@@ -6,6 +6,8 @@ node_modules/
 # Production
 dist/
 /build
+.nuxt/
+.output/
 
 # Misc
 .DS_Store
