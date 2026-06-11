@@ -62,11 +62,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { useAsyncData, createError } from 'nuxt/app'
+import { useAsyncData, createError, useSeoMeta, useHead, useRuntimeConfig } from 'nuxt/app'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
-import { useAuthModal, useCartPrompt } from '@/shared'
+import { useAuthModal, useCartPrompt, metaDescription, DEFAULT_OG_IMAGE } from '@/shared'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -113,6 +113,54 @@ const isLoading = computed(() => status.value === 'pending')
 const hasError = computed(
   () => status.value === 'error' || (status.value === 'success' && !data.value?.product),
 )
+
+const siteUrl = useRuntimeConfig().public.siteUrl
+const canonicalUrl = computed(() => `${siteUrl}/product/${slug.value}`)
+const seoDescription = computed(() =>
+  product.value ? metaDescription(product.value.description) : '',
+)
+const seoTitle = computed(() =>
+  product.value ? `${product.value.name} — NatsDoll` : 'NatsDoll',
+)
+
+useSeoMeta({
+  title: seoTitle,
+  description: seoDescription,
+  ogTitle: seoTitle,
+  ogDescription: seoDescription,
+  ogImage: computed(() => product.value?.images[0] ?? DEFAULT_OG_IMAGE),
+  ogUrl: canonicalUrl,
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+})
+
+useHead(() => ({
+  link: [{ rel: 'canonical', href: canonicalUrl.value }],
+  script: product.value
+    ? [
+        {
+          type: 'application/ld+json',
+          textContent: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.value.name,
+            description: seoDescription.value,
+            image: product.value.images,
+            offers: {
+              '@type': 'Offer',
+              price: (product.value.salePrice ?? product.value.price).toFixed(2),
+              priceCurrency: 'USD',
+              availability:
+                product.value.stock > 0
+                  ? 'https://schema.org/InStock'
+                  : 'https://schema.org/OutOfStock',
+              url: canonicalUrl.value,
+            },
+          }),
+        },
+      ]
+    : [],
+}))
 
 const productForFavorite = computed<Product | undefined>(() => {
   const p = product.value
