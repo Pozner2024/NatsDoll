@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
-const API_BASE = '/api'
+const API_BASE = import.meta.server
+  ? process.env.NUXT_API_INTERNAL_URL ?? 'http://localhost:3000'
+  : '/api'
 const REQUEST_TIMEOUT_MS = 15000
 
 const refreshSchema = z.object({ accessToken: z.string() })
