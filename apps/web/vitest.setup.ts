@@ -67,6 +67,9 @@ vi.mock('nuxt/app', () => {
     useLazyAsyncData: (a: unknown, b?: unknown, c?: unknown) => useAsyncData(a, b, c),
     createError: (input: { statusCode?: number; statusMessage?: string }) =>
       Object.assign(new Error(input.statusMessage ?? 'Error'), input),
+    useSeoMeta: () => {},
+    useHead: () => {},
+    useRuntimeConfig: () => ({ public: { siteUrl: 'https://natsdoll.com' } }),
   }
 })
 
