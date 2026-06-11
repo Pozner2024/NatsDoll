@@ -3,6 +3,11 @@ import { fileURLToPath } from 'node:url'
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-10',
   modules: ['@pinia/nuxt'],
+  runtimeConfig: {
+    public: {
+      siteUrl: 'https://natsdoll.com',
+    },
+  },
   alias: {
     '@': fileURLToPath(new URL('./src', import.meta.url)),
   },
