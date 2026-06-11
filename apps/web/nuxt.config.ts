@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-10',
+  buildId: 'natsdoll',
   modules: ['@pinia/nuxt'],
   runtimeConfig: {
     public: {
