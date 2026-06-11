@@ -225,3 +225,23 @@ describe('productRepository.findBySlug', () => {
     expect(result).toBeNull()
   })
 })
+
+describe('productRepository.findAllForSitemap', () => {
+  it('returns slug and updatedAt for published non-deleted products', async () => {
+    const prisma = makePrismaMock()
+    const updatedAt = new Date('2026-06-01T10:00:00Z')
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { slug: 'aurora-doll', updatedAt } as never,
+    ])
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findAllForSitemap()
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { isPublished: true, deletedAt: null },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    })
+    expect(result).toEqual([{ slug: 'aurora-doll', updatedAt }])
+  })
+})
