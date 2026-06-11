@@ -24,7 +24,7 @@
 - Modify: `apps/web/src/widgets/admin-panel/AdminPanel.vue:13,37`
 - Modify: `apps/web/src/widgets/admin-panel/index.ts`
 
-- [ ] **Step 1: `<RouterView />` → `<slot />`**
+- [x] **Step 1: `<RouterView />` → `<slot />`**
 
 В `AdminPanel.vue` строку 13:
 
@@ -50,7 +50,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { RouterLink, useRoute } from 'vue-router'
 ```
 
-- [ ] **Step 2: Экспорты секций в `index.ts`**
+- [x] **Step 2: Экспорты секций в `index.ts`**
 
 После строки `export { default as AdminPanel } ...` добавить:
 
@@ -63,12 +63,12 @@ export { default as AdminAnalytics } from './components/AdminAnalytics.vue'
 export { default as AdminSales } from './components/AdminSales.vue'
 ```
 
-- [ ] **Step 3: Прогнать все web-тесты**
+- [x] **Step 3: Прогнать все web-тесты**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4`
 Expected: 33 файла, 225 passed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/widgets/admin-panel
@@ -90,7 +90,7 @@ git commit -m "refactor(web): admin panel renders children via slot"
 - Create: `apps/web/app/pages/admin/sales/new.vue`
 - Create: `apps/web/app/pages/admin/sales/[id].vue`
 
-- [ ] **Step 1: Родитель `apps/web/app/pages/admin.vue`**
+- [x] **Step 1: Родитель `apps/web/app/pages/admin.vue`**
 
 ```vue
 <template>
@@ -106,7 +106,7 @@ definePageMeta({ middleware: 'admin' })
 </script>
 ```
 
-- [ ] **Step 2: Секции-виджеты**
+- [x] **Step 2: Секции-виджеты**
 
 `apps/web/app/pages/admin/index.vue`:
 
@@ -180,7 +180,7 @@ import { AdminSales } from '@/widgets/admin-panel'
 </script>
 ```
 
-- [ ] **Step 3: Формы (src/pages)**
+- [x] **Step 3: Формы (src/pages)**
 
 `apps/web/app/pages/admin/listings/new.vue`:
 
@@ -230,12 +230,12 @@ import AdminSaleFormPage from '@/pages/AdminSaleFormPage.vue'
 </script>
 ```
 
-- [ ] **Step 4: Lint**
+- [x] **Step 4: Lint**
 
 Run: `cd apps/web && npx eslint app/pages/admin.vue app/pages/admin --max-warnings=0; cd ../..`
 Expected: exit 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/pages/admin.vue apps/web/app/pages/admin
@@ -247,7 +247,7 @@ git commit -m "feat(web): client-only admin pages with nested routing"
 **Files:**
 - Modify: `apps/web/nuxt.config.ts` (routeRules)
 
-- [ ] **Step 1: routeRules**
+- [x] **Step 1: routeRules**
 
 К объекту `routeRules` добавить:
 
@@ -255,7 +255,7 @@ git commit -m "feat(web): client-only admin pages with nested routing"
     '/admin/**': { ssr: false },
 ```
 
-- [ ] **Step 2: Смоук**
+- [x] **Step 2: Смоук**
 
 Run: `docker compose restart web`, дождаться 200. Затем:
 
@@ -266,7 +266,7 @@ curl -s http://localhost:5173/admin | grep -c "admin-panel" || true
 
 Expected: 200; grep = 0 (контент не SSR-ится).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/nuxt.config.ts
@@ -277,7 +277,7 @@ git commit -m "feat(web): admin routes client-only"
 
 **Files:** нет изменений (если всё зелёное).
 
-- [ ] **Step 1: Тесты, typecheck, lint, build**
+- [x] **Step 1: Тесты, typecheck, lint, build**
 
 ```bash
 node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4
@@ -290,7 +290,7 @@ Expected: 225 passed; typecheck 0; lint 0; build 0. (Перед build прове
 свободное место на C: — известный случай нехватки; `npm cache clean --force`
 при необходимости.)
 
-- [ ] **Step 2: Живые сценарии (Playwright MCP, viewport 1400×900)**
+- [x] **Step 2: Живые сценарии (Playwright MCP, viewport 1400×900)**
 
 1. Без логина `/admin` → молча на `/` (без auth-модалки — middleware `admin`).
 2. Логин админом (Email/Password из `apps/api/.env`) → `/admin`: заголовок
@@ -306,7 +306,7 @@ Expected: 225 passed; typecheck 0; lint 0; build 0. (Перед build прове
 
 Expected: все сценарии соответствуют. Расхождение — стоп и разбор.
 
-- [ ] **Step 3: Отчёт**
+- [x] **Step 3: Отчёт**
 
 Статус 4 критериев приёмки спека с выводами команд.
 
