@@ -25,7 +25,7 @@ RUN apk add --no-cache tini \
 
 COPY --chown=appuser:appgroup package*.json ./
 COPY --chown=appuser:appgroup apps/api/package.json ./apps/api/
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy Prisma-generated client (native binaries compiled in builder stage)
 COPY --from=builder --chown=appuser:appgroup /app/node_modules/.prisma ./node_modules/.prisma
