@@ -10,7 +10,7 @@ export const useCategoryStore = defineStore('category', () => {
   let loaded = false
 
   async function load() {
-    if (loaded || loading.value) return
+    if (loaded || loading.value || categories.value.length > 0) return
     loading.value = true
     error.value = false
     try {
