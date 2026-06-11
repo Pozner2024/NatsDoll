@@ -1,10 +1,11 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
 import { zValidator } from '../../../shared/lib/zValidator'
-import type { ProductListParams, ProductListResponse, CategoryListItem, GetProduct } from '../types'
+import type { ProductListParams, ProductListResponse, CategoryListItem, GetProduct, SitemapProductItem } from '../types'
 
 type ListProducts = (params: ProductListParams) => Promise<ProductListResponse>
 type ListCategories = () => Promise<CategoryListItem[]>
+type ListProductsForSitemap = () => Promise<SitemapProductItem[]>
 
 const productListQuerySchema = z.object({
   category: z.string().optional().transform((v) => (v && v.length > 0 ? v : undefined)),
@@ -17,12 +18,18 @@ export function makeProductsRouter(
   listProducts: ListProducts,
   listCategories: ListCategories,
   getProduct: GetProduct,
+  listProductsForSitemap: ListProductsForSitemap,
 ) {
   const router = new Hono()
 
   router.get('/products', zValidator('query', productListQuerySchema), async (c) => {
     const params = c.req.valid('query')
     const result = await listProducts(params)
+    return c.json(result)
+  })
+
+  router.get('/products/sitemap-data', async (c) => {
+    const result = await listProductsForSitemap()
     return c.json(result)
   })
 

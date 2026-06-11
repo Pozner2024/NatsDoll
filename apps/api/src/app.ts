@@ -20,6 +20,7 @@ import {
   makeListProducts,
   makeListCategories,
   makeGetProduct,
+  makeListProductsForSitemap,
   makeProductsRouter,
 } from './features/products'
 import {
@@ -194,7 +195,8 @@ export function createApp() {
   const listProducts = makeListProducts(productRepo, getActiveSale)
   const listCategories = makeListCategories(productRepo)
   const getProduct = makeGetProduct(productRepo, getActiveSale)
-  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct))
+  const listProductsForSitemap = makeListProductsForSitemap(productRepo)
+  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap))
 
   // Auth
   const authRepo = makeAuthRepository(prisma)

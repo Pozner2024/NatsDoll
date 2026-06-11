@@ -27,10 +27,11 @@ function makeApp(
   listProducts = vi.fn().mockResolvedValue(sampleResponse),
   listCategories = vi.fn().mockResolvedValue([]),
   getProduct = vi.fn().mockResolvedValue(sampleDetail),
+  listProductsForSitemap = vi.fn().mockResolvedValue([]),
 ) {
   const app = new Hono()
-  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct))
-  return { app, listProducts, listCategories, getProduct }
+  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap))
+  return { app, listProducts, listCategories, getProduct, listProductsForSitemap }
 }
 
 describe('GET /products', () => {
@@ -118,5 +119,30 @@ describe('GET /products/:slug', () => {
     )
     const res = await app.request('/products/not-found')
     expect(res.status).toBe(404)
+  })
+})
+
+describe('GET /products/sitemap-data', () => {
+  it('returns slugs with updatedAt as ISO strings', async () => {
+    const listProductsForSitemap = vi.fn().mockResolvedValue([
+      { slug: 'aurora-doll', updatedAt: new Date('2026-06-01T10:00:00.000Z') },
+    ])
+    const { app } = makeApp(undefined, undefined, undefined, listProductsForSitemap)
+
+    const res = await app.request('/products/sitemap-data')
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([
+      { slug: 'aurora-doll', updatedAt: '2026-06-01T10:00:00.000Z' },
+    ])
+  })
+
+  it('is not shadowed by the :slug route', async () => {
+    const getProduct = vi.fn()
+    const { app } = makeApp(undefined, undefined, getProduct)
+
+    await app.request('/products/sitemap-data')
+
+    expect(getProduct).not.toHaveBeenCalled()
   })
 })
