@@ -137,7 +137,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import DOMPurify from 'dompurify'
+import DOMPurify from 'isomorphic-dompurify'
 import { AppButton, formatPrice, SHIPPING_BASE } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
 import MessageSelector from './MessageSelector.vue'
