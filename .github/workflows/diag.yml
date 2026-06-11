@@ -1,0 +1,28 @@
+name: Server diagnostics
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect disk usage via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 5m
+          script: |
+            df -h /
+            echo "=== docker system df ==="
+            docker system df
+            echo "=== images ==="
+            docker images --format "{{.Repository}}:{{.Tag}} {{.Size}}"
+            echo "=== container logs ==="
+            sudo du -sh /var/lib/docker/containers/*/ 2>/dev/null | sort -rh | head -8 || du -sh ~/.* 2>/dev/null | sort -rh | head -5
+            echo "=== top dirs in /var ==="
+            sudo du -xh -d 2 /var 2>/dev/null | sort -rh | head -10 || true
+            echo "=== home ==="
+            du -sh /home/natalia/* 2>/dev/null | sort -rh | head -8
