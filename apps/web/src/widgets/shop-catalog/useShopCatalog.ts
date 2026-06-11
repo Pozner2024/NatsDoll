@@ -1,6 +1,7 @@
-import { ref, computed, watch, onScopeDispose } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchProducts, type Product, type ProductSortOrder } from '@/entities/product'
+import { useAsyncData } from 'nuxt/app'
+import { fetchProducts, type ProductSortOrder } from '@/entities/product'
 import { useCategoryStore } from '@/entities/category'
 
 export const PAGE_SIZE = 12
@@ -15,10 +16,6 @@ function parsePage(raw: unknown): number {
   return Number.isFinite(n) && n >= 1 ? n : 1
 }
 
-function isAbortError(err: unknown): boolean {
-  return err instanceof DOMException && err.name === 'AbortError'
-}
-
 export function useShopCatalog() {
   const route = useRoute()
   const categoryStore = useCategoryStore()
@@ -30,52 +27,30 @@ export function useShopCatalog() {
   const sort = computed(() => parseSort(route.query.sort))
   const page = computed(() => parsePage(route.query.page))
 
-  const products = ref<Product[]>([])
-  const total = ref(0)
-  const totalPages = ref(0)
-  const isLoading = ref(false)
-  const error = ref<Error | null>(null)
-
-  let currentController: AbortController | null = null
-
-  async function load() {
-    currentController?.abort()
-    const controller = new AbortController()
-    currentController = controller
-    const { signal } = controller
-
-    isLoading.value = true
-    error.value = null
-    try {
-      const res = await fetchProducts({
-        category: category.value,
-        sort: sort.value,
-        page: page.value,
-        limit: PAGE_SIZE,
-      }, signal)
-      if (signal.aborted) return
-      products.value = res.items
-      total.value = res.total
-      totalPages.value = res.totalPages
-    } catch (e) {
-      if (signal.aborted || isAbortError(e)) return
-      error.value = e instanceof Error ? e : new Error(String(e))
-      products.value = []
-      total.value = 0
-      totalPages.value = 0
-    } finally {
-      if (!signal.aborted) isLoading.value = false
-    }
-  }
-
-  watch([category, sort, page], () => { void load() }, { immediate: true })
+  const { data, status, error: fetchError, refresh } = useAsyncData(
+    computed(() => `shop-products:${category.value ?? 'all'}:${sort.value}:${page.value}`),
+    () => fetchProducts({
+      category: category.value,
+      sort: sort.value,
+      page: page.value,
+      limit: PAGE_SIZE,
+    }),
+  )
 
   void categoryStore.load()
 
-  onScopeDispose(() => currentController?.abort())
+  const products = computed(() => data.value?.items ?? [])
+  const total = computed(() => data.value?.total ?? 0)
+  const totalPages = computed(() => data.value?.totalPages ?? 0)
+  const isLoading = computed(() => status.value === 'pending')
+  const error = computed<Error | null>(() => {
+    const e = fetchError.value
+    if (!e) return null
+    return e instanceof Error ? e : new Error(String(e))
+  })
 
   async function retry() {
-    await Promise.all([load(), categoryStore.load()])
+    await Promise.all([refresh(), categoryStore.load()])
   }
 
   const activeCategoryName = computed(() => {
