@@ -50,8 +50,14 @@ export type ProductDetail = {
 
 export type GetProduct = (slug: string) => Promise<ProductDetail | null>
 
+export type SitemapProductItem = {
+  slug: string
+  updatedAt: Date
+}
+
 export interface ProductRepository {
   findMany(params: ProductListParams): Promise<{ items: ProductListItem[]; total: number }>
   listCategories(): Promise<CategoryListItem[]>
   findBySlug(slug: string): Promise<ProductDetail | null>
+  findAllForSitemap(): Promise<SitemapProductItem[]>
 }

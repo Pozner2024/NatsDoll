@@ -11,8 +11,9 @@ type RateLimitOptions = {
 
 type Entry = { count: number; resetAt: number }
 
-// X-Real-IP — приоритет, его выставляет nginx из $remote_addr (клиент подделать не может).
-// X-Forwarded-For — клиент может прислать произвольный заголовок, nginx добавляет к нему свой IP справа,
+// X-Real-IP — приоритет. В проде Caddy перезаписывает его реальным IP TCP-пира
+// (см. apps/web/Caddyfile: header_up X-Real-IP {remote_host}), поэтому клиент подделать не может.
+// X-Forwarded-For — клиент может прислать произвольный заголовок, прокси добавляет к нему свой IP справа,
 // поэтому доверяем только последнему элементу списка.
 function extractClientIp(realIp: string | undefined, forwardedFor: string | undefined): string | undefined {
   const real = realIp?.trim()

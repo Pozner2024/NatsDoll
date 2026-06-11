@@ -24,6 +24,7 @@ function makeRepo(result: ProductDetail | null = detail) {
     findMany: vi.fn(),
     listCategories: vi.fn(),
     findBySlug: vi.fn().mockResolvedValue(result),
+    findAllForSitemap: vi.fn(),
   } as unknown as ProductRepository
 }
 

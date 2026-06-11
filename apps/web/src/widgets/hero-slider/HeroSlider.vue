@@ -4,13 +4,18 @@
     aria-label="Hero banner"
   >
     <div class="hero-slider__track">
-      <div
+      <img
         v-for="(slide, i) in slides"
         :key="slide.id"
         class="hero-slider__slide"
         :class="{ 'hero-slider__slide--active': i === currentIndex }"
-        :style="{ backgroundImage: `url(${slide.image})` }"
-      />
+        :src="slide.image"
+        alt=""
+        aria-hidden="true"
+        :loading="i === 0 ? 'eager' : 'lazy'"
+        :fetchpriority="i === 0 ? 'high' : 'auto'"
+        decoding="async"
+      >
     </div>
 
     <div class="hero-slider__overlay">
@@ -95,8 +100,9 @@ const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INT
   &__slide {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     opacity: 0;
     transform: scale(1);
     transition:

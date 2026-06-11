@@ -54,6 +54,7 @@ const mockRepo: AuthRepository = {
   deletePasswordReset: vi.fn(),
   finalizePasswordReset: vi.fn(),
   updateUser: vi.fn(),
+  updateUserAndInvalidateSessions: vi.fn(),
 }
 
 describe('login', () => {

@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /account
+Disallow: /cart
+Disallow: /admin
+Disallow: /auth
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /orders
+
+Sitemap: https://natsdoll.com/sitemap.xml

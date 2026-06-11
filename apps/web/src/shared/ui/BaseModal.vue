@@ -155,7 +155,7 @@ function handleClose() {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: var(--z-modal, 1000);
+    z-index: var(--z-modal);
   }
 
   &__close {

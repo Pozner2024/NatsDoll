@@ -44,15 +44,22 @@
       v-else
       class="cart-page__layout"
     >
-      <ul class="cart-page__items">
-        <CartLineItem
-          v-for="item in items"
-          :key="item.id"
-          :item="item"
-          @update="onUpdate"
-          @remove="onRemove"
+      <div class="cart-page__main">
+        <ul class="cart-page__items">
+          <CartLineItem
+            v-for="item in items"
+            :key="item.id"
+            :item="item"
+            @update="onUpdate"
+            @remove="onRemove"
+          />
+        </ul>
+
+        <CheckoutForm
+          @success="onOrderPlaced"
+          @loading-change="isPlacingOrder = $event"
         />
-      </ul>
+      </div>
 
       <aside class="cart-page__summary">
         <h2 class="cart-page__summary-title">
@@ -75,12 +82,12 @@
           <span>{{ formatPrice(grandTotal) }}</span>
         </p>
         <AppButton
-          type="button"
+          type="submit"
+          form="checkout-form"
           class="cart-page__checkout"
-          :disabled="itemCount === 0"
-          @click="router.push({ name: 'checkout' })"
+          :disabled="itemCount === 0 || isPlacingOrder"
         >
-          Checkout
+          {{ isPlacingOrder ? 'Placing order…' : 'Place order' }}
         </AppButton>
       </aside>
     </div>
@@ -93,6 +100,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { AppButton, formatPrice, calcShipping } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
+import { CheckoutForm } from '@/features/checkout-form'
 import CartLineItem from './components/CartLineItem.vue'
 
 const router = useRouter()
@@ -108,6 +116,11 @@ const grandTotal = computed(() => subtotal.value + shippingCost.value)
 const loading = computed(() => cartStore.loading)
 const error = computed(() => cartStore.error)
 const actionError = ref<string | null>(null)
+const isPlacingOrder = ref(false)
+
+function onOrderPlaced(orderId: string): void {
+  router.push({ name: 'order-confirmation', params: { id: orderId } })
+}
 
 onMounted(async () => {
   if (!authStore.authReady) await authStore.initAuth()
@@ -193,6 +206,13 @@ async function onRemove(itemId: string): Promise<void> {
     }
   }
 
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex: 1;
+  }
+
   &__items {
     list-style: none;
     padding: 0;
@@ -200,7 +220,6 @@ async function onRemove(itemId: string): Promise<void> {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    flex: 1;
   }
 
   &__summary {

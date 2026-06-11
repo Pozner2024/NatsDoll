@@ -1,11 +1,16 @@
 <template>
   <div class="review-card">
-    <div class="review-card__stars">
+    <div
+      class="review-card__stars"
+      role="img"
+      :aria-label="`${rating} out of 5 stars`"
+    >
       <span
         v-for="i in 5"
         :key="i"
         class="review-card__star"
         :class="{ 'review-card__star--filled': i <= rating }"
+        aria-hidden="true"
       >★</span>
     </div>
     <p class="review-card__text">

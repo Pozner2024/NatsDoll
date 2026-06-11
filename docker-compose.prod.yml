@@ -49,6 +49,16 @@ services:
 
   web:
     image: ghcr.io/pozner2024/natsdoll/web:latest
+    environment:
+      NUXT_API_INTERNAL_URL: http://api:3000
+      NUXT_PUBLIC_SITE_URL: ${FRONTEND_URL}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
     ports:
       - "80:80"
       - "443:443"
@@ -57,10 +67,11 @@ services:
       WWW_ADDRESS: ${WWW_ADDRESS:-http://localhost:2080}
       ACME_EMAIL: ${ACME_EMAIL:-}
     volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      api:
+      web:
         condition: service_healthy
     restart: unless-stopped
 

@@ -1,12 +1,33 @@
 import { z } from 'zod'
 
-const API_BASE = '/api'
+const API_BASE = import.meta.server
+  ? process.env.NUXT_API_INTERNAL_URL ?? 'http://localhost:3000'
+  : '/api'
+const REQUEST_TIMEOUT_MS = 15000
 
 const refreshSchema = z.object({ accessToken: z.string() })
 
-type ApiRequestInit = Omit<RequestInit, 'body'> & {
+type ApiRequestInit = RequestInit & {
   json?: unknown
   accessToken?: string
+  // Таймаут запроса в мс. null отключает таймаут (например, для больших загрузок).
+  timeoutMs?: number | null
+}
+
+// AbortSignal.any доступен только в свежих браузерах (Safari 17.4+, Firefox 124+).
+// На старых связываем сигналы вручную, чтобы не уронить страницу TypeError'ом.
+function anySignal(signals: AbortSignal[]): AbortSignal {
+  if (typeof AbortSignal.any === 'function') return AbortSignal.any(signals)
+  const controller = new AbortController()
+  const onAbort = () => controller.abort()
+  for (const s of signals) {
+    if (s.aborted) {
+      controller.abort()
+      break
+    }
+    s.addEventListener('abort', onAbort, { once: true })
+  }
+  return controller.signal
 }
 
 /**
@@ -15,16 +36,20 @@ type ApiRequestInit = Omit<RequestInit, 'body'> & {
  * и добавляет токен авторизации (Bearer), если он был передан.
  */
 export async function apiFetch(path: string, init: ApiRequestInit = {}): Promise<Response> {
-  const { json, headers, accessToken, ...rest } = init
+  const { json, headers, accessToken, timeoutMs = REQUEST_TIMEOUT_MS, ...rest } = init
   const mergedHeaders: Record<string, string> = {
     ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...(headers as Record<string, string> | undefined),
   }
+  const timeoutSignal = timeoutMs == null ? null : AbortSignal.timeout(timeoutMs)
+  const signals = [rest.signal, timeoutSignal].filter((s): s is AbortSignal => s != null)
+  const signal = signals.length > 1 ? anySignal(signals) : signals[0]
   return fetch(`${API_BASE}${path}`, {
     ...rest,
     credentials: 'include',
     headers: mergedHeaders,
+    signal,
     body: json !== undefined ? JSON.stringify(json) : (rest as RequestInit).body,
   })
 }

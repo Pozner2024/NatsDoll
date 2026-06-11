@@ -17,6 +17,8 @@ export type AuthRepository = {
   }): Promise<User>
   deleteUser(id: string): Promise<void>
   updateUser(id: string, data: { name?: string; passwordHash?: string }): Promise<User>
+  /** Атомарно обновляет пользователя и удаляет все его refresh-токены — для смены пароля. */
+  updateUserAndInvalidateSessions(id: string, data: { name?: string; passwordHash?: string }): Promise<User>
   findByGoogleId(googleId: string): Promise<User | null>
   linkGoogleId(userId: string, googleId: string): Promise<User>
   createGoogleUser(data: { name: string; email: string; googleId: string }): Promise<User>
@@ -72,6 +74,13 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
     },
 
     updateUser: (id, data) => prisma.user.update({ where: { id }, data }),
+
+    updateUserAndInvalidateSessions: (id, data) =>
+      prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({ where: { id }, data })
+        await tx.refreshToken.deleteMany({ where: { userId: id } })
+        return user
+      }),
 
     findByGoogleId: (googleId) => prisma.user.findUnique({ where: { googleId } }),
 

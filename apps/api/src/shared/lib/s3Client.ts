@@ -1,11 +1,15 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { AppError } from '../errors'
 
 type S3Bundle = { client: S3Client; bucket: string; endpoint: string }
 
-const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'])
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif'])
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 const KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9/_.-]*$/
+const S3_CONNECTION_TIMEOUT_MS = 3000
+const S3_REQUEST_TIMEOUT_MS = 10000
+const S3_MAX_ATTEMPTS = 3
 
 let cached: S3Bundle | null = null
 
@@ -43,6 +47,11 @@ function getS3(): S3Bundle {
     region: 'ru-central1',
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
+    maxAttempts: S3_MAX_ATTEMPTS,
+    requestHandler: new NodeHttpHandler({
+      connectionTimeout: S3_CONNECTION_TIMEOUT_MS,
+      requestTimeout: S3_REQUEST_TIMEOUT_MS,
+    }),
   })
 
   cached = { client, bucket, endpoint }
@@ -56,14 +65,19 @@ export async function uploadToS3(
 ): Promise<string> {
   assertValidUpload(key, body, contentType)
   const { client, bucket, endpoint } = getS3()
-  await client.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-      ACL: 'public-read',
-    }),
-  )
+  try {
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        ACL: 'public-read',
+      }),
+    )
+  } catch (err) {
+    console.error('[s3] upload failed:', err)
+    throw new AppError(503, 'Image storage is temporarily unavailable. Please try again later.')
+  }
   return `${endpoint}/${bucket}/${key}`
 }

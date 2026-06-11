@@ -1,3 +1,5 @@
+import type { ActiveSale } from '../admin/types'
+
 export type ShippingAddress = {
   fullName: string
   line1: string
@@ -67,6 +69,7 @@ export interface OrderRepository {
     items: CartItemForCheckout[],
     shippingCost: number,
     shippingAddress: ShippingAddress,
+    sale: ActiveSale | null,
   ): Promise<OrderDetail>
   getMyOrders(userId: string): Promise<OrderSummary[]>
   getOrderById(orderId: string): Promise<OrderDetail | null>

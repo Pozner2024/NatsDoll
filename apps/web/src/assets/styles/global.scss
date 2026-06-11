@@ -1,3 +1,48 @@
+:root {
+  --color-bg: #fdf6ef;
+  --color-text: #2c1810;
+  --color-accent: #8b5e52;
+  --color-accent-hover: #4a2e26;
+  --color-text-muted: #5a3d35;
+  --color-border: #ecddd5;
+
+  /* Button gradient channels (r g b — for use with rgb(var(--x) / alpha)) */
+  --btn-gradient-dark: 160 90 60;
+  --btn-gradient-mid: 232 180 140;
+  --btn-gradient-light: 255 245 225;
+
+  --color-white: #ffffff;
+  --color-error: #c0392b;
+  --color-gold: #d4a017;
+
+  --font-display: 'Playfair Display', serif;
+  --font-brand: 'Corinthia', cursive;
+  --fs-xs: 0.65rem;
+  --fs-sm: 0.8rem;
+  --fs-md: 0.9rem;
+  --fs-base: 1rem;
+  --fs-stars: 1.2rem;
+  --fs-logo: 2rem;
+  --fs-section-heading: 2.2rem;
+
+  --header-height: 45px;
+
+  --z-slider-slide: 0;
+  --z-slider-overlay: calc(var(--z-slider-slide) + 1);
+  --z-slider-controls: calc(var(--z-slider-overlay) + 1);
+  --z-gallery-img-base: 0;
+  --z-gallery-img-top: calc(var(--z-gallery-img-base) + 1);
+  --z-gallery-grid-button: calc(var(--z-gallery-img-top) + 1);
+  --z-card-overlay: 2;
+  --z-card-menu: 10;
+  --z-header: 10;
+  --z-dropdown: calc(var(--z-header) + 1);
+  --z-admin-mobile-nav: 100;
+  --z-admin-overlay: 200;
+  --z-modal: calc(var(--z-admin-overlay) + 1);
+  --z-lightbox: calc(var(--z-modal) + 1);
+}
+
 *,
 *::before,
 *::after {
@@ -15,10 +60,17 @@ textarea,
 
 html {
   scrollbar-gutter: stable;
+  overflow-x: clip;
 }
 
 body {
   color: var(--color-text);
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

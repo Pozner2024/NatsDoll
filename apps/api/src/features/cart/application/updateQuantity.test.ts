@@ -9,9 +9,8 @@ function makeRepo(): CartRepository {
   return {
     getOrCreateCartId: vi.fn(),
     findProductForCart: vi.fn(),
-    findCartItem: vi.fn(),
     findCartItemById: vi.fn(),
-    createCartItem: vi.fn(),
+    addCartItemRespectingStock: vi.fn(),
     updateCartItemQuantity: vi.fn(),
     deleteCartItem: vi.fn(),
     getCartView: vi.fn(),

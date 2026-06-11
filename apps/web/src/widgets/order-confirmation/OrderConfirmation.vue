@@ -20,7 +20,7 @@
           Order placed!
         </h1>
         <p class="order-confirmation__subtitle">
-          Thank you for your order. We'll start working on it right away.
+          Thank you for your order. It's already on its way to you.
         </p>
         <p class="order-confirmation__id">
           Order #{{ order.orderNumber }}
@@ -103,12 +103,20 @@
         </aside>
       </div>
 
-      <RouterLink
-        to="/shop"
-        class="order-confirmation__continue"
-      >
-        Continue shopping
-      </RouterLink>
+      <div class="order-confirmation__actions">
+        <AppButton
+          :to="{ name: 'account-purchases' }"
+          class="order-confirmation__action"
+        >
+          My orders
+        </AppButton>
+        <AppButton
+          to="/shop"
+          class="order-confirmation__action"
+        >
+          Continue shopping
+        </AppButton>
+      </div>
     </template>
   </div>
 </template>
@@ -116,7 +124,7 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { formatPrice } from '@/shared'
+import { AppButton, formatPrice } from '@/shared'
 import { useOrderStore } from '@/entities/order'
 
 const props = defineProps<{ orderId: string }>()
@@ -306,12 +314,15 @@ onMounted(() => {
     line-height: 1.5;
   }
 
-  &__continue {
-    display: inline-block;
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-top: 2rem;
-    color: var(--color-accent);
-    text-decoration: underline;
-    font-size: var(--fs-sm);
+  }
+
+  &__action {
+    --btn-font-size: var(--fs-sm);
   }
 }
 </style>

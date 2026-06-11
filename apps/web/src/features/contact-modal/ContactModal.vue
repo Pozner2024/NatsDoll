@@ -16,6 +16,7 @@
       <div
         v-if="submitStatus === 'success'"
         class="contact-modal__success"
+        role="status"
       >
         Message sent! I'll get back to you soon.
       </div>
@@ -85,6 +86,7 @@
         <p
           v-if="submitStatus === 'error'"
           class="contact-modal__error contact-modal__error--global"
+          role="alert"
         >
           {{ errorMessage || 'Something went wrong. Please try again.' }}
         </p>

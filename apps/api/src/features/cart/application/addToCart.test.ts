@@ -9,9 +9,8 @@ function makeRepo(): CartRepository {
   return {
     getOrCreateCartId: vi.fn(),
     findProductForCart: vi.fn(),
-    findCartItem: vi.fn(),
     findCartItemById: vi.fn(),
-    createCartItem: vi.fn(),
+    addCartItemRespectingStock: vi.fn(),
     updateCartItemQuantity: vi.fn(),
     deleteCartItem: vi.fn(),
     getCartView: vi.fn(),
@@ -24,6 +23,7 @@ describe('addToCart', () => {
   beforeEach(() => {
     repo = makeRepo()
     vi.mocked(repo.getOrCreateCartId).mockResolvedValue('cart-1')
+    vi.mocked(repo.addCartItemRespectingStock).mockResolvedValue({ added: true })
     vi.mocked(repo.getCartView).mockResolvedValue({ items: [], totalAmount: 0, itemCount: 0 })
   })
 
@@ -43,11 +43,11 @@ describe('addToCart', () => {
       .rejects.toMatchObject({ statusCode: 410 })
   })
 
-  it('throws 409 when quantity exceeds stock', async () => {
+  it('throws 409 when the repository reports the stock limit was exceeded', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
       id: 'p1', price: 10, stock: 2, messageOptions: [], isAvailable: true,
     })
-    vi.mocked(repo.findCartItem).mockResolvedValue(null)
+    vi.mocked(repo.addCartItemRespectingStock).mockResolvedValue({ added: false })
     const addToCart = makeAddToCart(repo, noSale)
     await expect(addToCart({ userId: 'u1', productId: 'p1', quantity: 5, message: null }))
       .rejects.toMatchObject({ statusCode: 409 })
@@ -71,33 +71,32 @@ describe('addToCart', () => {
       .rejects.toMatchObject({ statusCode: 400 })
   })
 
-  it('creates new cart item when none exists', async () => {
+  it('delegates to addCartItemRespectingStock with the product stock as limit', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
       id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: true,
     })
-    vi.mocked(repo.findCartItem).mockResolvedValue(null)
     const addToCart = makeAddToCart(repo, noSale)
     await addToCart({ userId: 'u1', productId: 'p1', quantity: 2, message: null })
-    expect(repo.createCartItem).toHaveBeenCalledWith('cart-1', 'p1', 2, null)
-    expect(repo.updateCartItemQuantity).not.toHaveBeenCalled()
+    expect(repo.addCartItemRespectingStock).toHaveBeenCalledWith({
+      cartId: 'cart-1', productId: 'p1', message: null, addQuantity: 2, stockLimit: 5,
+    })
   })
 
-  it('increments quantity when item with same productId+message exists', async () => {
+  it('passes the chosen preset message through to the repository', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
       id: 'p1', price: 10, stock: 5, messageOptions: ['Hi'], isAvailable: true,
     })
-    vi.mocked(repo.findCartItem).mockResolvedValue({ id: 'ci-1', quantity: 1 })
     const addToCart = makeAddToCart(repo, noSale)
     await addToCart({ userId: 'u1', productId: 'p1', quantity: 2, message: 'Hi' })
-    expect(repo.updateCartItemQuantity).toHaveBeenCalledWith('ci-1', 3)
-    expect(repo.createCartItem).not.toHaveBeenCalled()
+    expect(repo.addCartItemRespectingStock).toHaveBeenCalledWith({
+      cartId: 'cart-1', productId: 'p1', message: 'Hi', addQuantity: 2, stockLimit: 5,
+    })
   })
 
   it('returns the refreshed cart view', async () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
       id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: true,
     })
-    vi.mocked(repo.findCartItem).mockResolvedValue(null)
     vi.mocked(repo.getCartView).mockResolvedValue({
       items: [{ id: 'ci-1', productId: 'p1', productCategoryId: 'cat1', productSlug: 'p', productName: 'P', productImage: null, unitPrice: 10, quantity: 2, subtotal: 20, message: null }],
       totalAmount: 20,
@@ -128,10 +127,11 @@ describe('addToCart', () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
       id: 'p1', price: 10, stock: 5, messageOptions: [], isAvailable: true,
     })
-    vi.mocked(repo.findCartItem).mockResolvedValue(null)
     const addToCart = makeAddToCart(repo, noSale)
     await addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: '' })
-    expect(repo.createCartItem).toHaveBeenCalledWith('cart-1', 'p1', 1, null)
+    expect(repo.addCartItemRespectingStock).toHaveBeenCalledWith({
+      cartId: 'cart-1', productId: 'p1', message: null, addQuantity: 1, stockLimit: 5,
+    })
   })
 
   it('treats empty-string message as null and 400s when messageOptions require a message', async () => {
@@ -147,10 +147,11 @@ describe('addToCart', () => {
     vi.mocked(repo.findProductForCart).mockResolvedValue({
       id: 'p1', price: 10, stock: 5, messageOptions: ['Happy Birthday', 'With love'], isAvailable: true,
     })
-    vi.mocked(repo.findCartItem).mockResolvedValue(null)
     const addToCart = makeAddToCart(repo, noSale)
     const result = await addToCart({ userId: 'u1', productId: 'p1', quantity: 1, message: 'Happy Birthday' })
-    expect(repo.createCartItem).toHaveBeenCalledWith('cart-1', 'p1', 1, 'Happy Birthday')
+    expect(repo.addCartItemRespectingStock).toHaveBeenCalledWith({
+      cartId: 'cart-1', productId: 'p1', message: 'Happy Birthday', addQuantity: 1, stockLimit: 5,
+    })
     expect(result).toBeDefined()
   })
 })

@@ -375,17 +375,44 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
     async updateAdminOrder(orderId: string, input: UpdateOrderInput) {
       const current = await prisma.order.findUnique({
         where: { id: orderId },
-        select: { trackingNumber: true, orderNumber: true, user: { select: { name: true, email: true } } },
+        select: {
+          status: true,
+          trackingNumber: true,
+          orderNumber: true,
+          user: { select: { name: true, email: true } },
+          items: { select: { productId: true, quantity: true } },
+        },
       })
       if (!current) throw new AppError(404, 'Order not found')
 
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: input.status as 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED',
-          ...(input.trackingNumber !== undefined ? { trackingNumber: input.trackingNumber } : {}),
-          ...(input.adminNote !== undefined ? { adminNote: input.adminNote } : {}),
-        },
+      const newStatus = input.status as 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
+
+      // Сток списывается при оформлении заказа (createOrderFromCart). При переходе в
+      // терминальный статус CANCELLED/REFUNDED его нужно вернуть на склад — иначе остаток
+      // (для хэндмейда обычно 1) «съедается» навсегда. Проверка wasReleased защищает от
+      // повторного восстановления при повторных правках уже отменённого заказа.
+      const wasReleased = current.status === 'CANCELLED' || current.status === 'REFUNDED'
+      const willRelease = newStatus === 'CANCELLED' || newStatus === 'REFUNDED'
+      const shouldRestoreStock = willRelease && !wasReleased
+
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: newStatus,
+            ...(input.trackingNumber !== undefined ? { trackingNumber: input.trackingNumber } : {}),
+            ...(input.adminNote !== undefined ? { adminNote: input.adminNote } : {}),
+          },
+        })
+
+        if (shouldRestoreStock) {
+          for (const item of current.items) {
+            await tx.product.updateMany({
+              where: { id: item.productId },
+              data: { stock: { increment: item.quantity } },
+            })
+          }
+        }
       })
 
       const wasNull = current.trackingNumber === null

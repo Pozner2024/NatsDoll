@@ -28,7 +28,7 @@
 
 // ### 5. Общие инструменты (Shared)
 // **`apps/api/src/shared/`**
-// * Обработка ошибок базы данных (`handlePrismaError.ts`)
+// * Обработка ошибок Prisma — инлайн в `app.ts` (`app.onError`), плюс класс `shared/errors/AppError`
 // *Middleware для проверки авторизации (`requireAuth.ts`) и ограничения
 // частоты запросов (`rateLimit.ts`)
 // *Утилиты для работы с JWT и хешированием токенов (`tokens.ts`)

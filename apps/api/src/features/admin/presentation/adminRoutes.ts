@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { z } from 'zod/v3'
-import { zValidator } from '@hono/zod-validator'
+import { zValidator } from '../../../shared/lib/zValidator'
 import { requireAdmin } from '../../../shared/middleware'
 import type {
   GetDashboard, MarkAllMessagesRead,
@@ -87,7 +87,9 @@ const previewCountQuerySchema = z.object({
   productIds: z.string().optional(),
 })
 
-const MAX_UPLOAD_BODY_BYTES = 7 * 1024 * 1024
+// 25 МБ на файл (как в клиенте) + запас на multipart-обвязку (boundary, заголовки части),
+// чтобы файл ровно на лимите не отлетал с 413.
+const MAX_UPLOAD_BODY_BYTES = 25 * 1024 * 1024 + 64 * 1024
 
 export function makeAdminRouter(
   getDashboard: GetDashboard,

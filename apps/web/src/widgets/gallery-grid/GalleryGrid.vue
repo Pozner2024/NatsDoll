@@ -23,6 +23,8 @@
           :alt="`Gallery image ${i + 1}`"
           class="gallery-grid__img"
           :class="{ 'gallery-grid__img--hidden': flipped[i] }"
+          loading="lazy"
+          decoding="async"
         >
         <img
           v-if="poolCells[i]"
@@ -30,6 +32,8 @@
           aria-hidden="true"
           class="gallery-grid__img gallery-grid__img--top"
           :class="{ 'gallery-grid__img--hidden': !flipped[i] }"
+          loading="lazy"
+          decoding="async"
         >
       </div>
 

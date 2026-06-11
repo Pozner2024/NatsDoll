@@ -199,7 +199,7 @@ function handleDelete() {
     border-radius: 6px;
     min-width: 110px;
     box-shadow: 0 4px 12px rgb(44 24 16 / 0.1);
-    z-index: 10;
+    z-index: var(--z-card-menu);
     overflow: hidden;
   }
 

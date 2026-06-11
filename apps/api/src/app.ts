@@ -20,6 +20,7 @@ import {
   makeListProducts,
   makeListCategories,
   makeGetProduct,
+  makeListProductsForSitemap,
   makeProductsRouter,
 } from './features/products'
 import {
@@ -146,11 +147,11 @@ export function createApp() {
       if (err.code === 'P2003') {
         return c.json({ error: 'Operation not allowed due to related records' }, 409)
       }
-      console.error('Prisma error:', err)
+      console.error('Prisma known error:', { code: err.code, message: err.message })
       return c.json({ error: 'Database error' }, 500)
     }
     if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-      console.error('Prisma error:', err)
+      console.error('Prisma unknown error:', { message: err.message })
       return c.json({ error: 'Database error' }, 500)
     }
     console.error('Unhandled error:', err)
@@ -194,7 +195,8 @@ export function createApp() {
   const listProducts = makeListProducts(productRepo, getActiveSale)
   const listCategories = makeListCategories(productRepo)
   const getProduct = makeGetProduct(productRepo, getActiveSale)
-  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct))
+  const listProductsForSitemap = makeListProductsForSitemap(productRepo)
+  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap))
 
   // Auth
   const authRepo = makeAuthRepository(prisma)
@@ -222,7 +224,7 @@ export function createApp() {
 
   // Orders
   const orderRepo = makeOrderRepository(prisma)
-  const createOrder = makeCreateOrder(orderRepo)
+  const createOrder = makeCreateOrder(orderRepo, getActiveSale)
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
   app.use('/orders', requireAuth)
