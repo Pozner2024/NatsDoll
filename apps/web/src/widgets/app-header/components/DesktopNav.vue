@@ -74,7 +74,7 @@
     </button>
 
     <div
-      v-if="authStore.isLoggedIn"
+      v-if="showAccount"
       ref="profileDropdownRef"
       class="desktop-nav__dropdown"
       @mouseenter="profileOpen = true"
@@ -185,6 +185,8 @@ const route = useRoute()
 const router = useRouter()
 const shopOpen = ref(false)
 const profileOpen = ref(false)
+const mounted = ref(false)
+const showAccount = computed(() => mounted.value && authStore.isLoggedIn)
 const isShopActive = computed(() => route.path.startsWith('/shop'))
 const dropdownRef = ref<HTMLElement | null>(null)
 const profileDropdownRef = ref<HTMLElement | null>(null)
@@ -194,7 +196,10 @@ const shopItems = computed<NavItem[]>(() => [
   ...categoryStore.categories.map((c) => ({ label: c.name, to: `/shop/${c.slug}` })),
 ])
 
-onMounted(() => { void categoryStore.load() })
+onMounted(() => {
+  mounted.value = true
+  void categoryStore.load()
+})
 
 function closeShop() {
   shopOpen.value = false
