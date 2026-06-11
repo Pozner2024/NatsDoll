@@ -12,6 +12,10 @@ export default defineNuxtConfig({
     '/auth/**': { ssr: false },
     '/verify-email': { ssr: false },
     '/reset-password': { ssr: false },
+    '/account/**': { ssr: false },
+    '/cart': { ssr: false },
+    '/orders/**': { ssr: false },
+    '/checkout': { redirect: '/cart' },
   },
   alias: {
     '@': fileURLToPath(new URL('./src', import.meta.url)),
