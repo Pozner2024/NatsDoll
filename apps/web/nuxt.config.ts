@@ -8,6 +8,11 @@ export default defineNuxtConfig({
       siteUrl: 'https://natsdoll.com',
     },
   },
+  routeRules: {
+    '/auth/**': { ssr: false },
+    '/verify-email': { ssr: false },
+    '/reset-password': { ssr: false },
+  },
   alias: {
     '@': fileURLToPath(new URL('./src', import.meta.url)),
   },
