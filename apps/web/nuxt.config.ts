@@ -15,6 +15,7 @@ export default defineNuxtConfig({
     '/account/**': { ssr: false },
     '/cart': { ssr: false },
     '/orders/**': { ssr: false },
+    '/admin/**': { ssr: false },
     '/checkout': { redirect: '/cart' },
   },
   alias: {
