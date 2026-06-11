@@ -10,7 +10,7 @@
     <AdminSidebar />
 
     <div class="admin-panel__main">
-      <RouterView />
+      <slot />
     </div>
 
     <nav class="admin-panel__tabbar">
@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import AdminSidebar from './components/AdminSidebar.vue'
 import IconDashboard from './components/icons/IconDashboard.vue'
 import IconListings from './components/icons/IconListings.vue'
