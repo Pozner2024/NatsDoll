@@ -53,15 +53,16 @@
       <slot name="reviews" />
     </div>
     <MoreFromShop
-      v-if="!moreLoading && moreProducts.length > 0"
+      v-if="moreProducts.length > 0"
       :products="moreProducts"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onScopeDispose } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useAsyncData, createError } from 'nuxt/app'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
@@ -74,15 +75,44 @@ import type { ProductDetail, Product } from '@/entities/product'
 const MORE_FROM_SHOP_FETCH_LIMIT = 8
 const MORE_FROM_SHOP_DISPLAY_LIMIT = 6
 
+type ProductPageData = { product: ProductDetail | null; more: Product[] }
+
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
-const product = ref<ProductDetail | null>(null)
-const isLoading = ref(true)
-const hasError = ref(false)
+const { data, status, error } = await useAsyncData<ProductPageData>(
+  computed(() => `product:${slug.value}`),
+  async () => {
+    const product = await fetchProduct(slug.value)
+    if (!product) return { product: null, more: [] }
+    let more: Product[] = []
+    try {
+      const res = await fetchProducts({
+        category: product.categorySlug,
+        sort: 'newest',
+        page: 1,
+        limit: MORE_FROM_SHOP_FETCH_LIMIT,
+      })
+      more = res.items
+        .filter((p) => p.slug !== product.slug)
+        .slice(0, MORE_FROM_SHOP_DISPLAY_LIMIT)
+    } catch {
+      more = []
+    }
+    return { product, more }
+  },
+)
 
-const moreProducts = ref<Product[]>([])
-const moreLoading = ref(false)
+if (!error.value && data.value?.product === null) {
+  throw createError({ statusCode: 404, statusMessage: 'Product not found' })
+}
+
+const product = computed(() => data.value?.product ?? null)
+const moreProducts = computed(() => data.value?.more ?? [])
+const isLoading = computed(() => status.value === 'pending')
+const hasError = computed(
+  () => status.value === 'error' || (status.value === 'success' && !data.value?.product),
+)
 
 const productForFavorite = computed<Product | undefined>(() => {
   const p = product.value
@@ -102,69 +132,6 @@ const authStore = useAuthStore()
 const authModal = useAuthModal()
 const cartPrompt = useCartPrompt()
 const productInfoRef = ref<{ resetAdding: () => void } | null>(null)
-
-let currentController: AbortController | null = null
-
-function isAbortError(err: unknown): boolean {
-  return err instanceof DOMException && err.name === 'AbortError'
-}
-
-watch(
-  slug,
-  async (newSlug) => {
-    currentController?.abort()
-    const controller = new AbortController()
-    currentController = controller
-    const { signal } = controller
-
-    isLoading.value = true
-    hasError.value = false
-    product.value = null
-    moreLoading.value = true
-
-    let loaded: ProductDetail | null
-    try {
-      loaded = await fetchProduct(newSlug, signal)
-    } catch (err) {
-      if (signal.aborted || isAbortError(err)) return
-      hasError.value = true
-      isLoading.value = false
-      moreLoading.value = false
-      return
-    }
-
-    if (signal.aborted) return
-    if (!loaded) {
-      hasError.value = true
-      isLoading.value = false
-      moreLoading.value = false
-      return
-    }
-    product.value = loaded
-    isLoading.value = false
-
-    try {
-      const res = await fetchProducts({
-        category: loaded.categorySlug,
-        sort: 'newest',
-        page: 1,
-        limit: MORE_FROM_SHOP_FETCH_LIMIT,
-      }, signal)
-      if (signal.aborted) return
-      moreProducts.value = res.items
-        .filter((p) => p.slug !== newSlug)
-        .slice(0, MORE_FROM_SHOP_DISPLAY_LIMIT)
-    } catch (err) {
-      if (signal.aborted || isAbortError(err)) return
-      moreProducts.value = []
-    } finally {
-      if (!signal.aborted) moreLoading.value = false
-    }
-  },
-  { immediate: true },
-)
-
-onScopeDispose(() => currentController?.abort())
 
 async function onAddToCart(payload: { quantity: number; message: string | null }): Promise<void> {
   try {
