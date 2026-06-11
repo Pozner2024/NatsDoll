@@ -24,7 +24,7 @@
 - Modify: `apps/web/src/widgets/account-page/AccountPage.vue` (2 правки)
 - Modify: `apps/web/src/widgets/account-page/index.ts` (1 строка)
 
-- [ ] **Step 1: `<RouterView />` → `<slot />`**
+- [x] **Step 1: `<RouterView />` → `<slot />`**
 
 В `AccountPage.vue` строку:
 
@@ -50,7 +50,7 @@ import { RouterLink, RouterView } from 'vue-router'
 import { RouterLink } from 'vue-router'
 ```
 
-- [ ] **Step 2: Экспорт AccountPurchaseDetail**
+- [x] **Step 2: Экспорт AccountPurchaseDetail**
 
 В `apps/web/src/widgets/account-page/index.ts` добавить строку (после экспорта `AccountPurchases`):
 
@@ -58,12 +58,12 @@ import { RouterLink } from 'vue-router'
 export { default as AccountPurchaseDetail } from './components/AccountPurchaseDetail.vue'
 ```
 
-- [ ] **Step 3: Прогнать все web-тесты**
+- [x] **Step 3: Прогнать все web-тесты**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4`
 Expected: 33 файла, 225 passed (у AccountPage собственных тестов нет).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/widgets/account-page
@@ -83,7 +83,7 @@ git commit -m "refactor(web): account widget renders children via slot"
 - Create: `apps/web/app/pages/account/reviews.vue`
 - Create: `apps/web/app/pages/account/messages.vue`
 
-- [ ] **Step 1: Родитель `apps/web/app/pages/account.vue`**
+- [x] **Step 1: Родитель `apps/web/app/pages/account.vue`**
 
 ```vue
 <template>
@@ -99,7 +99,7 @@ definePageMeta({ middleware: 'auth' })
 </script>
 ```
 
-- [ ] **Step 2: Дочерние страницы**
+- [x] **Step 2: Дочерние страницы**
 
 `apps/web/app/pages/account/index.vue`:
 
@@ -213,12 +213,12 @@ definePageMeta({ name: 'account-messages' })
 </script>
 ```
 
-- [ ] **Step 3: Lint**
+- [x] **Step 3: Lint**
 
 Run: `cd apps/web && npx eslint app/pages/account.vue app/pages/account --max-warnings=0; cd ../..`
 Expected: exit 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/app/pages/account.vue apps/web/app/pages/account
@@ -232,7 +232,7 @@ git commit -m "feat(web): client-only account pages with nested routing"
 - Create: `apps/web/app/pages/orders/[id].vue`
 - Modify: `apps/web/nuxt.config.ts` (routeRules)
 
-- [ ] **Step 1: `apps/web/app/pages/cart.vue`**
+- [x] **Step 1: `apps/web/app/pages/cart.vue`**
 
 ```vue
 <template>
@@ -246,7 +246,7 @@ definePageMeta({ name: 'cart', middleware: 'auth' })
 </script>
 ```
 
-- [ ] **Step 2: `apps/web/app/pages/orders/[id].vue`**
+- [x] **Step 2: `apps/web/app/pages/orders/[id].vue`**
 
 ```vue
 <template>
@@ -260,7 +260,7 @@ definePageMeta({ name: 'order-confirmation', middleware: 'auth' })
 </script>
 ```
 
-- [ ] **Step 3: routeRules в `nuxt.config.ts`**
+- [x] **Step 3: routeRules в `nuxt.config.ts`**
 
 К существующему объекту `routeRules` добавить:
 
@@ -274,7 +274,7 @@ definePageMeta({ name: 'order-confirmation', middleware: 'auth' })
 Важно: `'/account/**'` покрывает и `/account` (родителя) — проверить curl'ом;
 если `/account` отдаёт SSR-контент, добавить отдельное правило `'/account': { ssr: false }`.
 
-- [ ] **Step 4: Смоук ssr:false и редиректа**
+- [x] **Step 4: Смоук ssr:false и редиректа**
 
 Run: `docker compose restart web`, дождаться 200. Затем:
 
@@ -288,7 +288,7 @@ curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" http://localhost:5173/c
 Expected: `/cart` → 200, grep = 0 (контент не SSR-ится); `/account` → 200;
 `/checkout` → 3xx с redirect_url на `/cart`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/pages/cart.vue apps/web/app/pages/orders apps/web/nuxt.config.ts
@@ -301,7 +301,7 @@ git commit -m "feat(web): client-only cart and order pages, checkout redirect"
 
 Предусловие: docker compose запущен, БД посеяна.
 
-- [ ] **Step 1: Тесты, typecheck, lint, build**
+- [x] **Step 1: Тесты, typecheck, lint, build**
 
 ```bash
 node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4
@@ -312,7 +312,7 @@ npm run build -w apps/web
 
 Expected: 225 passed; typecheck 0; lint 0; build 0.
 
-- [ ] **Step 2: Живые сценарии (Playwright MCP, desktop viewport 1400×900)**
+- [x] **Step 2: Живые сценарии (Playwright MCP, desktop viewport 1400×900)**
 
 1. Без логина `browser_navigate` на `/account` → auth-модалка видна, URL — `/` (middleware).
 2. Без логина на `/account/profile` → то же (наследование middleware детьми).
@@ -330,7 +330,7 @@ Expected: 225 passed; typecheck 0; lint 0; build 0.
 Expected: все сценарии соответствуют. Любое расхождение — стоп и разбор
 (systematic-debugging), не подгонять проверку под фактическое поведение.
 
-- [ ] **Step 3: Отчёт**
+- [x] **Step 3: Отчёт**
 
 Статус 5 критериев приёмки спека с выводами команд; указать способ проверки
 разделов кабинета (понижение роли) и что роль возвращена.
