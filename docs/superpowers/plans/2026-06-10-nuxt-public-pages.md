@@ -23,7 +23,7 @@
 - Modify: `apps/web/src/shared/lib/apiClient.ts:3`
 - Modify: `docker-compose.yml` (сервис `web`, секция `environment`)
 
-- [ ] **Step 1: Заменить константу API_BASE**
+- [x] **Step 1: Заменить константу API_BASE**
 
 В `apps/web/src/shared/lib/apiClient.ts` строку:
 
@@ -41,7 +41,7 @@ const API_BASE = import.meta.server
 
 Пояснение: на сервере запрос идёт в API напрямую и БЕЗ префикса `/api` (так же, как старый vite-rewrite срезал префикс). В браузере — `/api` как раньше. В vitest `import.meta.server` undefined → falsy → `/api`, тесты не замечают изменения.
 
-- [ ] **Step 2: Добавить env-переменную в dev-compose**
+- [x] **Step 2: Добавить env-переменную в dev-compose**
 
 В `docker-compose.yml`, сервис `web`, в `environment` рядом с `NUXT_DEV_PROXY_TARGET` добавить строку:
 
@@ -49,12 +49,12 @@ const API_BASE = import.meta.server
       NUXT_API_INTERNAL_URL: http://api:3000
 ```
 
-- [ ] **Step 3: Прогнать юнит-тесты**
+- [x] **Step 3: Прогнать юнит-тесты**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4`
 Expected: `33 passed`, `227 passed`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/shared/lib/apiClient.ts docker-compose.yml
@@ -66,7 +66,7 @@ git commit -m "feat(web): isomorphic api base for ssr"
 **Files:**
 - Modify: `apps/web/vitest.setup.ts` (добавить в конец файла)
 
-- [ ] **Step 1: Добавить мок в `apps/web/vitest.setup.ts`**
+- [x] **Step 1: Добавить мок в `apps/web/vitest.setup.ts`**
 
 Дописать в конец файла (существующий мок matchMedia не трогать):
 
@@ -130,12 +130,12 @@ vi.mock('nuxt/app', () => {
 
 Зачем: исходники будут импортировать `useAsyncData`/`createError` из `'nuxt/app'` явно. В vitest реальный `nuxt/app` не работает (нет Nuxt-контекста), мок эмулирует контракт: data/status/error, перезапуск по watch и по реактивному ключу, thenable для `await useAsyncData(...)`.
 
-- [ ] **Step 2: Прогнать юнит-тесты (мок пока никем не используется — ничего не должно сломаться)**
+- [x] **Step 2: Прогнать юнит-тесты (мок пока никем не используется — ничего не должно сломаться)**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4`
 Expected: `33 passed`, `227 passed`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/vitest.setup.ts
@@ -149,7 +149,7 @@ git commit -m "test(web): global nuxt/app mock for vitest"
 - Modify: `apps/web/nuxt.config.ts` (добавить pageTransition)
 - Modify: `apps/web/src/entities/category/store.ts:13` (guard от повторного фетча после гидратации)
 
-- [ ] **Step 1: Заменить содержимое `apps/web/app/layouts/default.vue`**
+- [x] **Step 1: Заменить содержимое `apps/web/app/layouts/default.vue`**
 
 Переносится разметка из `src/App.vue` (сам `src/App.vue` НЕ трогать — удалится в спеке 4). `initAuth()` из старого App.vue НЕ переносится (спек 4). Транзишен-обёртку `<RouterView v-slot>` заменяет Nuxt pageTransition (Step 2), поэтому здесь только слот:
 
@@ -231,7 +231,7 @@ main {
 
 Зачем `useAsyncData('nav-categories', ...)`: категории навигации (DesktopNav/BurgerMenu) сейчас грузятся в `onMounted` — на сервере их не было бы, и Google не видел бы ссылки на `/shop/<категория>`. Обёртка ждёт загрузку при SSR; @pinia/nuxt сериализует состояние стора в payload, клиент гидратируется без рефетча.
 
-- [ ] **Step 2: Добавить pageTransition в `apps/web/nuxt.config.ts`**
+- [x] **Step 2: Добавить pageTransition в `apps/web/nuxt.config.ts`**
 
 В объект `app` (рядом с `head`) добавить:
 
@@ -239,7 +239,7 @@ main {
     pageTransition: { name: 'page', mode: 'out-in' },
 ```
 
-- [ ] **Step 3: Guard в category store**
+- [x] **Step 3: Guard в category store**
 
 В `apps/web/src/entities/category/store.ts` строку:
 
@@ -255,12 +255,12 @@ main {
 
 Зачем: флаг `loaded` — переменная замыкания, в Pinia-payload не сериализуется. После гидратации `categories` уже заполнены, но `loaded === false`, и `onMounted`-вызовы в навигации сделали бы лишний рефетч.
 
-- [ ] **Step 4: Прогнать юнит-тесты**
+- [x] **Step 4: Прогнать юнит-тесты**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4`
 Expected: все проходят. Если упал тест category store на повторную загрузку — адаптировать ожидание под новый guard (смысл «не фетчит повторно, когда данные уже есть» сохраняется).
 
-- [ ] **Step 5: Смоук шапки в SSR**
+- [x] **Step 5: Смоук шапки в SSR**
 
 Предусловие: запущен локальный API (`npm run dev -w apps/api`; нужен Postgres — если не поднят: `docker compose up -d postgres`).
 
@@ -269,7 +269,7 @@ Run: `curl -s http://localhost:5173/ | grep -c "skip-link"` → Expected: `1` и
 Run: `curl -s http://localhost:5173/ | grep -o 'href="/shop/[a-z-]*"' | head -3` → Expected: ссылки на категории из БД (подтверждение SSR-навигации).
 Остановить dev-сервер.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/app/layouts/default.vue apps/web/nuxt.config.ts apps/web/src/entities/category/store.ts
@@ -282,7 +282,7 @@ git commit -m "feat(web): app shell layout with ssr nav categories"
 - Modify: `apps/web/src/widgets/gallery-grid/useGalleryGrid.ts` (полная замена)
 - Test: `apps/web/src/widgets/gallery-grid/useGalleryGrid.test.ts` (адаптация только при падении)
 
-- [ ] **Step 1: Заменить содержимое `useGalleryGrid.ts`**
+- [x] **Step 1: Заменить содержимое `useGalleryGrid.ts`**
 
 ```ts
 import { computed } from 'vue'
@@ -307,12 +307,12 @@ export function useGalleryGrid() {
 
 Импорт `useAsyncData` из `@/shared` удаляется. `fetchHomeGallery` теряет параметр signal — отменой управляет Nuxt. Интерфейс `{ preview, pool, isLoading, hasError }` сохранён — `GalleryGrid.vue` не меняется.
 
-- [ ] **Step 2: Прогнать тесты виджета**
+- [x] **Step 2: Прогнать тесты виджета**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic src/widgets/gallery-grid 2>&1 | tail -6`
 Expected: проходят без правок (мок из Task 2 воспроизводит контракт: pending при старте, default-значение, success/error). Если падают — адаптировать ТОЛЬКО упавшие ожидания, сценарии не удалять.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/src/widgets/gallery-grid
@@ -326,7 +326,7 @@ git commit -m "feat(web): gallery-grid via nuxt useAsyncData"
 - Create: `apps/web/app/pages/gallery.vue`
 - Test: `apps/web/src/widgets/collection-section/useCollectionSection.test.ts` (адаптация только при падении)
 
-- [ ] **Step 1: Заменить содержимое `useCollectionSection.ts`**
+- [x] **Step 1: Заменить содержимое `useCollectionSection.ts`**
 
 ```ts
 import { computed } from 'vue'
@@ -345,7 +345,7 @@ export function useCollectionSection() {
 }
 ```
 
-- [ ] **Step 2: Создать `apps/web/app/pages/gallery.vue`**
+- [x] **Step 2: Создать `apps/web/app/pages/gallery.vue`**
 
 ```vue
 <template>
@@ -357,12 +357,12 @@ import GalleryPage from '@/pages/GalleryPage.vue'
 </script>
 ```
 
-- [ ] **Step 3: Тесты виджета**
+- [x] **Step 3: Тесты виджета**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic src/widgets/collection-section 2>&1 | tail -6`
 Expected: проходят; при падении адаптировать только упавшие ожидания.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/widgets/collection-section apps/web/app/pages/gallery.vue
@@ -376,7 +376,7 @@ git commit -m "feat(web): gallery page with ssr collections"
 - Create: `apps/web/app/pages/shop/[[category]].vue`
 - Test: `apps/web/src/widgets/shop-catalog/useShopCatalog.test.ts`, `apps/web/src/widgets/shop-catalog/shopCatalog.test.ts` (адаптация при падении)
 
-- [ ] **Step 1: Заменить содержимое `useShopCatalog.ts`**
+- [x] **Step 1: Заменить содержимое `useShopCatalog.ts`**
 
 Каркас (parseSort/parsePage/PAGE_SIZE/VALID_SORTS) сохраняется дословно; ручной watch+abort заменяет `useAsyncData` с реактивным ключом; категории остаются в categoryStore (его SSR-загрузку уже делает layout, Task 3):
 
@@ -460,7 +460,7 @@ export function useShopCatalog() {
 
 Возвращаемый интерфейс идентичен старому (имена и типы полей), `ShopCatalog.vue` не меняется. Тип `Product` больше не импортируется (исчез ручной `ref<Product[]>`).
 
-- [ ] **Step 2: Создать `apps/web/app/pages/shop/[[category]].vue`**
+- [x] **Step 2: Создать `apps/web/app/pages/shop/[[category]].vue`**
 
 Двойные скобки = опциональный параметр (эквивалент старого `/shop/:category?`):
 
@@ -474,12 +474,12 @@ import ShopPage from '@/pages/ShopPage.vue'
 </script>
 ```
 
-- [ ] **Step 3: Тесты shop-catalog**
+- [x] **Step 3: Тесты shop-catalog**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic src/widgets/shop-catalog 2>&1 | tail -10`
 Expected: большинство проходит (мок перезапускает handler при смене реактивного ключа, т.е. route-сценарии работают). Упавшие — адаптировать с сохранением смысла: проверки «парсинг sort/page», «параметры fetchProducts», «error-состояние», «retry» должны остаться. Тесты на ручную отмену AbortController, если есть, заменить нечем — такие сценарии помечать как удалённые ТОЛЬКО с пояснением в отчёте (отменой теперь управляет Nuxt).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/widgets/shop-catalog apps/web/app/pages/shop
@@ -492,7 +492,7 @@ git commit -m "feat(web): shop catalog via nuxt useAsyncData, shop page route"
 - Modify: `apps/web/src/widgets/product-page/ProductPageWidget.vue` (только `<script setup>` и две строки шаблона)
 - Create: `apps/web/app/pages/product/[slug].vue`
 
-- [ ] **Step 1: Заменить `<script setup>` в `ProductPageWidget.vue`**
+- [x] **Step 1: Заменить `<script setup>` в `ProductPageWidget.vue`**
 
 Шаблон и стили НЕ трогать, кроме двух правок ниже. Новый `<script setup lang="ts">` целиком:
 
@@ -594,7 +594,7 @@ async function onAddToCart(payload: { quantity: number; message: string | null }
 
 Ключевые моменты: `await useAsyncData` — данные готовы до рендера (SSR и клиентская навигация); товар null без сетевой ошибки → `createError(404)` — сервер отвечает честным 404-статусом; «похожие товары» загружаются в том же handler (их ошибки глушатся — как раньше).
 
-- [ ] **Step 2: Две правки в шаблоне `ProductPageWidget.vue`**
+- [x] **Step 2: Две правки в шаблоне `ProductPageWidget.vue`**
 
 Условие у `MoreFromShop` (исчез `moreLoading`):
 
@@ -607,7 +607,7 @@ async function onAddToCart(payload: { quantity: number; message: string | null }
 
 Остальной шаблон без изменений.
 
-- [ ] **Step 3: Создать `apps/web/app/pages/product/[slug].vue`**
+- [x] **Step 3: Создать `apps/web/app/pages/product/[slug].vue`**
 
 ```vue
 <template>
@@ -619,12 +619,12 @@ import ProductPage from '@/pages/ProductPage.vue'
 </script>
 ```
 
-- [ ] **Step 4: Прогнать все юнит-тесты**
+- [x] **Step 4: Прогнать все юнит-тесты**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -6`
 Expected: все проходят. Компонентных тестов самого ProductPageWidget нет (есть только у его детей — они не затронуты), но проверить весь прогон.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/widgets/product-page apps/web/app/pages/product
@@ -636,7 +636,7 @@ git commit -m "feat(web): ssr product page with server-side 404"
 **Files:**
 - Modify: `apps/web/app/pages/index.vue` (полная замена)
 
-- [ ] **Step 1: Заменить содержимое `apps/web/app/pages/index.vue`**
+- [x] **Step 1: Заменить содержимое `apps/web/app/pages/index.vue`**
 
 ```vue
 <template>
@@ -648,7 +648,7 @@ import HomePage from '@/pages/HomePage.vue'
 </script>
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add apps/web/app/pages/index.vue
@@ -661,12 +661,12 @@ git commit -m "feat(web): home page replaces skeleton stub"
 
 Предусловие: Postgres запущен (`docker compose up -d postgres`), локальный API запущен (`npm run dev -w apps/api`, background), БД посеяна (если пустая: `npx prisma db seed` из `apps/api` с локальным DATABASE_URL).
 
-- [ ] **Step 1: Юнит-тесты целиком**
+- [x] **Step 1: Юнит-тесты целиком**
 
 Run: `node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic 2>&1 | tail -4`
 Expected: 33 файла проходят.
 
-- [ ] **Step 2: SSR-смоук всех 4 страниц**
+- [x] **Step 2: SSR-смоук всех 4 страниц**
 
 Run (background): `npm run dev -w apps/web`, подождать ~20 с. Затем:
 
@@ -685,22 +685,22 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173/product/nonexiste
 
 Expected: имя товара найдено; второй запрос печатает `404`.
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 Run: `cd apps/web && NODE_OPTIONS=--max-old-space-size=4096 npx nuxt typecheck; cd ../..`
 Expected: exit 0.
 
-- [ ] **Step 4: Lint новых/изменённых файлов**
+- [x] **Step 4: Lint новых/изменённых файлов**
 
 Run: `cd apps/web && npx eslint app src/widgets/gallery-grid src/widgets/collection-section src/widgets/shop-catalog src/widgets/product-page src/shared/lib/apiClient.ts src/entities/category --max-warnings=0; cd ../..`
 Expected: exit 0 (предсуществующий долг остального `src` не трогаем).
 
-- [ ] **Step 5: Build**
+- [x] **Step 5: Build**
 
 Run: `npm run build -w apps/web`
 Expected: exit 0.
 
-- [ ] **Step 6: Отчёт**
+- [x] **Step 6: Отчёт**
 
 Сообщить статус каждого критерия приёмки спека (5 шт.) с выводом команд. Клиентскую навигацию (критерий 3) проверяет контролёр в браузере отдельно — пометить как «передано контролёру».
 
