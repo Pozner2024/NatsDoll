@@ -41,7 +41,7 @@
     <div class="account-page__main">
       <div class="account-page__topbar" />
       <div class="account-page__content">
-        <RouterView />
+        <slot />
       </div>
     </div>
   </div>
@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/entities/user'
 import IconProfile from './components/IconProfile.vue'
 import IconPurchases from './components/IconPurchases.vue'
