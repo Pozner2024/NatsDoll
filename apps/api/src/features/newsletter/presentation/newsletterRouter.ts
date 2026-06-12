@@ -4,7 +4,7 @@ import { zValidator } from '../../../shared/lib/zValidator'
 import { createRateLimiter } from '../../../shared/middleware'
 
 const subscribeBodySchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().max(254),
 })
 
 const subscribeLimiter = createRateLimiter({ max: 3, windowMs: 60 * 60_000 })

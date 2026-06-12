@@ -9,6 +9,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (!authStore.authReady) await authStore.initAuth()
 
   if (!authStore.isLoggedIn) {
+    sessionStorage.setItem('auth_redirect', to.fullPath)
     const { open } = useAuthModal()
     open()
     return navigateTo('/')

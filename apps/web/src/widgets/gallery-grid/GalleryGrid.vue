@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch, onUnmounted } from 'vue'
+import { computed, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { AppButton } from '@/shared'
 import { useGalleryGrid } from './useGalleryGrid'
 import GalleryGridSkeleton from './GalleryGridSkeleton.vue'
@@ -90,11 +90,15 @@ function scheduleFlip(i: number) {
 
 // Таймеры стартуют один раз — как только в pool появятся данные,
 // чтобы не было src="undefined" на первом кадре.
-watch(pool, (newPool) => {
-  if (timersStarted || newPool.length === 0) return
+function startTimers(items: readonly unknown[]) {
+  if (timersStarted || items.length === 0) return
   timersStarted = true
   for (let i = 0; i < GALLERY_GRID_SIZE; i++) scheduleFlip(i)
-})
+}
+
+watch(pool, startTimers)
+
+onMounted(() => startTimers(pool.value))
 
 onUnmounted(() => {
   timers.forEach(id => { if (id !== null) clearTimeout(id) })

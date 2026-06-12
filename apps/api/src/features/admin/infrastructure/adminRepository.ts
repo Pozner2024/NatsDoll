@@ -252,7 +252,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       if (input.orderId) {
         const order = await prisma.order.findUnique({ where: { id: input.orderId } })
         if (!order || order.userId !== input.userId) {
-          throw new AppError(403, 'Order not found')
+          throw new AppError(404, 'Order not found')
         }
       }
       await prisma.message.create({
@@ -394,6 +394,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       const wasReleased = current.status === 'CANCELLED' || current.status === 'REFUNDED'
       const willRelease = newStatus === 'CANCELLED' || newStatus === 'REFUNDED'
       const shouldRestoreStock = willRelease && !wasReleased
+      const shouldReclaimStock = !willRelease && wasReleased
 
       await prisma.$transaction(async (tx) => {
         await tx.order.update({
@@ -411,6 +412,18 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
               where: { id: item.productId },
               data: { stock: { increment: item.quantity } },
             })
+          }
+        }
+
+        if (shouldReclaimStock) {
+          for (const item of current.items) {
+            const { count } = await tx.product.updateMany({
+              where: { id: item.productId, stock: { gte: item.quantity } },
+              data: { stock: { decrement: item.quantity } },
+            })
+            if (count === 0) {
+              throw new AppError(409, 'Not enough stock to reactivate this order')
+            }
           }
         }
       })

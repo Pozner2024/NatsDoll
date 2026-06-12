@@ -77,12 +77,18 @@ const done = ref(false)
 onMounted(() => {
   const t = route.query.token
   token.value = typeof t === 'string' ? t : ''
+  history.replaceState(null, '', window.location.pathname)
 })
 
 async function handleSubmit() {
   if (!token.value) return
+  error.value = !password.value
+    ? 'Please enter your password'
+    : password.value.length < 4
+      ? 'Password must be at least 4 characters'
+      : ''
+  if (error.value) return
   isLoading.value = true
-  error.value = ''
   try {
     await authStore.resetPassword(token.value, password.value)
     done.value = true

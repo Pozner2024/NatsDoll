@@ -8,10 +8,10 @@ import {
   removeCartItem,
 } from './cartApi'
 
-const EMPTY_CART: Cart = { items: [], totalAmount: 0, itemCount: 0 }
+const emptyCart = (): Cart => ({ items: [], totalAmount: 0, itemCount: 0 })
 
 export const useCartStore = defineStore('cart', () => {
-  const cart = ref<Cart>(EMPTY_CART)
+  const cart = ref<Cart>(emptyCart())
   const loading = ref(false)
   const error = ref<string | null>(null)
   let loaded = false
@@ -58,7 +58,7 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   function reset(): void {
-    cart.value = EMPTY_CART
+    cart.value = emptyCart()
     loaded = false
     error.value = null
   }

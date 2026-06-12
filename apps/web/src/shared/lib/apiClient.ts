@@ -7,9 +7,10 @@ const REQUEST_TIMEOUT_MS = 15000
 
 const refreshSchema = z.object({ accessToken: z.string() })
 
-type ApiRequestInit = RequestInit & {
+type ApiRequestInit = Omit<RequestInit, 'headers'> & {
   json?: unknown
   accessToken?: string
+  headers?: Record<string, string>
   // Таймаут запроса в мс. null отключает таймаут (например, для больших загрузок).
   timeoutMs?: number | null
 }
@@ -40,7 +41,7 @@ export async function apiFetch(path: string, init: ApiRequestInit = {}): Promise
   const mergedHeaders: Record<string, string> = {
     ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    ...(headers as Record<string, string> | undefined),
+    ...headers,
   }
   const timeoutSignal = timeoutMs == null ? null : AbortSignal.timeout(timeoutMs)
   const signals = [rest.signal, timeoutSignal].filter((s): s is AbortSignal => s != null)
@@ -83,6 +84,13 @@ async function doRefresh(): Promise<string | null> {
   return body.accessToken
 }
 
+export function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = doRefresh().catch(() => null).finally(() => { refreshPromise = null })
+  }
+  return refreshPromise
+}
+
 /**
  * Главная функция для выполнения защищенных запросов (требующих авторизации).
  * Обладает встроенным механизмом "перехвата" (interceptor):
@@ -98,10 +106,7 @@ export async function authFetch(path: string, init: ApiRequestInit = {}): Promis
 
   if (res.status !== 401) return res
 
-  if (!refreshPromise) {
-    refreshPromise = doRefresh().catch(() => null).finally(() => { refreshPromise = null })
-  }
-  const newToken = await refreshPromise
+  const newToken = await refreshAccessToken()
 
   if (!newToken) {
     authCallbacks.clearAuth()

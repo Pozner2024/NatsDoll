@@ -28,10 +28,12 @@ const imageUrlSchema = z
   .url()
   .refine((u) => u.startsWith('http://') || u.startsWith('https://'), 'Image must be an http(s) URL')
 
+const slugSchema = z.string().min(1).max(120).regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, digits and hyphens')
+
 const productBodySchema = z.object({
   name: z.string().min(1),
-  slug: z.string().min(1),
-  description: z.string(),
+  slug: slugSchema,
+  description: z.string().max(20000),
   price: z.number().positive(),
   stock: z.number().int().min(0),
   categoryId: z.string().min(1),
@@ -42,7 +44,7 @@ const productBodySchema = z.object({
 
 const categoryBodySchema = z.object({
   name: z.string().min(1),
-  slug: z.string().min(1),
+  slug: slugSchema,
 })
 
 const orderListQuerySchema = z.object({
@@ -54,8 +56,8 @@ const orderListQuerySchema = z.object({
 
 const orderUpdateBodySchema = z.object({
   status: z.enum(['PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
-  trackingNumber: z.string().nullable().optional(),
-  adminNote: z.string().nullable().optional(),
+  trackingNumber: z.string().max(100).nullable().optional(),
+  adminNote: z.string().max(2000).nullable().optional(),
 })
 
 const analyticsQuerySchema = z.object({

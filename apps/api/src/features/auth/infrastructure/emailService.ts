@@ -91,7 +91,7 @@ export function makeEmailService(): EmailService {
     async sendMessageNotification(adminEmail, fromName, fromEmail, text, orderNumber) {
       const subject = orderNumber
         ? `New message re: Order #${orderNumber} — NatsDoll`
-        : `New message from ${escapeHtml(fromName)} — NatsDoll`
+        : `New message from ${fromName} — NatsDoll`
       await send({
         from: 'noreply@natsdoll.com',
         to: adminEmail,

@@ -25,7 +25,7 @@ export function makeMessageRepository(prisma: PrismaClient): MessageRepository {
     async create(userId, data) {
       if (data.orderId) {
         const order = await prisma.order.findUnique({ where: { id: data.orderId } })
-        if (!order || order.userId !== userId) throw new AppError(403, 'Order not found')
+        if (!order || order.userId !== userId) throw new AppError(404, 'Order not found')
       }
 
       const user = await prisma.user.findUnique({

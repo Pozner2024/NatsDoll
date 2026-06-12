@@ -31,6 +31,7 @@ services:
       PORT: 3000
       FRONTEND_URL: http://localhost:5173
       JWT_SECRET: dev-secret-key
+      SEED_DEMO_PRODUCTS: "true"
     env_file:
       - apps/api/.env
     command: sh -c "rm -rf /app/node_modules/.package-lock.json 2>/dev/null; npm ci && npx -w apps/api prisma migrate deploy && npm run generate -w apps/api && (npx -w apps/api prisma db seed || true) && npm run dev -w apps/api"

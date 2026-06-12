@@ -3,6 +3,7 @@
 // обработка ошибок и регистрируются все функциональные модули системы через эндпоинты API
 
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { Prisma } from '@prisma/client'
@@ -117,6 +118,9 @@ import {
 import { requireAuth } from './shared/middleware'
 import { uploadToS3 } from './shared/lib'
 
+const GLOBAL_BODY_LIMIT_BYTES = 100 * 1024
+const IMAGE_UPLOAD_PATH = '/admin/products/images'
+
 export function createApp() {
   const app = new Hono()
 
@@ -132,6 +136,15 @@ export function createApp() {
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   }))
+
+  const globalBodyLimit = bodyLimit({
+    maxSize: GLOBAL_BODY_LIMIT_BYTES,
+    onError: (c) => c.json({ error: 'Request body too large' }, 413),
+  })
+  app.use('*', (c, next) => {
+    if (c.req.path === IMAGE_UPLOAD_PATH) return next()
+    return globalBodyLimit(c, next)
+  })
 
   app.onError((err, c) => {
     if (err instanceof AppError) {

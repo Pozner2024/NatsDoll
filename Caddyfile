@@ -18,6 +18,9 @@
 	}
 
 	handle_path /api/* {
+		request_body {
+			max_size 26MiB
+		}
 		reverse_proxy api:3000 {
 			# Перезаписываем X-Real-IP реальным адресом TCP-пира (Caddy — edge-прокси).
 			# Без этого клиент мог бы прислать произвольный X-Real-IP и обойти rate limiter,

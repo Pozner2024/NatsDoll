@@ -124,7 +124,7 @@ async function main() {
   for (const category of categories) {
     await prisma.category.upsert({
       where: { slug: category.slug },
-      update: { name: category.name, position: category.position },
+      update: {},
       create: category,
     })
   }
@@ -143,6 +143,11 @@ async function main() {
 
   console.log(`Seeded ${galleryItems.length} gallery items.`)
 
+  if (process.env.SEED_DEMO_PRODUCTS !== 'true') {
+    console.log('Skipping demo products: SEED_DEMO_PRODUCTS is not "true".')
+    return
+  }
+
   console.log('Seeding products...')
 
   const categoriesBySlug = new Map(
@@ -159,15 +164,7 @@ async function main() {
     const messageOptions = messageOptionsByCategory[p.categorySlug] ?? []
     await prisma.product.upsert({
       where: { slug: baseSlug },
-      update: {
-        name: p.name,
-        price: p.price,
-        stock: p.stock,
-        images: p.images,
-        messageOptions,
-        isPublished: true,
-        categoryId,
-      },
+      update: {},
       create: {
         name: p.name,
         slug: baseSlug,

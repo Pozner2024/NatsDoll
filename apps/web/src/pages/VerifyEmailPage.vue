@@ -24,6 +24,7 @@ const failed = ref(false)
 
 onMounted(async () => {
   const token = new URLSearchParams(window.location.search).get('token')
+  history.replaceState(null, '', window.location.pathname)
   if (!token) {
     failed.value = true
     return

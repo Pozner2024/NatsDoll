@@ -11,7 +11,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { z } from 'zod'
 import type { User } from './types'
-import { apiFetch, apiErrorMessage } from '@/shared'
+import { apiFetch, apiErrorMessage, refreshAccessToken } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useFavoritesStore } from '@/entities/favorites'
 
@@ -25,10 +25,6 @@ const userSchema = z.object({
 const authResponseSchema = z.object({
   accessToken: z.string(),
   user: userSchema,
-})
-
-const refreshResponseSchema = z.object({
-  accessToken: z.string(),
 })
 
 const meResponseSchema = z.object({
@@ -117,11 +113,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function _doInitAuth(): Promise<void> {
     try {
-      const res = await apiFetch('/auth/refresh', { method: 'POST' })
-      if (!res.ok) return
-      const body = refreshResponseSchema.parse(await res.json())
-      const meUser = await fetchMe(body.accessToken)
-      if (meUser) setAuth(body.accessToken, meUser)
+      const token = await refreshAccessToken()
+      if (!token) return
+      const meUser = await fetchMe(token)
+      if (meUser) setAuth(token, meUser)
     } catch {
       // тихий фейл — пользователь просто остаётся неавторизованным
     } finally {
@@ -141,25 +136,6 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = body.user
   }
 
-  async function loginWithToken(token: string): Promise<void> {
-    if (initPromise) await initPromise
-    initPromise = _doLoginWithToken(token)
-    return initPromise
-  }
-
-  async function _doLoginWithToken(token: string): Promise<void> {
-    try {
-      const meUser = await fetchMe(token)
-      if (meUser) setAuth(token, meUser)
-      else clearState()
-    } catch {
-      clearState()
-    } finally {
-      authReady.value = true
-      initPromise = null
-    }
-  }
-
   return {
     user: readonly(user),
     accessToken: readonly(accessToken),
@@ -173,7 +149,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     clearState,
     initAuth,
-    loginWithToken,
     setAccessToken,
     updateProfile,
   }

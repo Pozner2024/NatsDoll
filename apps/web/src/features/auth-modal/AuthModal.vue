@@ -370,7 +370,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthModal } from '@/shared'
 import { useAuthStore } from '@/entities/user'
-import { BaseModal, IconEye, validateEmail } from '@/shared'
+import { BaseModal, IconEye, validateEmail, resolveSafeRedirect } from '@/shared'
 
 const authModal = useAuthModal()
 const { isOpen, mode } = storeToRefs(authModal)
@@ -448,7 +448,9 @@ async function handleLogin() {
   try {
     await authStore.login({ email: loginForm.email, password: loginForm.password })
     close()
-    router.push({ name: 'account' })
+    const stored = sessionStorage.getItem('auth_redirect')
+    sessionStorage.removeItem('auth_redirect')
+    if (stored) router.push(resolveSafeRedirect(stored))
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
   } finally {
@@ -462,8 +464,10 @@ async function handleRegister() {
   submitError.value = ''
   try {
     await authStore.register({ name: registerForm.name, email: registerForm.email, password: registerForm.password })
-    const { pathname, search, hash } = window.location
-    sessionStorage.setItem('auth_redirect', pathname + search + hash)
+    if (!sessionStorage.getItem('auth_redirect')) {
+      const { pathname, search, hash } = window.location
+      sessionStorage.setItem('auth_redirect', pathname + search + hash)
+    }
     showVerifyPending()
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
@@ -492,8 +496,10 @@ async function handleForgot() {
 }
 
 function handleGoogle() {
-  const { pathname, search, hash } = window.location
-  sessionStorage.setItem('auth_redirect', pathname + search + hash)
+  if (!sessionStorage.getItem('auth_redirect')) {
+    const { pathname, search, hash } = window.location
+    sessionStorage.setItem('auth_redirect', pathname + search + hash)
+  }
   window.location.href = '/api/auth/google'
 }
 </script>
