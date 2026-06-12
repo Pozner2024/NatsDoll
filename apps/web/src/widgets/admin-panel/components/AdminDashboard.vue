@@ -24,7 +24,9 @@
     >
       <div class="admin-dashboard__stats">
         <div class="stat-card">
-          <div class="stat-card__label">Orders today</div>
+          <div class="stat-card__label">
+            Orders today
+          </div>
           <div class="stat-card__value">
             {{ isLoading ? '—' : data?.stats.ordersToday }}
           </div>
@@ -33,7 +35,9 @@
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">Revenue today</div>
+          <div class="stat-card__label">
+            Revenue today
+          </div>
           <div class="stat-card__value">
             {{ isLoading ? '—' : formatMoney(data?.stats.revenueToday ?? 0) }}
           </div>
@@ -42,18 +46,26 @@
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">New messages</div>
+          <div class="stat-card__label">
+            New messages
+          </div>
           <div class="stat-card__value stat-card__value--accent">
             {{ isLoading ? '—' : data?.stats.newMessages }}
           </div>
-          <div class="stat-card__hint">Unread by admin</div>
+          <div class="stat-card__hint">
+            Unread by admin
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">Active listings</div>
+          <div class="stat-card__label">
+            Active listings
+          </div>
           <div class="stat-card__value">
             {{ isLoading ? '—' : data?.stats.activeListings }}
           </div>
-          <div class="stat-card__hint">Published products</div>
+          <div class="stat-card__hint">
+            Published products
+          </div>
         </div>
       </div>
 
@@ -95,7 +107,7 @@
               >
                 <td>
                   <RouterLink
-                    :to="`/admin/orders/${order.id}`"
+                    to="/admin/orders"
                     class="orders-table__link"
                   >
                     #{{ order.orderNumber }}
@@ -109,7 +121,9 @@
                     :class="`status-badge--${order.status.toLowerCase()}`"
                   >{{ order.status }}</span>
                 </td>
-                <td class="orders-table__date">{{ formatDate(order.createdAt) }}</td>
+                <td class="orders-table__date">
+                  {{ formatDate(order.createdAt) }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -148,7 +162,9 @@
                 >#{{ msg.orderNumber }}</span>
                 <span class="messages-list__date">{{ formatDate(msg.createdAt) }}</span>
               </div>
-              <p class="messages-list__text">{{ truncate(msg.text, 80) }}</p>
+              <p class="messages-list__text">
+                {{ truncate(msg.text, 80) }}
+              </p>
             </li>
           </ul>
         </div>
