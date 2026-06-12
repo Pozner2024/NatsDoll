@@ -39,7 +39,7 @@
             class="categories-section__input"
             @keydown.enter="saveEdit(cat.id)"
             @keydown.escape="cancelEdit"
-          />
+          >
           <span class="categories-section__count">{{ cat.productCount }} products</span>
           <button
             class="categories-section__action categories-section__action--save"
@@ -82,7 +82,7 @@
           placeholder="Category name"
           @keydown.enter="saveNew"
           @keydown.escape="cancelAdd"
-        />
+        >
         <button
           class="categories-section__action categories-section__action--save"
           @click="saveNew"

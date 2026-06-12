@@ -11,7 +11,7 @@
         :src="product.image"
         :alt="product.name"
         class="product-card__image"
-      />
+      >
       <div
         v-else
         class="product-card__image product-card__image--placeholder"
@@ -30,8 +30,12 @@
       </span>
     </RouterLink>
     <div class="product-card__body">
-      <div class="product-card__name">{{ product.name }}</div>
-      <div class="product-card__meta">{{ product.category }} · ${{ product.price.toFixed(2) }}</div>
+      <div class="product-card__name">
+        {{ product.name }}
+      </div>
+      <div class="product-card__meta">
+        {{ product.category }} · ${{ product.price.toFixed(2) }}
+      </div>
       <div
         class="product-card__stock"
         :class="{ 'product-card__stock--empty': product.stock === 0 }"

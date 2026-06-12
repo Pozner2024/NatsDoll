@@ -21,21 +21,20 @@ const AdminProductListResponseSchema = z.object({
   totalPages: z.number(),
 })
 
-const AdminProductInputSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().min(1),
-  description: z.string(),
-  price: z.number().positive(),
-  stock: z.number().int().min(0),
-  categoryId: z.string().min(1),
-  images: z.array(z.string()),
-  messageOptions: z.array(z.string()),
-  isPublished: z.boolean(),
-})
-
 export type AdminProductItem = z.infer<typeof AdminProductItemSchema>
-export type AdminProductInput = z.infer<typeof AdminProductInputSchema>
 export type AdminProductListResponse = z.infer<typeof AdminProductListResponseSchema>
+
+export type AdminProductInput = {
+  name: string
+  slug: string
+  description: string
+  price: number
+  stock: number
+  categoryId: string
+  images: string[]
+  messageOptions: string[]
+  isPublished: boolean
+}
 
 export type AdminListingsFilters = {
   search: string

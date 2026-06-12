@@ -32,7 +32,7 @@
             class="product-form-page__input"
             required
             @input="autoSlug"
-          />
+          >
         </label>
         <label class="product-form-page__label">
           Slug
@@ -40,7 +40,7 @@
             v-model="form.slug"
             class="product-form-page__input"
             required
-          />
+          >
         </label>
       </div>
 
@@ -70,7 +70,7 @@
             min="0"
             class="product-form-page__input"
             required
-          />
+          >
         </label>
         <label class="product-form-page__label">
           Stock
@@ -80,7 +80,7 @@
             min="0"
             class="product-form-page__input"
             required
-          />
+          >
         </label>
       </div>
 
@@ -115,7 +115,7 @@
             class="product-form-page__tag-input"
             placeholder="Add option…"
             @keydown.enter.prevent="addMessageOption"
-          />
+          >
           <button
             type="button"
             class="product-form-page__tag-btn"
@@ -138,7 +138,7 @@
         <input
           v-model="form.isPublished"
           type="checkbox"
-        />
+        >
         Published
       </label>
 

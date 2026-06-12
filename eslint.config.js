@@ -77,4 +77,10 @@ export default [
     files: ["apps/web/app/**/*.vue"],
     rules: { "vue/multi-word-component-names": "off" },
   },
+
+  // Описание товара санитизируется DOMPurify перед v-html (ProductInfo.vue)
+  {
+    files: ["apps/web/src/widgets/product-page/components/ProductInfo.vue"],
+    rules: { "vue/no-v-html": "off" },
+  },
 ];

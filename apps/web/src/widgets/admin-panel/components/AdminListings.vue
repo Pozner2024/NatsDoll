@@ -20,13 +20,15 @@
         class="admin-listings__search"
         placeholder="Search by name…"
         @input="setFilter({ search: ($event.target as HTMLInputElement).value })"
-      />
+      >
       <select
         :value="filters.categoryId"
         class="admin-listings__select"
         @change="setFilter({ categoryId: ($event.target as HTMLSelectElement).value })"
       >
-        <option value="">All categories</option>
+        <option value="">
+          All categories
+        </option>
         <option
           v-for="cat in categoryOptions"
           :key="cat.id"
@@ -40,9 +42,15 @@
         class="admin-listings__select"
         @change="setFilter({ status: ($event.target as HTMLSelectElement).value as 'all' | 'published' | 'draft' })"
       >
-        <option value="all">All statuses</option>
-        <option value="published">Published</option>
-        <option value="draft">Draft</option>
+        <option value="all">
+          All statuses
+        </option>
+        <option value="published">
+          Published
+        </option>
+        <option value="draft">
+          Draft
+        </option>
       </select>
       <span
         v-if="data"

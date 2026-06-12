@@ -6,14 +6,30 @@
         class="order-list__select"
         @change="$emit('filter-change', { status: ($event.target as HTMLSelectElement).value })"
       >
-        <option value="">All statuses</option>
-        <option value="PENDING">Pending</option>
-        <option value="PAID">Paid</option>
-        <option value="PROCESSING">Processing</option>
-        <option value="SHIPPED">Shipped</option>
-        <option value="DELIVERED">Delivered</option>
-        <option value="CANCELLED">Cancelled</option>
-        <option value="REFUNDED">Refunded</option>
+        <option value="">
+          All statuses
+        </option>
+        <option value="PENDING">
+          Pending
+        </option>
+        <option value="PAID">
+          Paid
+        </option>
+        <option value="PROCESSING">
+          Processing
+        </option>
+        <option value="SHIPPED">
+          Shipped
+        </option>
+        <option value="DELIVERED">
+          Delivered
+        </option>
+        <option value="CANCELLED">
+          Cancelled
+        </option>
+        <option value="REFUNDED">
+          Refunded
+        </option>
       </select>
       <input
         :value="filters.search"

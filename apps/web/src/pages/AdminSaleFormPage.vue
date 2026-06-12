@@ -24,7 +24,7 @@
             class="sale-form-page__input"
             placeholder="e.g. Summer Sale"
             required
-          />
+          >
         </label>
       </div>
 
@@ -39,7 +39,7 @@
               max="99"
               class="sale-form-page__input sale-form-page__input--narrow"
               required
-            />
+            >
             <span class="sale-form-page__input-suffix">%</span>
           </div>
         </label>
@@ -50,7 +50,7 @@
             type="date"
             class="sale-form-page__input"
             required
-          />
+          >
         </label>
         <label class="sale-form-page__label">
           End date
@@ -59,7 +59,7 @@
             type="date"
             class="sale-form-page__input"
             required
-          />
+          >
         </label>
         <p class="sale-form-page__tz-hint">
           Dates are UTC: start = 00:00 UTC, end = 23:59 UTC
@@ -67,14 +67,16 @@
       </div>
 
       <div class="sale-form-page__field">
-        <p class="sale-form-page__label">Applies to</p>
+        <p class="sale-form-page__label">
+          Applies to
+        </p>
         <div class="sale-form-page__radios">
           <label class="sale-form-page__radio">
             <input
               v-model="form.scope"
               type="radio"
               value="ALL"
-            />
+            >
             All products
           </label>
           <label class="sale-form-page__radio">
@@ -82,7 +84,7 @@
               v-model="form.scope"
               type="radio"
               value="CATEGORIES"
-            />
+            >
             Categories
           </label>
           <label class="sale-form-page__radio">
@@ -90,7 +92,7 @@
               v-model="form.scope"
               type="radio"
               value="PRODUCTS"
-            />
+            >
             Specific products
           </label>
         </div>
@@ -111,7 +113,7 @@
               :checked="form.categoryIds.includes(cat.id)"
               class="sale-form-page__chip-check"
               @change="toggleCategory(cat.id)"
-            />
+            >
             {{ cat.name }}
           </label>
         </div>
@@ -182,7 +184,7 @@
           v-model="pickerSearch"
           class="sale-form-page__input"
           placeholder="Search…"
-        />
+        >
         <div class="sale-form-page__picker-list">
           <label
             v-for="product in filteredPickerProducts"
@@ -194,13 +196,13 @@
               :value="product.id"
               :checked="form.productIds.includes(product.id)"
               @change="toggleProduct(product.id)"
-            />
+            >
             <img
               v-if="product.image"
               :src="product.image"
               class="sale-form-page__picker-thumb"
               alt=""
-            />
+            >
             <span
               v-else
               class="sale-form-page__picker-thumb sale-form-page__picker-thumb--empty"

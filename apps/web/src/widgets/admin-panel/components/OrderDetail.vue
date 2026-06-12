@@ -107,13 +107,27 @@
               v-model="draft.status"
               class="order-detail__select"
             >
-              <option value="PENDING">PENDING</option>
-              <option value="PAID">PAID</option>
-              <option value="PROCESSING">PROCESSING</option>
-              <option value="SHIPPED">SHIPPED</option>
-              <option value="DELIVERED">DELIVERED</option>
-              <option value="CANCELLED">CANCELLED</option>
-              <option value="REFUNDED">REFUNDED</option>
+              <option value="PENDING">
+                PENDING
+              </option>
+              <option value="PAID">
+                PAID
+              </option>
+              <option value="PROCESSING">
+                PROCESSING
+              </option>
+              <option value="SHIPPED">
+                SHIPPED
+              </option>
+              <option value="DELIVERED">
+                DELIVERED
+              </option>
+              <option value="CANCELLED">
+                CANCELLED
+              </option>
+              <option value="REFUNDED">
+                REFUNDED
+              </option>
             </select>
           </div>
 

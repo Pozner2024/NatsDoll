@@ -74,8 +74,12 @@
           class="admin-sales__empty"
         >
           <span class="admin-sales__empty-icon">%</span>
-          <p class="admin-sales__empty-title">No sale is running right now</p>
-          <p class="admin-sales__empty-sub">Create a seasonal sale to discount your products</p>
+          <p class="admin-sales__empty-title">
+            No sale is running right now
+          </p>
+          <p class="admin-sales__empty-sub">
+            Create a seasonal sale to discount your products
+          </p>
           <RouterLink
             to="/admin/sales/new"
             class="admin-sales__new-btn"
@@ -89,7 +93,9 @@
         v-if="pastSales.length"
         class="admin-sales__past"
       >
-        <h2 class="admin-sales__past-title">Past sales</h2>
+        <h2 class="admin-sales__past-title">
+          Past sales
+        </h2>
         <div class="admin-sales__past-list">
           <div
             v-for="sale in pastSales"

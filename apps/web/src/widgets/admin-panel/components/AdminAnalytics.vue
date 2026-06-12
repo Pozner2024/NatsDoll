@@ -34,7 +34,9 @@
       <template v-else>
         <div class="admin-analytics__stats">
           <div class="stat-card">
-            <div class="stat-card__label">Revenue</div>
+            <div class="stat-card__label">
+              Revenue
+            </div>
             <div class="stat-card__value">
               {{ isLoading ? '—' : formatMoney(data?.summary.totalRevenue ?? 0) }}
             </div>
@@ -47,7 +49,9 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-card__label">Orders</div>
+            <div class="stat-card__label">
+              Orders
+            </div>
             <div class="stat-card__value">
               {{ isLoading ? '—' : data?.summary.totalOrders ?? 0 }}
             </div>

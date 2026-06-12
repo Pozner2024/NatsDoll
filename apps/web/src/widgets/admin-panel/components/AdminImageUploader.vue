@@ -14,7 +14,7 @@
         multiple
         class="image-uploader__input"
         @change="onChange"
-      />
+      >
       <button
         type="button"
         class="image-uploader__choose"
@@ -52,7 +52,7 @@
           :src="url"
           class="image-uploader__thumb"
           alt=""
-        />
+        >
         <span
           v-if="i === 0"
           class="image-uploader__main"
