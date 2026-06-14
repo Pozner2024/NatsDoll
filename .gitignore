@@ -60,3 +60,5 @@ apps/api/prisma/seed.js.map
 apps/api/prisma/seed.d.ts.map
 sources_vue.txt
 collect_vue_folder.py
+
+.claude/settings.local.json
