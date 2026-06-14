@@ -38,27 +38,25 @@ function buildBuckets(
   if (period === 'today' || period === 'yesterday') {
     // 24 hourly buckets
     while (cur <= end) {
-      const key = `${cur.toISOString().slice(0, 10)} ${String(cur.getUTCHours()).padStart(2, '0')}:00`
-      buckets[key] = { revenue: 0, count: 0 }
+      buckets[bucketKey(period, cur)] = { revenue: 0, count: 0 }
       cur.setUTCHours(cur.getUTCHours() + 1)
     }
   } else if (period === '365d') {
     cur.setUTCDate(1)
     while (cur <= end) {
-      const key = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-01`
-      buckets[key] = { revenue: 0, count: 0 }
+      buckets[bucketKey(period, cur)] = { revenue: 0, count: 0 }
       cur.setUTCMonth(cur.getUTCMonth() + 1)
     }
   } else if (period === '90d') {
     const day = cur.getUTCDay() || 7
     cur.setUTCDate(cur.getUTCDate() - day + 1)
     while (cur <= end) {
-      buckets[cur.toISOString().slice(0, 10)] = { revenue: 0, count: 0 }
+      buckets[bucketKey(period, cur)] = { revenue: 0, count: 0 }
       cur.setUTCDate(cur.getUTCDate() + 7)
     }
   } else {
     while (cur <= end) {
-      buckets[cur.toISOString().slice(0, 10)] = { revenue: 0, count: 0 }
+      buckets[bucketKey(period, cur)] = { revenue: 0, count: 0 }
       cur.setUTCDate(cur.getUTCDate() + 1)
     }
   }

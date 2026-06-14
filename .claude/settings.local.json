@@ -315,7 +315,17 @@
       "Bash(unzip -l \"../NatsDoll-review.zip\")",
       "Bash(grep -iE \"\\\\.env$|node_modules|\\\\.git/\")",
       "Bash(grep -n '\\\\$queryRaw\\\\|\\\\$executeRaw\\\\|Prisma.raw\\\\|Prisma.sql' apps/api/src -r)",
-      "Bash(docker version *)"
+      "Bash(docker version *)",
+      "Bash(gh run *)",
+      "PowerShell(gh run list --limit 1 --json databaseId,status,displayTitle --jq '.[0]')",
+      "Bash(grep -oE \"[a-z@/-]+/[a-z-]+$|vue/[a-z-]+\")",
+      "Bash(grep -v \"//\")",
+      "Bash(grep -iv \"//\")",
+      "Bash(grep -rnE \"\\(secret|password|api_key\\)\\\\s*[:=]\\\\s*['\\\\\"][A-Za-z0-9+/]{16,}\" apps/api/src apps/web/src --include=\"*.ts\" --include=\"*.vue\")",
+      "PowerShell(gh api *)",
+      "Bash(NODE_OPTIONS=--max-old-space-size=4096 npx nuxt typecheck)",
+      "Bash(xargs -I{} stat -c \"%s {}\" {})",
+      "Bash(echo \"=== tsc exit: $? ===\")"
     ]
   }
 }

@@ -1,7 +1,7 @@
 # NatsDoll — Архитектура проекта
 
-**Версия:** 3.0 
-**Дата:** 2026-04-05
+**Версия:** 3.1 
+**Дата:** 2026-06-13
 
 ---
 
@@ -17,7 +17,7 @@ NatsDoll — B2C интернет-магазин хэндмейд изделий
 
 | Слой        | Технология                  |
 | ----------- | --------------------------- |
-| Frontend    | Vue 3 + Pinia + Vite + TS   |
+| Frontend    | Nuxt 4 (Vue 3, SSR) + Pinia + TS + SCSS |
 | Backend     | Hono + TypeScript + Node.js |
 | БД          | PostgreSQL + Prisma ORM     |
 | Shared      | npm workspaces + Zod + TS   |
@@ -42,17 +42,20 @@ NatsDoll/
 │   │   ├── prisma/       ← ORM, миграции, schema
 │   │   └── tests/
 │   │
-│   └── web/              ← Vue 3 frontend
-│       ├── src/
-│       │   ├── pages/      ← страницы (роутинг)
-│       │   ├── widgets/    ← самодостаточные блоки с логикой
-│       │   ├── features/   ← действия пользователя
-│       │   ├── entities/   ← бизнес-сущности
-│       │   ├── shared/     ← UI-примитивы и утилиты
-│       │   ├── router/     ← Vue Router
-│       │   └── App.vue
+│   └── web/              ← Nuxt 4 frontend (SSR)
+│       ├── app/             ← слой Nuxt (вне ФСД)
+│       │   ├── pages/       ← file-based роутинг (точки входа)
+│       │   ├── layouts/     ← макеты страниц
+│       │   ├── app.vue      ← корень приложения
+│       │   └── error.vue    ← страница ошибок (404 / 5xx)
+│       ├── src/             ← слои ФСД
+│       │   ├── widgets/     ← самодостаточные блоки с логикой
+│       │   ├── features/    ← действия пользователя
+│       │   ├── entities/    ← бизнес-сущности
+│       │   └── shared/      ← UI-примитивы и утилиты
+│       ├── nuxt.config.ts   ← конфиг (routeRules: SSR/CSR, buildId)
 │       └── tests/
-│           └── e2e/        ← Playwright тесты
+│           └── e2e/         ← Playwright тесты
 │
 ├── packages/
 │   └── shared/           ← npm workspace
@@ -68,11 +71,20 @@ NatsDoll/
 
 ## ФРОНТЕНД: ФСД слои
 
+### Рендеринг (Nuxt SSR)
+
+Гибридная стратегия через `routeRules` в `nuxt.config.ts`:
+
+- **SSR** — публичные страницы (главная, каталог, товар, галерея) ради SEO. HTML не кэшируется.
+- **CSR (`ssr: false`)** — приватные/интерактивные: `/account/**`, `/cart`, `/orders/**`, `/admin/**`, `/auth/**`, `/verify-email`, `/reset-password`.
+
+`buildId: 'natsdoll'` фиксирован: CSP-хэш inline-скрипта Nuxt завязан на него — пересчитывать после апгрейда Nuxt.
+
 ### Слои (сверху вниз)
 
 | Слой       | Назначение                                              | Примеры                          |
 | ---------- | ------------------------------------------------------- | -------------------------------- |
-| `pages`    | Страницы приложения, точки входа роутера                | HomePage, CartPage               |
+| `pages`    | Страницы-точки входа в `app/pages/` (Nuxt file-based), тонкие — собирают виджеты | index, cart, product/[slug]       |
 | `widgets`  | Самодостаточные блоки со своей логикой и состоянием     | AppHeader, HeroSlider            |
 | `features` | Действия пользователя (бизнес-операции)                 | AddToCart, Login, Search         |
 | `entities` | Бизнес-сущности                                         | Product, User, Order             |
@@ -200,51 +212,45 @@ features/{featureName}/
 
 ### Application слой
 
-Содержит бизнес-логику в виде use-cases. Один файл = одна операция:
+Содержит бизнес-логику в виде use-cases. Один файл = одна операция. Use-case — **фабрика** `make…`, которая принимает зависимости и возвращает функцию операции:
 
 ```typescript
 // features/auth/application/login.ts
-export async function login(
-  email: string,
-  password: string,
-  userRepository: UserRepository,
-) {
-  const user = await userRepository.findByEmail(email);
-  if (!user) throw new NotFoundError("User not found");
+export function makeLogin(repo: AuthRepository) {
+  return async function login(email: string, password: string) {
+    const user = await repo.findByEmail(email);
+    if (!user) throw new AppError(404, "User not found");
 
-  const isValid = await verifyPassword(password, user.passwordHash);
-  if (!isValid) throw new ValidationError("Invalid password");
+    const isValid = await verifyPassword(password, user.passwordHash);
+    if (!isValid) throw new AppError(401, "Invalid password");
 
-  const tokens = generateTokens(user.id);
-  return { user, tokens };
+    return user;
+  };
 }
 ```
 
 **Правила:**
 
 - Один файл на одну операцию (не один большой сервис)
-- Получает репозиторий как параметр (инжекция зависимостей)
+- Получает репозиторий и другие зависимости через `make…`-фабрику (инжекция зависимостей)
 - Работает с Prisma-моделями напрямую
 - Не зависит от Hono или других фреймворков
 
 ### Infrastructure слой
 
-Работает с БД через Prisma:
+Работает с БД через Prisma. Репозиторий — **фабрика** `make…Repository(prisma)`, возвращающая объект с методами (тип описан в `types.ts`):
 
 ```typescript
-// features/users/infrastructure/userRepository.ts
-export class UserRepository {
-  async findByEmail(email: string) {
-    return await prisma.user.findUnique({ where: { email } });
-  }
-
-  async create(data: UserCreateInput) {
-    return await prisma.user.create({ data });
-  }
-
-  async findById(id: string) {
-    return await prisma.user.findUnique({ where: { id } });
-  }
+// features/auth/infrastructure/authRepository.ts
+export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
+  return {
+    async findByEmail(email) {
+      return prisma.user.findUnique({ where: { email } });
+    },
+    async saveRefreshToken({ userId, tokenHash, expiresAt }) {
+      await prisma.refreshToken.create({ data: { userId, tokenHash, expiresAt } });
+    },
+  };
 }
 ```
 
@@ -254,12 +260,14 @@ HTTP маршруты и обработчики Hono:
 
 ```typescript
 // features/auth/presentation/authRoutes.ts
-export function registerAuthRoutes(app: HonoApp) {
-  app.post("/auth/login", async (c) => {
+export function makeAuthRouter(login: Login /* ...прочие use-cases */) {
+  const router = new Hono();
+  router.post("/login", async (c) => {
     const { email, password } = await c.req.json();
-    const result = await login(email, password, userRepository);
+    const result = await login(email, password);
     return c.json(result);
   });
+  return router;
 }
 ```
 
@@ -269,13 +277,18 @@ export function registerAuthRoutes(app: HonoApp) {
 
 ```typescript
 // apps/api/src/app.ts
-import { registerAuthRoutes } from "./features/auth";
-import { userRepository } from "./features/users/infrastructure";
+import { makeAuthRepository, makeLogin, makeAuthRouter } from "./features/auth";
 
-const app = new Hono();
-app.use(errorHandler);
-registerAuthRoutes(app);
-export default app;
+export function createApp() {
+  const app = new Hono();
+  // ...глобальные middleware и onError...
+
+  const authRepo = makeAuthRepository(prisma);
+  const login = makeLogin(authRepo);
+  app.route("/auth", makeAuthRouter(login /* ...прочие use-cases */));
+
+  return app;
+}
 ```
 
 ### Структура shared (бэкенд)

@@ -11,7 +11,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { z } from 'zod'
 import type { User } from './types'
-import { apiFetch, apiErrorMessage, refreshAccessToken } from '@/shared'
+import { apiFetch, authFetch, apiErrorMessage, refreshAccessToken } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useFavoritesStore } from '@/entities/favorites'
 
@@ -126,10 +126,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function updateProfile(data: { name?: string; password?: string; currentPassword?: string }): Promise<void> {
-    const res = await apiFetch('/auth/me', {
+    const res = await authFetch('/auth/me', {
       method: 'PATCH',
       json: data,
-      accessToken: accessToken.value ?? undefined,
     })
     if (!res.ok) throw new Error(await apiErrorMessage(res, 'Failed to update profile'))
     const body = z.object({ user: userSchema }).parse(await res.json())
