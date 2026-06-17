@@ -58,4 +58,5 @@ export interface PaymentRepository {
   upsertSettings(data: { enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null | undefined }): Promise<void>
   getOrderForPayment(orderId: string): Promise<OrderForPayment | null>
   setPaypalOrderId(orderId: string, paypalOrderId: string): Promise<void>
+  markOrderPaid(orderId: string, captureId: string | null): Promise<void>
 }

@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import type { PaymentRepository, PaymentMode, OrderForPayment } from '../types'
+import { AppError } from '../../../shared/errors'
 
 const SETTINGS_ID = 'default'
 
@@ -47,6 +48,37 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
 
     async setPaypalOrderId(orderId: string, paypalOrderId: string): Promise<void> {
       await prisma.order.update({ where: { id: orderId }, data: { paypalOrderId } })
+    },
+
+    async markOrderPaid(orderId: string, captureId: string | null): Promise<void> {
+      await prisma.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          select: { status: true, items: { select: { productId: true, quantity: true, product: { select: { name: true } } } } },
+        })
+        if (!order) throw new AppError(404, 'Order not found')
+        if (order.status === 'PAID') return // идемпотентность
+
+        const stockIssues: string[] = []
+        for (const item of order.items) {
+          const { count } = await tx.product.updateMany({
+            where: { id: item.productId, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
+          })
+          if (count === 0) stockIssues.push(item.product.name)
+        }
+
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'PAID',
+            paypalCaptureId: captureId,
+            ...(stockIssues.length > 0
+              ? { adminNote: `⚠ Проверить остаток: ${stockIssues.join(', ')}` }
+              : {}),
+          },
+        })
+      })
     },
   }
 }
