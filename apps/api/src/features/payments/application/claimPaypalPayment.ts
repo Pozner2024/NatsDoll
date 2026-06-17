@@ -14,6 +14,12 @@ export function makeClaimPaypalPayment(
     if (order.status !== 'PENDING') {
       return
     }
+    // Не перезаписываем уже привязанный PayPal-заказ: в client-режиме (Secret нет)
+    // подтвердить платёж через PayPal API нельзя, поэтому claim лишь фиксирует первый
+    // присланный id; повторный/чужой id игнорируется, чтобы его нельзя было подменить.
+    if (order.paypalOrderId) {
+      return
+    }
     await repo.setPaypalOrderId(orderId, paypalOrderId)
   }
 }

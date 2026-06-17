@@ -32,6 +32,17 @@ export function makeCapturePaypalPayment(
     if (result.status !== 'COMPLETED') {
       throw new AppError(402, 'Payment was not completed')
     }
+    // Сверяем, что PayPal списал ровно ту сумму/валюту/заказ, что мы создали на сервере.
+    // result.amount === null бывает только при идемпотентном ORDER_ALREADY_CAPTURED — заказ
+    // изначально создан нами с серверной суммой, повторная проверка не нужна.
+    if (result.amount !== null) {
+      const amountMatches = result.amount === order.totalAmount.toFixed(2)
+      const currencyMatches = result.currencyCode === 'USD'
+      const invoiceMatches = result.invoiceId === `natsdoll-${order.orderNumber}`
+      if (!amountMatches || !currencyMatches || !invoiceMatches) {
+        throw new AppError(409, 'Payment verification failed')
+      }
+    }
     await markOrderPaid(orderId, result.captureId)
     return { status: 'COMPLETED' }
   }

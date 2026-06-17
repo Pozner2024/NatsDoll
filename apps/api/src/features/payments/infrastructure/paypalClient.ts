@@ -25,9 +25,31 @@ async function getAccessToken(creds: PaypalCreds): Promise<string> {
   return data.access_token
 }
 
+type PurchaseUnit = {
+  invoice_id?: string
+  amount?: { value?: string; currency_code?: string }
+  payments?: { captures?: Array<{ id?: string; amount?: { value?: string; currency_code?: string } }> }
+}
+
+function firstPurchaseUnit(body: unknown): PurchaseUnit | undefined {
+  return (body as { purchase_units?: PurchaseUnit[] }).purchase_units?.[0]
+}
+
 function extractCaptureId(body: unknown): string | null {
-  const pu = (body as { purchase_units?: Array<{ payments?: { captures?: Array<{ id?: string }> } }> }).purchase_units
-  return pu?.[0]?.payments?.captures?.[0]?.id ?? null
+  return firstPurchaseUnit(body)?.payments?.captures?.[0]?.id ?? null
+}
+
+// Сумма/валюта берутся из capture (purchase_units[0].payments.captures[0].amount),
+// а при его отсутствии (ответ GET order) — из purchase_units[0].amount.
+function extractDetails(body: unknown): { amount: string | null; currencyCode: string | null; invoiceId: string | null } {
+  const pu = firstPurchaseUnit(body)
+  const captureAmount = pu?.payments?.captures?.[0]?.amount
+  const amount = captureAmount ?? pu?.amount
+  return {
+    amount: amount?.value ?? null,
+    currencyCode: amount?.currency_code ?? null,
+    invoiceId: pu?.invoice_id ?? null,
+  }
 }
 
 export function makePaypalClient(): PaypalClient {
@@ -73,11 +95,11 @@ export function makePaypalClient(): PaypalClient {
       const body = (await res.json().catch(() => ({}))) as { status?: string; details?: Array<{ issue?: string }> }
       if (!res.ok) {
         if (body.details?.some((d) => d.issue === 'ORDER_ALREADY_CAPTURED')) {
-          return { status: 'COMPLETED', captureId: null }
+          return { status: 'COMPLETED', captureId: null, amount: null, currencyCode: null, invoiceId: null }
         }
         throw new AppError(502, 'Failed to capture PayPal payment')
       }
-      return { status: body.status ?? 'UNKNOWN', captureId: extractCaptureId(body) }
+      return { status: body.status ?? 'UNKNOWN', captureId: extractCaptureId(body), ...extractDetails(body) }
     },
 
     async getOrderStatus({ creds, paypalOrderId }): Promise<CapturedPayment> {
@@ -89,7 +111,7 @@ export function makePaypalClient(): PaypalClient {
         throw new AppError(502, 'Failed to fetch PayPal order')
       }
       const body = (await res.json()) as { status?: string }
-      return { status: body.status ?? 'UNKNOWN', captureId: extractCaptureId(body) }
+      return { status: body.status ?? 'UNKNOWN', captureId: extractCaptureId(body), ...extractDetails(body) }
     },
   }
 }

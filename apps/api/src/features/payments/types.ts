@@ -13,6 +13,9 @@ export interface CreatedPaypalOrder {
 export interface CapturedPayment {
   status: string        // 'COMPLETED' при успехе
   captureId: string | null
+  amount: string | null // value из purchase_units[0] (capture или order), null если недоступно
+  currencyCode: string | null
+  invoiceId: string | null
 }
 
 export interface PaypalClient {
