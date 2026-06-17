@@ -20,7 +20,9 @@
           Order placed!
         </h1>
         <p class="order-confirmation__subtitle">
-          Thank you for your order. It's already on its way to you.
+          {{ order.status === 'PENDING'
+            ? 'Почти готово — завершите оплату ниже.'
+            : "Thank you for your order. It's already on its way to you." }}
         </p>
         <p class="order-confirmation__id">
           Order #{{ order.orderNumber }}
@@ -103,6 +105,29 @@
         </aside>
       </div>
 
+      <section
+        v-if="order.status === 'PENDING'"
+        class="order-confirmation__payment"
+      >
+        <h2 class="order-confirmation__section-title">
+          Payment
+        </h2>
+        <p
+          v-if="claimed"
+          class="order-confirmation__payment-pending"
+        >
+          Оплата получена и проверяется. Мы подтвердим её в ближайшее время.
+        </p>
+        <PaypalPayment
+          v-else
+          :order-id="order.id"
+          :order-number="order.orderNumber"
+          :amount-usd="order.totalAmount"
+          @paid="onPaid"
+          @claimed="onClaimed"
+        />
+      </section>
+
       <div class="order-confirmation__actions">
         <AppButton
           :to="{ name: 'account-purchases' }"
@@ -122,10 +147,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
 import { useOrderStore } from '@/entities/order'
+import { PaypalPayment } from '@/features/paypal-payment'
 
 const props = defineProps<{ orderId: string }>()
 
@@ -133,12 +159,21 @@ const orderStore = useOrderStore()
 const order = computed(() => orderStore.currentOrder)
 const loading = computed(() => orderStore.loading)
 const error = computed(() => orderStore.error)
+const claimed = ref(false)
 
 onMounted(() => {
   if (!order.value || order.value.id !== props.orderId) {
     orderStore.loadOrder(props.orderId)
   }
 })
+
+async function onPaid() {
+  await orderStore.loadOrder(props.orderId)
+}
+
+function onClaimed() {
+  claimed.value = true
+}
 </script>
 
 <style scoped lang="scss">
@@ -312,6 +347,18 @@ onMounted(() => {
     flex-direction: column;
     gap: 0.2rem;
     line-height: 1.5;
+  }
+
+  &__payment {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+
+  &__payment-pending {
+    color: var(--color-text-muted);
+    margin: 0;
   }
 
   &__actions {

@@ -59,6 +59,7 @@ const allTitles: Record<string, string> = {
   '/admin/messages':  'Messages',
   '/admin/analytics': 'Analytics',
   '/admin/sales':     'Sales & Discounts',
+  '/admin/payments':  'Payments',
 }
 
 const currentTitle = computed(() => {
