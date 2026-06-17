@@ -43,11 +43,23 @@
           v-model="secretInput"
           type="password"
           autocomplete="off"
+          :disabled="clearSecret"
           :placeholder="hasSecret ? 'Secret задан — оставьте пустым, чтобы не менять' : 'Оставьте пустым, если не используете'"
         >
         <small class="payment-settings__hint">
-          {{ hasSecret ? 'Secret задан. Чтобы удалить — введите пробел и сохраните.' : 'С Secret оплата подтверждается автоматически; без него — вручную по сверке.' }}
+          {{ hasSecret ? 'Secret задан. Оставьте поле пустым, чтобы не менять.' : 'С Secret оплата подтверждается автоматически; без него — вручную по сверке.' }}
         </small>
+      </label>
+
+      <label
+        v-if="hasSecret"
+        class="payment-settings__row"
+      >
+        <input
+          v-model="clearSecret"
+          type="checkbox"
+        >
+        <span>Удалить сохранённый Secret (перейти в ручной режим)</span>
       </label>
 
       <button
@@ -81,6 +93,7 @@ import { fetchPaymentSettings, savePaymentSettings } from '../adminPaymentApi'
 
 const form = reactive({ enabled: false, mode: 'SANDBOX' as 'SANDBOX' | 'LIVE', clientId: '' })
 const secretInput = ref('')
+const clearSecret = ref(false)
 const hasSecret = ref(false)
 const loading = ref(true)
 const saving = ref(false)
@@ -106,7 +119,15 @@ async function onSave() {
   error.value = ''
   saved.value = false
   try {
-    const secret = secretInput.value === '' ? undefined : secretInput.value
+    // null — очистить (ручной режим); undefined — не трогать; строка — заменить.
+    let secret: string | null | undefined
+    if (clearSecret.value) {
+      secret = null
+    } else if (secretInput.value === '') {
+      secret = undefined
+    } else {
+      secret = secretInput.value
+    }
     const s = await savePaymentSettings({
       enabled: form.enabled,
       mode: form.mode,
@@ -115,6 +136,7 @@ async function onSave() {
     })
     hasSecret.value = s.hasSecret
     secretInput.value = ''
+    clearSecret.value = false
     saved.value = true
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Ошибка'
