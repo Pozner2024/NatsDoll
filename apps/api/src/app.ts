@@ -85,6 +85,20 @@ import {
   makeMessageRouter,
 } from './features/messages'
 import {
+  makePaymentRepository,
+  makePaypalClient,
+  decryptSecret,
+  makeGetPaymentSettings,
+  makeUpdatePaymentSettings,
+  makeGetPaymentConfig,
+  makeCreatePaypalOrder,
+  makeCapturePaypalPayment,
+  makeClaimPaypalPayment,
+  makeMarkOrderPaid,
+  makePaymentRouter,
+  makeAdminPaymentRouter,
+} from './features/payments'
+import {
   makeAdminRepository,
   makeGetDashboard,
   makeMarkAllMessagesRead,
@@ -243,6 +257,19 @@ export function createApp() {
   app.use('/orders', requireAuth)
   app.use('/orders/*', requireAuth)
   app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder))
+
+  // Payments
+  const paymentRepo = makePaymentRepository(prisma)
+  const paypalClient = makePaypalClient()
+  const markOrderPaid = makeMarkOrderPaid(paymentRepo)
+  const getPaymentSettings = makeGetPaymentSettings(paymentRepo)
+  const updatePaymentSettings = makeUpdatePaymentSettings(paymentRepo)
+  const getPaymentConfig = makeGetPaymentConfig(paymentRepo)
+  const createPaypalOrder = makeCreatePaypalOrder(paymentRepo, paypalClient, decryptSecret)
+  const capturePaypalPayment = makeCapturePaypalPayment(paymentRepo, paypalClient, markOrderPaid, decryptSecret)
+  const claimPaypalPayment = makeClaimPaypalPayment(paymentRepo)
+  app.route('/payments', makePaymentRouter(getPaymentConfig, createPaypalOrder, capturePaypalPayment, claimPaypalPayment))
+  app.route('/admin/payment-settings', makeAdminPaymentRouter(getPaymentSettings, updatePaymentSettings))
 
   // Favorites
   const favoritesRepo = makeFavoritesRepository(prisma)
