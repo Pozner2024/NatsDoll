@@ -385,14 +385,14 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
 
       const newStatus = input.status as 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
 
-      // Сток списывается при оформлении заказа (createOrderFromCart). При переходе в
-      // терминальный статус CANCELLED/REFUNDED его нужно вернуть на склад — иначе остаток
-      // (для хэндмейда обычно 1) «съедается» навсегда. Проверка wasReleased защищает от
-      // повторного восстановления при повторных правках уже отменённого заказа.
-      const wasReleased = current.status === 'CANCELLED' || current.status === 'REFUNDED'
-      const willRelease = newStatus === 'CANCELLED' || newStatus === 'REFUNDED'
-      const shouldRestoreStock = willRelease && !wasReleased
-      const shouldReclaimStock = !willRelease && wasReleased
+      // Инвариант: сток списан ⟺ заказ в «оплаченном» статусе (PAID_STATUSES).
+      // Списание происходит при переходе в оплаченный статус (в т.ч. ручное PENDING→PAID,
+      // и реактивация из CANCELLED/REFUNDED), возврат — при уходе из оплаченного.
+      // PENDING→CANCELLED ничего не меняет: неоплаченный заказ склад не держал.
+      const wasCharged = PAID_STATUSES.includes(current.status as typeof PAID_STATUSES[number])
+      const willCharge = PAID_STATUSES.includes(newStatus as typeof PAID_STATUSES[number])
+      const shouldRestoreStock = wasCharged && !willCharge
+      const shouldReclaimStock = !wasCharged && willCharge
 
       await prisma.$transaction(async (tx) => {
         await tx.order.update({
@@ -420,7 +420,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
               data: { stock: { decrement: item.quantity } },
             })
             if (count === 0) {
-              throw new AppError(409, 'Not enough stock to reactivate this order')
+              throw new AppError(409, 'Not enough stock for this order')
             }
           }
         }

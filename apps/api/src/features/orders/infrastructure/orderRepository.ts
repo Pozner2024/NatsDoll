@@ -57,23 +57,10 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
       const cartItemIds = items.map((i) => i.id)
 
       const order = await prisma.$transaction(async (tx) => {
-        // Атомарный CAS-decrement: WHERE stock>=quantity AND product доступен.
-        // Условие в WHERE гарантирует, что параллельный checkout не уведёт stock в минус
-        // и не пропустит уже снятый с публикации товар.
-        for (const item of items) {
-          const { count } = await tx.product.updateMany({
-            where: {
-              id: item.productId,
-              isPublished: true,
-              deletedAt: null,
-              stock: { gte: item.quantity },
-            },
-            data: { stock: { decrement: item.quantity } },
-          })
-          if (count === 0) {
-            throw new AppError(409, `"${item.productName}" is no longer available or out of stock`)
-          }
-        }
+        // Сток НЕ списывается при оформлении — заказ создаётся в статусе PENDING.
+        // Реальное списание (CAS) происходит при оплате (markOrderPaid), когда заказ
+        // переходит в PAID. Доступность/наличие на момент оформления проверяет createOrder
+        // (application). См. инвариант «сток списан ⟺ заказ оплачен».
 
         // Цены перечитываются внутри транзакции (источник истины на момент оформления),
         // а активная распродажа приходит параметром из application-слоя (getActiveSale) —

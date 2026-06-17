@@ -28,7 +28,27 @@ beforeEach(async () => {
 })
 
 describe('orderRepository.createOrderFromCart (integration)', () => {
-  it('does not oversell when two checkouts race for the last unit', async () => {
+  it('does not decrement stock on order creation (deferred to payment) and clears the cart', async () => {
+    const category = await createCategory(prisma)
+    const product = await createProduct(prisma, category.id, { stock: 5 })
+    const user = await createUser(prisma)
+    await createCartWithItem(prisma, user.id, product.id, 3)
+
+    const items = await repo.getCartItemsForCheckout(user.id)
+    const order = await repo.createOrderFromCart(user.id, items, 12, address, null)
+
+    expect(order.status).toBe('PENDING')
+
+    // Сток НЕ тронут при оформлении — списание перенесено на момент оплаты.
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: product.id } })
+    expect(after.stock).toBe(5)
+
+    // Корзина очищена после оформления.
+    const remaining = await prisma.cartItem.count({ where: { cart: { userId: user.id } } })
+    expect(remaining).toBe(0)
+  })
+
+  it('allows two concurrent checkouts for the last unit without touching stock', async () => {
     const category = await createCategory(prisma)
     const product = await createProduct(prisma, category.id, { stock: 1 })
     const u1 = await createUser(prisma)
@@ -46,31 +66,11 @@ describe('orderRepository.createOrderFromCart (integration)', () => {
       repo.createOrderFromCart(u2.id, items2, 12, address, null),
     ])
 
-    const fulfilled = results.filter((r) => r.status === 'fulfilled')
-    const rejected = results.filter((r) => r.status === 'rejected')
-
-    // Ровно один заказ проходит, второй отклоняется CAS-проверкой — сток не уходит в минус.
-    expect(fulfilled).toHaveLength(1)
-    expect(rejected).toHaveLength(1)
+    // Оба заказа создаются: защита от oversell теперь на этапе оплаты (markOrderPaid),
+    // а не оформления. Сток при оформлении не меняется.
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2)
 
     const after = await prisma.product.findUniqueOrThrow({ where: { id: product.id } })
-    expect(after.stock).toBe(0)
-  })
-
-  it('decrements stock by ordered quantity on a successful checkout', async () => {
-    const category = await createCategory(prisma)
-    const product = await createProduct(prisma, category.id, { stock: 5 })
-    const user = await createUser(prisma)
-    await createCartWithItem(prisma, user.id, product.id, 3)
-
-    const items = await repo.getCartItemsForCheckout(user.id)
-    await repo.createOrderFromCart(user.id, items, 12, address, null)
-
-    const after = await prisma.product.findUniqueOrThrow({ where: { id: product.id } })
-    expect(after.stock).toBe(2)
-
-    // Корзина очищена после оформления.
-    const remaining = await prisma.cartItem.count({ where: { cart: { userId: user.id } } })
-    expect(remaining).toBe(0)
+    expect(after.stock).toBe(1)
   })
 })

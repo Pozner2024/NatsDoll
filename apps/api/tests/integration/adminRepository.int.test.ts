@@ -35,7 +35,43 @@ async function seedPaidOrder(stock: number, quantity: number) {
   return { productId: product.id, orderId: order.id }
 }
 
+async function seedPendingOrder(stock: number, quantity: number) {
+  const category = await createCategory(prisma)
+  const product = await createProduct(prisma, category.id, { stock })
+  const user = await createUser(prisma)
+  const order = await prisma.order.create({
+    data: {
+      userId: user.id,
+      status: 'PENDING',
+      totalAmount: 10 * quantity,
+      shippingCost: 0,
+      shippingAddress: {},
+      items: { create: [{ productId: product.id, quantity, price: 10 }] },
+    },
+  })
+  return { productId: product.id, orderId: order.id }
+}
+
 describe('adminRepository.updateAdminOrder — stock restore (integration)', () => {
+  it('does not restore stock when an unpaid (PENDING) order is cancelled', async () => {
+    const { productId, orderId } = await seedPendingOrder(0, 2)
+
+    await repo.updateAdminOrder(orderId, { status: 'CANCELLED' })
+
+    // Неоплаченный заказ склад не держал — возвращать нечего.
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: productId } })
+    expect(after.stock).toBe(0)
+  })
+
+  it('reclaims stock when a pending order is marked paid', async () => {
+    const { productId, orderId } = await seedPendingOrder(5, 2)
+
+    await repo.updateAdminOrder(orderId, { status: 'PAID' })
+
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: productId } })
+    expect(after.stock).toBe(3)
+  })
+
   it('restores stock when a paid order is cancelled', async () => {
     const { productId, orderId } = await seedPaidOrder(0, 2)
 
