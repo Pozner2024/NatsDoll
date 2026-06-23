@@ -3,7 +3,7 @@
     id="checkout-form"
     class="checkout-form"
     novalidate
-    @submit.prevent="handleSubmit"
+    @submit.prevent
   >
     <h2 class="checkout-form__title">
       Shipping address
@@ -119,29 +119,14 @@
         class="checkout-form__error"
       >{{ errors.country }}</span>
     </div>
-
-    <p
-      v-if="submitError"
-      class="checkout-form__error checkout-form__error--global"
-      role="alert"
-    >
-      {{ submitError }}
-    </p>
   </form>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, watch } from 'vue'
-import { useOrderStore } from '@/entities/order'
+import { reactive, onMounted } from 'vue'
 import type { ShippingAddress } from '@/entities/order'
 import { useAddressStore } from '@/entities/address'
 
-const emit = defineEmits<{
-  success: [orderId: string]
-  'loading-change': [value: boolean]
-}>()
-
-const orderStore = useOrderStore()
 const addressStore = useAddressStore()
 
 const form = reactive({
@@ -174,11 +159,6 @@ const errors = reactive({
   postalCode: '',
 })
 
-const isSubmitting = ref(false)
-const submitError = ref('')
-
-watch(isSubmitting, (value) => emit('loading-change', value))
-
 function validate(): boolean {
   errors.fullName = form.fullName.trim() ? '' : 'Required'
   errors.line1 = form.line1.trim() ? '' : 'Required'
@@ -188,27 +168,20 @@ function validate(): boolean {
   return !errors.fullName && !errors.line1 && !errors.city && !errors.country && !errors.postalCode
 }
 
-async function handleSubmit() {
-  if (!validate()) return
-  isSubmitting.value = true
-  submitError.value = ''
-  try {
-    const address: ShippingAddress = {
-      fullName: form.fullName,
-      line1: form.line1,
-      city: form.city,
-      country: form.country,
-      postalCode: form.postalCode,
-    }
-    if (form.line2.trim()) address.line2 = form.line2
-    const orderId = await orderStore.create(address)
-    emit('success', orderId)
-  } catch (e) {
-    submitError.value = e instanceof Error ? e.message : 'Something went wrong'
-  } finally {
-    isSubmitting.value = false
+function getValidatedAddress(): ShippingAddress | null {
+  if (!validate()) return null
+  const address: ShippingAddress = {
+    fullName: form.fullName,
+    line1: form.line1,
+    city: form.city,
+    country: form.country,
+    postalCode: form.postalCode,
   }
+  if (form.line2.trim()) address.line2 = form.line2
+  return address
 }
+
+defineExpose({ getValidatedAddress })
 </script>
 
 <style scoped lang="scss">
