@@ -4,13 +4,13 @@
       <h2 class="account-addresses__title">
         Addresses
       </h2>
-      <button
+      <AppButton
         v-if="!showForm"
         class="account-addresses__add-btn"
         @click="openAdd"
       >
         + Add address
-      </button>
+      </AppButton>
     </div>
 
     <p
@@ -314,12 +314,10 @@ onMounted(() => {
   }
 
   &__add-btn {
-    font-size: 0.875rem;
-    color: var(--color-accent);
-    text-decoration: underline;
-    background: none;
-    border: none;
-    font-family: var(--font-display);
+    --btn-font-size: 0.8rem;
+
+    flex-shrink: 0;
+    padding: 0.5rem 1.25rem;
   }
 
   &__status {
