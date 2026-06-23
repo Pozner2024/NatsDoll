@@ -21,7 +21,7 @@
         </h1>
         <p class="order-confirmation__subtitle">
           {{ order.status === 'PENDING'
-            ? 'Почти готово — завершите оплату ниже.'
+            ? 'Almost there — complete your payment below.'
             : "Thank you for your order. It's already on its way to you." }}
         </p>
         <p class="order-confirmation__id">
@@ -116,7 +116,7 @@
           v-if="claimed"
           class="order-confirmation__payment-pending"
         >
-          Оплата получена и проверяется. Мы подтвердим её в ближайшее время.
+          Payment received and is being verified. We'll confirm it shortly.
         </p>
         <PaypalPayment
           v-else

@@ -73,7 +73,7 @@ function loadSdk(clientId: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (getSdk()) return resolve()
     const script = document.createElement('script')
-    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture`
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&locale=en_US`
     script.onload = () => resolve()
     script.onerror = () => reject(new Error('Failed to load PayPal'))
     document.head.appendChild(script)
