@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, readonly } from 'vue'
 import type { OrderDetail, OrderSummary, ShippingAddress } from './types'
 import { placeOrder, fetchMyOrders, fetchOrder } from './orderApi'
-import { useCartStore } from '@/entities/cart'
 
 export const useOrderStore = defineStore('order', () => {
   const currentOrder = ref<OrderDetail | null>(null)
@@ -16,7 +15,6 @@ export const useOrderStore = defineStore('order', () => {
     try {
       const order = await placeOrder(shippingAddress)
       currentOrder.value = order
-      useCartStore().reset()
       return order.id
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to place order'

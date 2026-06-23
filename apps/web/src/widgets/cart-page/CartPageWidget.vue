@@ -137,7 +137,9 @@ async function prepareOrder() {
 }
 
 function goToReceipt(): void {
-  if (pending.value) router.push({ name: 'order-confirmation', params: { id: pending.value.orderId } })
+  if (!pending.value) return
+  cartStore.reset()
+  router.push({ name: 'order-confirmation', params: { id: pending.value.orderId } })
 }
 
 onMounted(async () => {
