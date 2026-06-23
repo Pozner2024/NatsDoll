@@ -58,6 +58,23 @@ describe('paymentRepository.markOrderPaid (integration)', () => {
     expect(after.stock).toBe(3)
   })
 
+  it('does not decrement again when the order already moved past PAID (PROCESSING/SHIPPED/DELIVERED)', async () => {
+    const category = await createCategory(prisma)
+    const product = await createProduct(prisma, category.id, { stock: 5 })
+    const user = await createUser(prisma)
+    const order = await pendingOrder(user.id, product.id, 3)
+
+    await paymentRepo.markOrderPaid(order.id, 'CAP-1')
+    await prisma.order.update({ where: { id: order.id }, data: { status: 'PROCESSING' } })
+    await paymentRepo.markOrderPaid(order.id, 'CAP-2')
+
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: product.id } })
+    expect(after.stock).toBe(2) // сток не списан второй раз
+    const updated = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(updated.status).toBe('PROCESSING') // статус не откатился в PAID
+    expect(updated.paypalCaptureId).toBe('CAP-1') // capture id не перезаписан
+  })
+
   it('does not oversell the last unit — still marks PAID but flags adminNote when stock is short', async () => {
     const category = await createCategory(prisma)
     const product = await createProduct(prisma, category.id, { stock: 1 })

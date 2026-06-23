@@ -13,6 +13,7 @@ export type EmailService = {
   sendMessageNotification(adminEmail: string, fromName: string, fromEmail: string, text: string, orderNumber?: number): Promise<void>
   sendTrackingNotification(to: string, name: string, orderNumber: number, trackingNumber: string): Promise<void>
   sendContactNotification(adminEmail: string, fromName: string, fromEmail: string, message: string): Promise<void>
+  sendPaymentCaptureAlert(adminEmail: string, orderNumber: number, captureId: string | null, reason: string): Promise<void>
 }
 
 export function makeEmailService(): EmailService {
@@ -111,6 +112,21 @@ export function makeEmailService(): EmailService {
         html: `
           <p><strong>${escapeHtml(fromName)}</strong> (${escapeHtml(fromEmail)}) submitted the contact form:</p>
           <p>${escapeHtml(message)}</p>
+        `,
+      })
+    },
+    async sendPaymentCaptureAlert(adminEmail, orderNumber, captureId, reason) {
+      // SECURITY: только server-controlled значения в html (orderNumber/captureId — из БД/PayPal,
+      // reason — текст внутренней ошибки). User-input сюда не попадает.
+      await send({
+        from: 'noreply@natsdoll.com',
+        to: adminEmail,
+        subject: `⚠ Payment captured but order not marked paid — Order #${orderNumber}`,
+        html: `
+          <p><strong>PayPal списал деньги, но заказ #${orderNumber} не был помечен оплаченным.</strong></p>
+          <p>Сверьте платёж в панели PayPal и при необходимости пометьте заказ оплаченным вручную.</p>
+          <p>PayPal capture id: <strong>${escapeHtml(captureId ?? 'unknown')}</strong></p>
+          <p>Причина сбоя: ${escapeHtml(reason)}</p>
         `,
       })
     },

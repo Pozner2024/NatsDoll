@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client'
 import type { PaymentRepository, PaymentMode, OrderForPayment } from '../types'
 import { AppError } from '../../../shared/errors'
+import { isPaidStatus } from '../../../shared/lib'
 
 const SETTINGS_ID = 'default'
 
@@ -57,7 +58,7 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
           select: { status: true, items: { select: { productId: true, quantity: true, product: { select: { name: true } } } } },
         })
         if (!order) throw new AppError(404, 'Order not found')
-        if (order.status === 'PAID') return // идемпотентность
+        if (isPaidStatus(order.status)) return // идемпотентность: сток уже списан
 
         const stockIssues: string[] = []
         for (const item of order.items) {

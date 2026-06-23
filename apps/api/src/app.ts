@@ -266,7 +266,7 @@ export function createApp() {
   const updatePaymentSettings = makeUpdatePaymentSettings(paymentRepo)
   const getPaymentConfig = makeGetPaymentConfig(paymentRepo)
   const createPaypalOrder = makeCreatePaypalOrder(paymentRepo, paypalClient, decryptSecret)
-  const capturePaypalPayment = makeCapturePaypalPayment(paymentRepo, paypalClient, markOrderPaid, decryptSecret)
+  const capturePaypalPayment = makeCapturePaypalPayment(paymentRepo, paypalClient, markOrderPaid, decryptSecret, emailService)
   const claimPaypalPayment = makeClaimPaypalPayment(paymentRepo)
   app.route('/payments', makePaymentRouter(getPaymentConfig, createPaypalOrder, capturePaypalPayment, claimPaypalPayment))
   app.route('/admin/payment-settings', makeAdminPaymentRouter(getPaymentSettings, updatePaymentSettings))

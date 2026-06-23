@@ -2,13 +2,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput, AnalyticsPeriod, AnalyticsResponse, SaleInput, SaleRecord, ActiveSale, SaleScope } from '../types'
 import type { ShippingAddress } from '../../orders/types'
 import { AppError } from '../../../shared/errors'
-
-const PAID_STATUSES: Array<'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED'> = [
-  'PAID',
-  'PROCESSING',
-  'SHIPPED',
-  'DELIVERED',
-]
+import { PAID_STATUSES, isTerminalStatus } from '../../../shared/lib'
 
 function bucketKey(period: AnalyticsPeriod, date: Date): string {
   if (period === 'today' || period === 'yesterday') {
@@ -385,9 +379,15 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
 
       const newStatus = input.status as 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
 
+      // CANCELLED/REFUNDED — финал: вернуть заказ в рабочий статус нельзя (защита от
+      // денежного рассинхрона, напр. REFUNDED→PAID). Переход между терминальными разрешён.
+      if (isTerminalStatus(current.status) && newStatus !== current.status && !isTerminalStatus(newStatus)) {
+        throw new AppError(409, 'Order is in a final state and cannot be reactivated')
+      }
+
       // Инвариант: сток списан ⟺ заказ в «оплаченном» статусе (PAID_STATUSES).
-      // Списание происходит при переходе в оплаченный статус (в т.ч. ручное PENDING→PAID,
-      // и реактивация из CANCELLED/REFUNDED), возврат — при уходе из оплаченного.
+      // Списание происходит при переходе в оплаченный статус (в т.ч. ручное PENDING→PAID),
+      // возврат — при уходе из оплаченного.
       // PENDING→CANCELLED ничего не меняет: неоплаченный заказ склад не держал.
       const wasCharged = PAID_STATUSES.includes(current.status as typeof PAID_STATUSES[number])
       const willCharge = PAID_STATUSES.includes(newStatus as typeof PAID_STATUSES[number])

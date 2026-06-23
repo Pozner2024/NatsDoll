@@ -93,6 +93,28 @@ describe('adminRepository.updateAdminOrder — stock restore (integration)', () 
     expect(after.stock).toBe(2)
   })
 
+  it('rejects reactivating a terminal order into a working status (no money desync)', async () => {
+    const { productId, orderId } = await seedPaidOrder(0, 2)
+
+    await repo.updateAdminOrder(orderId, { status: 'REFUNDED' })
+    await expect(repo.updateAdminOrder(orderId, { status: 'PAID' })).rejects.toThrow()
+
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId } })
+    expect(order.status).toBe('REFUNDED') // статус не изменился
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: productId } })
+    expect(after.stock).toBe(2) // сток не списан повторно
+  })
+
+  it('allows transitions between terminal statuses (CANCELLED ↔ REFUNDED)', async () => {
+    const { orderId } = await seedPaidOrder(0, 2)
+
+    await repo.updateAdminOrder(orderId, { status: 'CANCELLED' })
+    await repo.updateAdminOrder(orderId, { status: 'REFUNDED' })
+
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId } })
+    expect(order.status).toBe('REFUNDED')
+  })
+
   it('does not restore stock for non-terminal status changes', async () => {
     const { productId, orderId } = await seedPaidOrder(0, 2)
 
