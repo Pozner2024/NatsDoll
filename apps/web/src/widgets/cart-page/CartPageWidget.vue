@@ -78,14 +78,25 @@
           <span>Total</span>
           <span>{{ formatPrice(grandTotal) }}</span>
         </p>
-        <PaypalPayment
-          class="cart-page__pay"
-          :amount-usd="grandTotal"
-          :on-validate="validateAddress"
-          :prepare-order="prepareOrder"
-          @paid="goToReceipt"
-          @claimed="goToReceipt"
-        />
+        <template v-if="paymentsReady">
+          <PaypalPayment
+            v-if="paymentsEnabled"
+            class="cart-page__pay"
+            :amount-usd="grandTotal"
+            :on-validate="validateAddress"
+            :prepare-order="prepareOrder"
+            @paid="goToReceipt"
+            @claimed="goToReceipt"
+          />
+          <AppButton
+            v-else
+            class="cart-page__checkout"
+            :disabled="placingOrder"
+            @click="placeOrderFallback"
+          >
+            {{ placingOrder ? 'Placing order…' : 'Place order' }}
+          </AppButton>
+        </template>
         <p
           v-if="orderError"
           class="cart-page__pay-error"
@@ -100,11 +111,12 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { formatPrice, calcShipping } from '@/shared'
+import { AppButton, formatPrice, calcShipping } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
 import { CheckoutForm } from '@/features/checkout-form'
-import { PaypalPayment } from '@/features/paypal-payment'
+import { PaypalPayment, fetchPaymentConfig } from '@/features/paypal-payment'
+import type { PaymentConfig } from '@/features/paypal-payment'
 import { usePendingOrder } from './usePendingOrder'
 import type { ShippingAddress } from '@/entities/order'
 import CartLineItem from './components/CartLineItem.vue'
@@ -126,6 +138,11 @@ const actionError = ref<string | null>(null)
 const checkoutFormRef = ref<{ getValidatedAddress: () => ShippingAddress | null } | null>(null)
 const { pending, error: orderError, prepare } = usePendingOrder()
 
+const paymentConfig = ref<PaymentConfig | null>(null)
+const paymentsReady = computed(() => paymentConfig.value !== null)
+const paymentsEnabled = computed(() => !!paymentConfig.value?.enabled && !!paymentConfig.value.clientId)
+const placingOrder = ref(false)
+
 function validateAddress(): boolean {
   return checkoutFormRef.value?.getValidatedAddress() != null
 }
@@ -142,9 +159,25 @@ function goToReceipt(): void {
   router.push({ name: 'order-confirmation', params: { id: pending.value.orderId } })
 }
 
+async function placeOrderFallback(): Promise<void> {
+  if (!validateAddress()) return
+  placingOrder.value = true
+  try {
+    const order = await prepareOrder()
+    if (order) goToReceipt()
+  } finally {
+    placingOrder.value = false
+  }
+}
+
 onMounted(async () => {
   if (!authStore.authReady) await authStore.initAuth()
   if (authStore.isLoggedIn) await cartStore.load()
+  try {
+    paymentConfig.value = await fetchPaymentConfig()
+  } catch {
+    paymentConfig.value = { enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false }
+  }
 })
 
 async function onUpdate(itemId: string, quantity: number): Promise<void> {
@@ -275,6 +308,11 @@ async function onRemove(itemId: string): Promise<void> {
   }
 
   &__pay {
+    margin-top: 0.75rem;
+  }
+
+  &__checkout {
+    width: 100%;
     margin-top: 0.75rem;
   }
 
