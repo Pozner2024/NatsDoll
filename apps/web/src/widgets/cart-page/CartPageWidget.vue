@@ -55,10 +55,7 @@
           />
         </ul>
 
-        <CheckoutForm
-          @success="onOrderPlaced"
-          @loading-change="isPlacingOrder = $event"
-        />
+        <CheckoutForm ref="checkoutFormRef" />
       </div>
 
       <aside class="cart-page__summary">
@@ -81,14 +78,20 @@
           <span>Total</span>
           <span>{{ formatPrice(grandTotal) }}</span>
         </p>
-        <AppButton
-          type="submit"
-          form="checkout-form"
-          class="cart-page__checkout"
-          :disabled="itemCount === 0 || isPlacingOrder"
+        <PaypalPayment
+          class="cart-page__pay"
+          :amount-usd="grandTotal"
+          :on-validate="validateAddress"
+          :prepare-order="prepareOrder"
+          @paid="goToReceipt"
+          @claimed="goToReceipt"
+        />
+        <p
+          v-if="orderError"
+          class="cart-page__pay-error"
         >
-          {{ isPlacingOrder ? 'Placing order…' : 'Place order' }}
-        </AppButton>
+          {{ orderError }}
+        </p>
       </aside>
     </div>
   </section>
@@ -97,10 +100,13 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { AppButton, formatPrice, calcShipping } from '@/shared'
+import { formatPrice, calcShipping } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
 import { CheckoutForm } from '@/features/checkout-form'
+import { PaypalPayment } from '@/features/paypal-payment'
+import { usePendingOrder } from './usePendingOrder'
+import type { ShippingAddress } from '@/entities/order'
 import CartLineItem from './components/CartLineItem.vue'
 
 const router = useRouter()
@@ -116,10 +122,22 @@ const grandTotal = computed(() => subtotal.value + shippingCost.value)
 const loading = computed(() => cartStore.loading)
 const error = computed(() => cartStore.error)
 const actionError = ref<string | null>(null)
-const isPlacingOrder = ref(false)
 
-function onOrderPlaced(orderId: string): void {
-  router.push({ name: 'order-confirmation', params: { id: orderId } })
+const checkoutFormRef = ref<{ getValidatedAddress: () => ShippingAddress | null } | null>(null)
+const { pending, error: orderError, prepare } = usePendingOrder()
+
+function validateAddress(): boolean {
+  return checkoutFormRef.value?.getValidatedAddress() != null
+}
+
+async function prepareOrder() {
+  const address = checkoutFormRef.value?.getValidatedAddress()
+  if (!address) return null
+  return prepare(address)
+}
+
+function goToReceipt(): void {
+  if (pending.value) router.push({ name: 'order-confirmation', params: { id: pending.value.orderId } })
 }
 
 onMounted(async () => {
@@ -254,9 +272,14 @@ async function onRemove(itemId: string): Promise<void> {
     }
   }
 
-  &__checkout {
-    width: 100%;
+  &__pay {
     margin-top: 0.75rem;
+  }
+
+  &__pay-error {
+    margin-top: 0.5rem;
+    font-size: var(--fs-sm);
+    color: var(--color-error);
   }
 }
 </style>
