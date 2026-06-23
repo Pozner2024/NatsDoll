@@ -4,7 +4,7 @@
       v-if="!ready && !error"
       class="paypal-payment__status"
     >
-      Загрузка оплаты…
+      Loading payment…
     </p>
     <p
       v-if="error"
@@ -29,7 +29,13 @@ import {
   type PaymentConfig,
 } from './paypalPaymentApi'
 
-const props = defineProps<{ orderId: string; orderNumber: number; amountUsd: number }>()
+const props = defineProps<{
+  orderId?: string
+  orderNumber?: number
+  amountUsd: number
+  onValidate?: () => boolean
+  prepareOrder?: () => Promise<{ orderId: string; orderNumber: number; amountUsd: number } | null>
+}>()
 const emit = defineEmits<{ paid: []; claimed: [] }>()
 
 interface PaypalOrderActions {
@@ -43,6 +49,16 @@ interface PaypalButtons {
 }
 interface PaypalSdk {
   Buttons: (options: unknown) => PaypalButtons
+}
+
+let active: { orderId: string; orderNumber: number; amountUsd: number } | null = null
+
+async function resolveOrder(): Promise<{ orderId: string; orderNumber: number; amountUsd: number } | null> {
+  if (props.prepareOrder) return props.prepareOrder()
+  if (props.orderId && props.orderNumber != null) {
+    return { orderId: props.orderId, orderNumber: props.orderNumber, amountUsd: props.amountUsd }
+  }
+  return null
 }
 
 const buttonsEl = ref<HTMLElement | null>(null)
@@ -59,7 +75,7 @@ function loadSdk(clientId: string): Promise<void> {
     const script = document.createElement('script')
     script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture`
     script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Не удалось загрузить PayPal'))
+    script.onerror = () => reject(new Error('Failed to load PayPal'))
     document.head.appendChild(script)
   })
 }
@@ -68,48 +84,63 @@ onMounted(async () => {
   try {
     const cfg: PaymentConfig = await fetchPaymentConfig()
     if (!cfg.enabled || !cfg.clientId) {
-      error.value = 'Оплата временно недоступна'
+      error.value = 'Payments are temporarily unavailable'
       return
     }
     await loadSdk(cfg.clientId)
     const sdk = getSdk()
     if (!sdk) {
-      error.value = 'Оплата временно недоступна'
+      error.value = 'Payments are temporarily unavailable'
       return
     }
 
-    const invoiceId = `natsdoll-${props.orderNumber}`
+    const onClick = (_data: unknown, actions: { resolve: () => void; reject: () => void }) => {
+      if (props.onValidate && !props.onValidate()) return actions.reject()
+      return actions.resolve()
+    }
+
     const buttons = sdk.Buttons(
       cfg.serverFlow
         ? {
-            createOrder: () => createServerPaypalOrder(props.orderId),
+            onClick,
+            createOrder: async () => {
+              active = await resolveOrder()
+              if (!active) throw new Error('Order not ready')
+              return createServerPaypalOrder(active.orderId)
+            },
             onApprove: async () => {
-              await captureServerPayment(props.orderId)
+              if (!active) return
+              await captureServerPayment(active.orderId)
               emit('paid')
             },
-            onError: () => { error.value = 'Ошибка оплаты' },
+            onError: () => { error.value = 'Payment failed' },
           }
         : {
-            createOrder: (_data: unknown, actions: PaypalOrderActions) =>
-              actions.order.create({
+            onClick,
+            createOrder: async (_data: unknown, actions: PaypalOrderActions) => {
+              active = await resolveOrder()
+              if (!active) throw new Error('Order not ready')
+              return actions.order.create({
                 purchase_units: [{
-                  invoice_id: invoiceId,
-                  custom_id: invoiceId,
-                  amount: { currency_code: 'USD', value: props.amountUsd.toFixed(2) },
+                  invoice_id: `natsdoll-${active.orderNumber}`,
+                  custom_id: `natsdoll-${active.orderNumber}`,
+                  amount: { currency_code: 'USD', value: active.amountUsd.toFixed(2) },
                 }],
-              }),
+              })
+            },
             onApprove: async (_data: unknown, actions: PaypalOrderActions) => {
+              if (!active) return
               const captured = await actions.order.capture()
-              await claimClientPayment(props.orderId, captured.id)
+              await claimClientPayment(active.orderId, captured.id)
               emit('claimed')
             },
-            onError: () => { error.value = 'Ошибка оплаты' },
+            onError: () => { error.value = 'Payment failed' },
           },
     )
     if (buttonsEl.value) buttons.render(buttonsEl.value)
     ready.value = true
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Ошибка'
+    error.value = e instanceof Error ? e.message : 'Something went wrong'
   }
 })
 </script>
