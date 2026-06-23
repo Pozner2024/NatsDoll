@@ -91,6 +91,29 @@
         </div>
       </div>
 
+      <section
+        v-if="order.status === 'PENDING'"
+        class="purchase-detail__payment"
+      >
+        <h3 class="purchase-detail__section-title">
+          Payment
+        </h3>
+        <p
+          v-if="claimed"
+          class="purchase-detail__payment-pending"
+        >
+          Payment received and is being verified. We'll confirm it shortly.
+        </p>
+        <PaypalPayment
+          v-else
+          :order-id="order.id"
+          :order-number="order.orderNumber"
+          :amount-usd="order.totalAmount"
+          @paid="onPaid"
+          @claimed="onClaimed"
+        />
+      </section>
+
       <div class="purchase-detail__footer">
         <div class="purchase-detail__address">
           <h3 class="purchase-detail__section-title">
@@ -125,10 +148,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { formatPrice, formatDate } from '@/shared'
 import { useOrderStore } from '@/entities/order'
+import { PaypalPayment } from '@/features/paypal-payment'
 
 const route = useRoute()
 const orderStore = useOrderStore()
@@ -141,6 +165,16 @@ const order = computed(() => {
 })
 const loading = computed(() => orderStore.loading)
 const error = computed(() => orderStore.error)
+
+const claimed = ref(false)
+
+async function onPaid() {
+  await orderStore.loadOrder(route.params.id as string)
+}
+
+function onClaimed() {
+  claimed.value = true
+}
 
 watch(
   () => route.params.id,
@@ -324,6 +358,18 @@ watch(
     font-weight: 600;
     color: var(--color-text);
     flex-shrink: 0;
+    margin: 0;
+  }
+
+  &__payment {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+
+  &__payment-pending {
+    color: var(--color-text-muted);
     margin: 0;
   }
 
