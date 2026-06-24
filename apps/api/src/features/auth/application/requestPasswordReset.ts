@@ -25,7 +25,7 @@ export function makeRequestPasswordReset(repo: AuthRepository, emailService: Ema
     if (!user.passwordHash) {
       await hash(`${DUMMY_HASH}${Date.now()}`).catch(() => undefined)
       try {
-        await emailService.sendAccountExistsEmail(user.email, `${FRONTEND_URL}/reset-password`)
+        await emailService.sendAccountExistsEmail(user.email, FRONTEND_URL)
       } catch (err) {
         console.error('[requestPasswordReset] failed to send account-exists email:', err)
       }

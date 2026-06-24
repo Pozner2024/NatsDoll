@@ -26,7 +26,7 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
       await hash(data.password).catch(() => undefined)
       if (existing.emailVerified) {
         try {
-          await emailService.sendAccountExistsEmail(existing.email, `${FRONTEND_URL}/reset-password`)
+          await emailService.sendAccountExistsEmail(existing.email, FRONTEND_URL)
         } catch (err) {
           console.error('[register] failed to send account-exists email:', err)
         }

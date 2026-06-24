@@ -8,7 +8,7 @@ const EMAIL_TIMEOUT_MS = 8000
 
 export type EmailService = {
   sendVerificationEmail(to: string, verificationUrl: string): Promise<void>
-  sendAccountExistsEmail(to: string, resetUrl: string): Promise<void>
+  sendAccountExistsEmail(to: string, signInUrl: string): Promise<void>
   sendPasswordResetEmail(to: string, resetUrl: string): Promise<void>
   sendMessageNotification(adminEmail: string, fromName: string, fromEmail: string, text: string, orderNumber?: number): Promise<void>
   sendTrackingNotification(to: string, name: string, orderNumber: number, trackingNumber: string): Promise<void>
@@ -61,17 +61,17 @@ export function makeEmailService(): EmailService {
         `,
       })
     },
-    async sendAccountExistsEmail(to, resetUrl) {
-      // SECURITY: только server-controlled значения в html (resetUrl — токен из crypto).
+    async sendAccountExistsEmail(to, signInUrl) {
+      // SECURITY: только server-controlled значения в html (signInUrl — env-переменная).
       await send({
         from: 'noreply@natsdoll.com',
         to,
         subject: 'You already have an account — NatsDoll',
         html: `
           <p>An account already exists for this email.</p>
-          <p>Just sign in as usual. If you forgot your password, reset it here:</p>
-          <p><a href="${resetUrl}">Reset password</a></p>
+          <p>Just <a href="${signInUrl}">sign in</a> as usual.</p>
           <p>If you originally signed up with Google, use the "Continue with Google" button instead.</p>
+          <p>Forgot your password? Open the sign-in window and choose "Forgot password" to get a reset link by email.</p>
         `,
       })
     },
