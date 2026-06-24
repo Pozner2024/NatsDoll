@@ -58,6 +58,15 @@ describe('capturePaypalPayment verification', () => {
     expect(d.emailService.sendPaymentCaptureAlert).toHaveBeenCalledWith('admin@natsdoll.com', 7, 'CAP-9', 'db down')
   })
 
+  it('rejects a terminal (cancelled/refunded) order without taking money', async () => {
+    const d = deps({ status: 'COMPLETED', captureId: 'CAP-1', amount: '42.50', currencyCode: 'USD', invoiceId: 'natsdoll-7' })
+    d.repo.getOrderForPayment.mockResolvedValue({ ...order, status: 'CANCELLED' })
+    const uc = makeCapturePaypalPayment(d.repo as never, d.paypal as never, d.markOrderPaid as never, d.decrypt as never, d.emailService as never)
+    await expect(uc('u1', 'o1')).rejects.toThrow()
+    expect(d.paypal.captureOrder).not.toHaveBeenCalled()
+    expect(d.markOrderPaid).not.toHaveBeenCalled()
+  })
+
   it('alerts admin when verification fails after money was already captured', async () => {
     vi.stubEnv('ADMIN_EMAIL', 'admin@natsdoll.com')
     const d = deps({ status: 'COMPLETED', captureId: 'CAP-2', amount: '1.00', currencyCode: 'USD', invoiceId: 'natsdoll-7' })

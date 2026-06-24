@@ -33,7 +33,7 @@
           <button
             type="button"
             class="cart-line__qty-btn"
-            :disabled="item.quantity <= 1"
+            :disabled="disabled || item.quantity <= 1"
             @click="onDecrement"
           >
             −
@@ -42,6 +42,7 @@
           <button
             type="button"
             class="cart-line__qty-btn"
+            :disabled="disabled"
             @click="onIncrement"
           >
             +
@@ -62,6 +63,7 @@
       <button
         type="button"
         class="cart-line__remove"
+        :disabled="disabled"
         @click="onRemoveClick"
       >
         Remove
@@ -75,7 +77,7 @@ import { RouterLink } from 'vue-router'
 import { formatPrice } from '@/shared'
 import type { CartItem } from '@/entities/cart'
 
-const props = defineProps<{ item: CartItem }>()
+const props = defineProps<{ item: CartItem; disabled?: boolean }>()
 const emit = defineEmits<{
   update: [itemId: string, quantity: number]
   remove: [itemId: string]
@@ -221,6 +223,10 @@ function onRemoveClick(): void {
 
     &:hover {
       color: rgb(180 30 30 / 1);
+    }
+
+    &:disabled {
+      opacity: 0.4;
     }
   }
 }

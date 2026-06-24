@@ -1,5 +1,5 @@
 import { AppError } from '../../../shared/errors'
-import { isPaidStatus } from '../../../shared/lib'
+import { isPaidStatus, isTerminalStatus } from '../../../shared/lib'
 import type { EmailService } from '../../auth/infrastructure/emailService'
 import type { PaymentRepository, PaypalClient } from '../types'
 import type { MarkOrderPaid } from './markOrderPaid'
@@ -41,6 +41,9 @@ export function makeCapturePaypalPayment(
     }
     if (isPaidStatus(order.status)) {
       return { status: 'COMPLETED' }
+    }
+    if (isTerminalStatus(order.status)) {
+      throw new AppError(409, 'Order is in a final state')
     }
     if (!order.paypalOrderId) {
       throw new AppError(409, 'No PayPal order to capture')

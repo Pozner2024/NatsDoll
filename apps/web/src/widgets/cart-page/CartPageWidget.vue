@@ -50,6 +50,7 @@
             v-for="item in items"
             :key="item.id"
             :item="item"
+            :disabled="!!pending"
             @update="onUpdate"
             @remove="onRemove"
           />
