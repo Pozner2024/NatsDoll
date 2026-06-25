@@ -3,7 +3,13 @@ import { fileURLToPath } from 'node:url'
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-10',
   buildId: 'natsdoll',
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', '@nuxt/fonts'],
+  fonts: {
+    families: [
+      { name: 'Playfair Display', provider: 'google', weights: [400], styles: ['normal', 'italic'] },
+      { name: 'Corinthia', provider: 'google', weights: [400, 700] },
+    ],
+  },
   runtimeConfig: {
     public: {
       siteUrl: 'https://natsdoll.com',
@@ -63,10 +69,6 @@ export default defineNuxtConfig({
         { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
         { rel: 'apple-touch-icon', href: '/favicon-180.png' },
         { rel: 'manifest', href: '/site.webmanifest' },
-        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Corinthia:wght@400;700&display=swap' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&display=swap' },
       ],
       script: [
         {
