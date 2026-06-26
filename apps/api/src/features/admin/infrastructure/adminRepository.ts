@@ -321,6 +321,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
           shippingAddress: true,
           trackingNumber: true,
           adminNote: true,
+          paypalOrderId: true,
           createdAt: true,
           user: { select: { id: true, name: true, email: true } },
           items: {
@@ -345,6 +346,7 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         shippingAddress: order.shippingAddress as ShippingAddress,
         trackingNumber: order.trackingNumber,
         adminNote: order.adminNote,
+        paypalOrderId: order.paypalOrderId,
         createdAt: order.createdAt.toISOString(),
         userId: order.user.id,
         userName: order.user.name,

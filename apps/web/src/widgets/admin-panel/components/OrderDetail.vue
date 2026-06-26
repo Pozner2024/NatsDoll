@@ -93,6 +93,14 @@
           </div>
         </section>
 
+        <div
+          v-if="order.paypalOrderId"
+          class="order-detail__paypal"
+        >
+          <span class="order-detail__paypal-label">Buyer initiated PayPal</span>
+          <code class="order-detail__paypal-id">{{ order.paypalOrderId }}</code>
+        </div>
+
         <form
           class="order-detail__form"
           @submit.prevent="handleSave"
@@ -334,6 +342,30 @@ defineExpose({ setError })
   &__date {
     font-size: 0.78rem;
     color: var(--color-text-muted);
+  }
+
+  &__paypal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: rgb(212 160 23 / 0.08);
+  }
+
+  &__paypal-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-gold);
+  }
+
+  &__paypal-id {
+    font-size: 0.78rem;
+    font-family: monospace;
+    color: var(--color-text);
+    word-break: break-all;
   }
 
   &__message-btn {

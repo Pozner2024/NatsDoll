@@ -203,6 +203,7 @@ export type AdminOrderDetail = {
   shippingAddress: ShippingAddress
   trackingNumber: string | null
   adminNote: string | null
+  paypalOrderId: string | null
   createdAt: string
   userId: string
   userName: string

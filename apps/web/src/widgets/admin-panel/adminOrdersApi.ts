@@ -44,6 +44,7 @@ const OrderDetailSchema = z.object({
   shippingAddress: ShippingAddressSchema,
   trackingNumber: z.string().nullable(),
   adminNote: z.string().nullable(),
+  paypalOrderId: z.string().nullable(),
   createdAt: z.string(),
   userId: z.string(),
   userName: z.string(),

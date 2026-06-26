@@ -308,7 +308,7 @@ describe('GET /admin/orders/:id', () => {
     const mockDetail: AdminOrderDetail = {
       id: 'o1', orderNumber: 1, status: 'PENDING', totalAmount: 30, shippingCost: 5,
       shippingAddress: { fullName: 'Alice', line1: '1 St', city: 'NY', country: 'US', postalCode: '10001' },
-      trackingNumber: null, adminNote: null, createdAt: '2026-06-01T00:00:00.000Z',
+      trackingNumber: null, adminNote: null, paypalOrderId: '5O190127TN364715T', createdAt: '2026-06-01T00:00:00.000Z',
       userId: 'u1', userName: 'Alice', userEmail: 'a@test.com', items: [],
     }
     const app = makeApp({ getAdminOrder: vi.fn().mockResolvedValue(mockDetail) })
@@ -317,6 +317,7 @@ describe('GET /admin/orders/:id', () => {
     const body = await res.json() as AdminOrderDetail
     expect(body.orderNumber).toBe(1)
     expect(body.adminNote).toBeNull()
+    expect(body.paypalOrderId).toBe('5O190127TN364715T')
   })
 })
 
