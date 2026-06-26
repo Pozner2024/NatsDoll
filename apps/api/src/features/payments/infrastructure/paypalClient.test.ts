@@ -48,6 +48,18 @@ describe('paypalClient.captureOrder', () => {
     expect(res.captureId).toBe('CAP-1')
   })
 
+  it('reads invoice_id from the capture, not the purchase unit', async () => {
+    mockFetchSequence([
+      { ok: true, body: { access_token: 'tok' } },
+      { ok: true, body: { status: 'COMPLETED', purchase_units: [{ payments: { captures: [{ id: 'CAP-1', amount: { currency_code: 'USD', value: '28.00' }, invoice_id: 'natsdoll-13' } ] } }] } },
+    ])
+    const client = makePaypalClient()
+    const res = await client.captureOrder({ creds, paypalOrderId: 'PAYPAL-1' })
+    expect(res.invoiceId).toBe('natsdoll-13')
+    expect(res.amount).toBe('28.00')
+    expect(res.currencyCode).toBe('USD')
+  })
+
   it('treats ORDER_ALREADY_CAPTURED as success', async () => {
     mockFetchSequence([
       { ok: true, body: { access_token: 'tok' } },

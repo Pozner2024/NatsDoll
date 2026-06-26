@@ -28,7 +28,7 @@ async function getAccessToken(creds: PaypalCreds): Promise<string> {
 type PurchaseUnit = {
   invoice_id?: string
   amount?: { value?: string; currency_code?: string }
-  payments?: { captures?: Array<{ id?: string; amount?: { value?: string; currency_code?: string } }> }
+  payments?: { captures?: Array<{ id?: string; amount?: { value?: string; currency_code?: string }; invoice_id?: string }> }
 }
 
 function firstPurchaseUnit(body: unknown): PurchaseUnit | undefined {
@@ -43,12 +43,12 @@ function extractCaptureId(body: unknown): string | null {
 // а при его отсутствии (ответ GET order) — из purchase_units[0].amount.
 function extractDetails(body: unknown): { amount: string | null; currencyCode: string | null; invoiceId: string | null } {
   const pu = firstPurchaseUnit(body)
-  const captureAmount = pu?.payments?.captures?.[0]?.amount
-  const amount = captureAmount ?? pu?.amount
+  const capture = pu?.payments?.captures?.[0]
+  const amount = capture?.amount ?? pu?.amount
   return {
     amount: amount?.value ?? null,
     currencyCode: amount?.currency_code ?? null,
-    invoiceId: pu?.invoice_id ?? null,
+    invoiceId: capture?.invoice_id ?? pu?.invoice_id ?? null,
   }
 }
 
