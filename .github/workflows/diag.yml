@@ -26,3 +26,5 @@ jobs:
             sudo du -xh -d 2 /var 2>/dev/null | sort -rh | head -10 || true
             echo "=== home ==="
             du -sh /home/natalia/* 2>/dev/null | sort -rh | head -8
+            echo "=== api payment logs ==="
+            cd /home/natalia/natsdoll && docker compose -f docker-compose.prod.yml logs --tail=500 api 2>/dev/null | grep -iE "capturePaypalPayment|verification mismatch|payment captured" || echo "no payment logs found"

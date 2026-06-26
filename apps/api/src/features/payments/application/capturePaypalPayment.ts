@@ -66,6 +66,12 @@ export function makeCapturePaypalPayment(
         const currencyMatches = result.currencyCode === 'USD'
         const invoiceMatches = result.invoiceId === `natsdoll-${order.orderNumber}`
         if (!amountMatches || !currencyMatches || !invoiceMatches) {
+          console.error('[capturePaypalPayment] verification mismatch', {
+            orderNumber: order.orderNumber,
+            amount: { expected: order.totalAmount.toFixed(2), actual: result.amount, ok: amountMatches },
+            currency: { expected: 'USD', actual: result.currencyCode, ok: currencyMatches },
+            invoice: { expected: `natsdoll-${order.orderNumber}`, actual: result.invoiceId, ok: invoiceMatches },
+          })
           throw new AppError(409, 'Payment verification failed')
         }
       }
