@@ -261,7 +261,7 @@ export function createApp() {
   const guestCheckout = makeGuestCheckout(orderRepo, getActiveSale, orderRepo.getProductsForCheckout, authRepo, issueTokensForUser)
   app.use('/orders', requireAuth)
   app.use('/orders/*', async (c, next) => {
-    if (c.req.path === '/orders/guest') return next()
+    if (c.req.method === 'POST' && c.req.path === '/orders/guest') return next()
     return requireAuth(c, next)
   })
   app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder, guestCheckout))

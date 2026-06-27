@@ -26,7 +26,7 @@
     </div>
 
     <div
-      v-else-if="items.length === 0"
+      v-else-if="items.length === 0 && !pending"
       class="cart-page__empty"
     >
       <p class="cart-page__empty-text">
@@ -195,7 +195,13 @@ const paymentsEnabled = computed(() => !!paymentConfig.value?.enabled && !!payme
 const placingOrder = ref(false)
 
 function validateAddress(): boolean {
-  if (!authStore.isLoggedIn && validateEmail(guestEmail.value) !== '') return false
+  if (!authStore.isLoggedIn) {
+    const emailErr = validateEmail(guestEmail.value)
+    if (emailErr) {
+      guestEmailError.value = emailErr
+      return false
+    }
+  }
   return checkoutFormRef.value?.getValidatedAddress?.() != null
 }
 
