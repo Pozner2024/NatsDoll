@@ -41,6 +41,15 @@ describe('guestCheckout', () => {
     expect(d.requestPasswordReset).not.toHaveBeenCalled()
   })
 
+  it('rejects with 409 for a Google-only account and sends no reset link', async () => {
+    const d = deps()
+    d.authRepo.findByEmail.mockResolvedValue({ id: 'u9', email: 'a@b.com', passwordHash: null, googleId: 'g1' })
+    await expect(make(d)({ email: 'a@b.com', shippingAddress: address, items: [{ productId: 'p1', quantity: 1, message: null }] })).rejects.toThrow()
+    expect(d.orderRepo.createOrderFromItems).not.toHaveBeenCalled()
+    expect(d.issueTokens).not.toHaveBeenCalled()
+    expect(d.requestPasswordReset).not.toHaveBeenCalled()
+  })
+
   it('NEVER issues a session into an existing passwordless guest account; emails a set-password link instead', async () => {
     const d = deps()
     d.authRepo.findByEmail.mockResolvedValue({ id: 'u1', email: 'a@b.com', name: 'Anna', passwordHash: null, googleId: null })

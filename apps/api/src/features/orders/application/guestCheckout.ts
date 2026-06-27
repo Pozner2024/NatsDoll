@@ -47,7 +47,8 @@ export function makeGuestCheckout(
       // данным владельца (account takeover). Гостю без способа входа шлём ссылку задать пароль,
       // чтобы он мог войти и оформить заказ сам.
       if (!existing.passwordHash && !existing.googleId) {
-        await requestPasswordReset(input.email)
+        // best-effort: сбой отправки не должен превращать детерминированный 409 в 500.
+        await requestPasswordReset(input.email).catch(() => undefined)
       }
       throw new AppError(409, 'An account with this email exists. Please sign in or check your email.')
     }
