@@ -149,6 +149,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearState,
     initAuth,
     setAccessToken,
+    setAuth,
     updateProfile,
   }
 })

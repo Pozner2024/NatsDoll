@@ -80,7 +80,7 @@ export function makeOrderRouter(
       items: body.items.map((i) => ({ productId: i.productId, quantity: i.quantity, message: i.message ?? null })),
     })
     setCookie(c, COOKIE_NAME, tokens.refreshToken, REFRESH_COOKIE_OPTIONS)
-    return c.json({ order, accessToken: tokens.accessToken }, 201)
+    return c.json({ order, accessToken: tokens.accessToken, user: tokens.user }, 201)
   })
 
   return router
