@@ -3,8 +3,15 @@ import { useOrderStore } from '@/entities/order'
 import type { ShippingAddress } from '@/entities/order'
 import { useAddressStore } from '@/entities/address'
 import type { Address } from '@/entities/address'
+import { createGuestOrder, GuestEmailTakenError } from './guestCheckoutApi'
 
 export type PreparedOrder = { orderId: string; orderNumber: number; amountUsd: number }
+
+type GuestParams = {
+  email: string
+  items: { productId: string; quantity: number; message: string | null }[]
+  amountUsd: number
+}
 
 function addressInBook(addresses: ReadonlyArray<Address>, a: ShippingAddress): boolean {
   return addresses.some(x =>
@@ -32,10 +39,19 @@ export function usePendingOrder() {
     }
   }
 
-  async function prepare(address: ShippingAddress): Promise<PreparedOrder | null> {
+  async function prepare(address: ShippingAddress, guestParams?: GuestParams): Promise<PreparedOrder | null> {
     if (pending.value) return pending.value
     error.value = ''
     try {
+      if (guestParams) {
+        const { orderId, orderNumber } = await createGuestOrder({
+          email: guestParams.email,
+          shippingAddress: address,
+          items: guestParams.items,
+        })
+        pending.value = { orderId, orderNumber, amountUsd: guestParams.amountUsd }
+        return pending.value
+      }
       const orderId = await orderStore.create(address)
       const order = orderStore.currentOrder
       if (!order) {
@@ -46,6 +62,7 @@ export function usePendingOrder() {
       pending.value = { orderId, orderNumber: order.orderNumber, amountUsd: order.totalAmount }
       return pending.value
     } catch (e) {
+      if (e instanceof GuestEmailTakenError) throw e
       error.value = e instanceof Error ? e.message : 'Could not create order'
       return null
     }

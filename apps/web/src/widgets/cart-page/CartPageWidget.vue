@@ -56,6 +56,50 @@
           />
         </ul>
 
+        <div
+          v-if="!authStore.isLoggedIn"
+          class="cart-page__guest-email"
+        >
+          <label
+            for="guest-email"
+            class="cart-page__guest-email-label"
+          >
+            Email
+            <span
+              aria-hidden="true"
+              class="cart-page__guest-email-required"
+            >*</span>
+          </label>
+          <input
+            id="guest-email"
+            v-model="guestEmail"
+            type="email"
+            autocomplete="email"
+            class="cart-page__guest-email-input"
+            placeholder="your@email.com"
+            @input="guestEmailError = ''; emailTaken = false"
+          >
+          <p
+            v-if="guestEmailError"
+            class="cart-page__guest-email-error"
+          >
+            {{ guestEmailError }}
+          </p>
+          <p
+            v-if="emailTaken"
+            class="cart-page__guest-email-taken"
+          >
+            An account with this email exists —
+            <button
+              type="button"
+              class="cart-page__sign-in-btn"
+              @click="authModal.open('login')"
+            >
+              sign in
+            </button>
+          </p>
+        </div>
+
         <CheckoutForm ref="checkoutFormRef" />
       </div>
 
@@ -112,13 +156,14 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { AppButton, formatPrice, calcShipping } from '@/shared'
+import { AppButton, formatPrice, calcShipping, useAuthModal, validateEmail } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
 import { CheckoutForm } from '@/features/checkout-form'
 import { PaypalPayment, fetchPaymentConfig } from '@/features/paypal-payment'
 import type { PaymentConfig } from '@/features/paypal-payment'
 import { usePendingOrder } from './usePendingOrder'
+import { GuestEmailTakenError } from './guestCheckoutApi'
 import type { ShippingAddress } from '@/entities/order'
 import CartLineItem from './components/CartLineItem.vue'
 
@@ -136,6 +181,11 @@ const loading = computed(() => cartStore.loading)
 const error = computed(() => cartStore.error)
 const actionError = ref<string | null>(null)
 
+const authModal = useAuthModal()
+const guestEmail = ref('')
+const guestEmailError = ref('')
+const emailTaken = ref(false)
+
 const checkoutFormRef = ref<{ getValidatedAddress: () => ShippingAddress | null } | null>(null)
 const { pending, error: orderError, prepare } = usePendingOrder()
 
@@ -145,12 +195,37 @@ const paymentsEnabled = computed(() => !!paymentConfig.value?.enabled && !!payme
 const placingOrder = ref(false)
 
 function validateAddress(): boolean {
-  return checkoutFormRef.value?.getValidatedAddress() != null
+  if (!authStore.isLoggedIn && validateEmail(guestEmail.value) !== '') return false
+  return checkoutFormRef.value?.getValidatedAddress?.() != null
 }
 
 async function prepareOrder() {
-  const address = checkoutFormRef.value?.getValidatedAddress()
+  const address = checkoutFormRef.value?.getValidatedAddress?.()
   if (!address) return null
+
+  if (!authStore.isLoggedIn) {
+    const emailErr = validateEmail(guestEmail.value)
+    if (emailErr) {
+      guestEmailError.value = emailErr
+      return null
+    }
+    guestEmailError.value = ''
+    emailTaken.value = false
+    try {
+      return await prepare(address, {
+        email: guestEmail.value.trim(),
+        items: cartStore.guestItems,
+        amountUsd: grandTotal.value,
+      })
+    } catch (e) {
+      if (e instanceof GuestEmailTakenError) {
+        emailTaken.value = true
+        return null
+      }
+      throw e
+    }
+  }
+
   return prepare(address)
 }
 
@@ -161,6 +236,13 @@ function goToReceipt(): void {
 }
 
 async function placeOrderFallback(): Promise<void> {
+  if (!authStore.isLoggedIn) {
+    const emailErr = validateEmail(guestEmail.value)
+    if (emailErr) {
+      guestEmailError.value = emailErr
+      return
+    }
+  }
   if (!validateAddress()) return
   placingOrder.value = true
   try {
@@ -306,6 +388,61 @@ async function onRemove(itemId: string): Promise<void> {
       margin-top: 0.5rem;
       padding-top: 0.75rem;
     }
+  }
+
+  &__guest-email {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  &__guest-email-label {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  &__guest-email-required {
+    color: var(--color-error);
+    margin-left: 0.2rem;
+  }
+
+  &__guest-email-input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    color: var(--color-text);
+    background: var(--color-bg);
+    outline: none;
+
+    &:focus {
+      border-color: var(--color-accent);
+    }
+  }
+
+  &__guest-email-error {
+    font-size: var(--fs-sm);
+    color: var(--color-error);
+    margin: 0;
+  }
+
+  &__guest-email-taken {
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  &__sign-in-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-accent);
+    text-decoration: underline;
   }
 
   &__pay {
