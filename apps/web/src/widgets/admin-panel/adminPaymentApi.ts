@@ -6,6 +6,7 @@ const settingsSchema = z.object({
   mode: z.enum(['SANDBOX', 'LIVE']),
   clientId: z.string().nullable(),
   hasSecret: z.boolean(),
+  webhookId: z.string().nullable(),
 })
 
 export type PaymentSettings = z.infer<typeof settingsSchema>
@@ -15,6 +16,7 @@ export interface UpdatePaymentSettingsBody {
   mode: 'SANDBOX' | 'LIVE'
   clientId: string | null
   secret?: string | null
+  webhookId?: string | null
 }
 
 export async function fetchPaymentSettings(): Promise<PaymentSettings> {

@@ -7,10 +7,11 @@ function makeApp(
   create = vi.fn(),
   capture = vi.fn(),
   claim = vi.fn(),
+  webhook = vi.fn().mockResolvedValue({ handled: true }),
 ) {
   const app = new Hono()
-  app.route('/payments', makePaymentRouter(config as never, create as never, capture as never, claim as never))
-  return { app, config, create, capture, claim }
+  app.route('/payments', makePaymentRouter(config as never, create as never, capture as never, claim as never, webhook as never))
+  return { app, config, create, capture, claim, webhook }
 }
 
 describe('payment routes — публичность и auth-гейт', () => {
@@ -53,5 +54,16 @@ describe('payment routes — публичность и auth-гейт', () => {
     })
     expect(res.status).toBe(401)
     expect(claim).not.toHaveBeenCalled()
+  })
+
+  it('POST /paypal/webhook — публичный (без auth), делегирует в handler', async () => {
+    const { app, webhook } = makeApp()
+    const res = await app.request('/payments/paypal/webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'paypal-transmission-id': 'tid' },
+      body: JSON.stringify({ event_type: 'PAYMENT.CAPTURE.COMPLETED' }),
+    })
+    expect(res.status).toBe(200)
+    expect(webhook).toHaveBeenCalled()
   })
 })

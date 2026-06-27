@@ -15,11 +15,13 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
         mode: s.mode as PaymentMode,
         clientId: s.paypalClientId,
         secret: s.paypalSecret,
+        webhookId: s.paypalWebhookId,
       }
     },
 
     async upsertSettings(data) {
       const secretUpdate = data.secret === undefined ? {} : { paypalSecret: data.secret }
+      const webhookUpdate = data.webhookId === undefined ? {} : { paypalWebhookId: data.webhookId }
       await prisma.paymentSettings.upsert({
         where: { id: SETTINGS_ID },
         create: {
@@ -28,12 +30,14 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
           mode: data.mode,
           paypalClientId: data.clientId,
           paypalSecret: data.secret ?? null,
+          paypalWebhookId: data.webhookId ?? null,
         },
         update: {
           enabled: data.enabled,
           mode: data.mode,
           paypalClientId: data.clientId,
           ...secretUpdate,
+          ...webhookUpdate,
         },
       })
     },
@@ -41,6 +45,15 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
     async getOrderForPayment(orderId: string): Promise<OrderForPayment | null> {
       const o = await prisma.order.findUnique({
         where: { id: orderId },
+        select: { id: true, userId: true, orderNumber: true, status: true, totalAmount: true, paypalOrderId: true },
+      })
+      if (!o) return null
+      return { ...o, totalAmount: o.totalAmount.toNumber() }
+    },
+
+    async getOrderForPaymentByNumber(orderNumber: number): Promise<OrderForPayment | null> {
+      const o = await prisma.order.findUnique({
+        where: { orderNumber },
         select: { id: true, userId: true, orderNumber: true, status: true, totalAmount: true, paypalOrderId: true },
       })
       if (!o) return null

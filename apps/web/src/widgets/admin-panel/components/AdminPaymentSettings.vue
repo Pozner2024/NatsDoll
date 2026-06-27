@@ -62,6 +62,19 @@
         <span>Удалить сохранённый Secret (перейти в ручной режим)</span>
       </label>
 
+      <label class="payment-settings__field">
+        <span class="payment-settings__label">PayPal Webhook ID</span>
+        <input
+          v-model="form.webhookId"
+          type="text"
+          autocomplete="off"
+          placeholder="Из PayPal Dashboard → Webhooks"
+        >
+        <small class="payment-settings__hint">
+          Подтверждает оплату, даже если покупатель закрыл вкладку после оплаты. Оставьте пустым, чтобы выключить.
+        </small>
+      </label>
+
       <button
         class="payment-settings__save"
         type="button"
@@ -91,7 +104,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { fetchPaymentSettings, savePaymentSettings } from '../adminPaymentApi'
 
-const form = reactive({ enabled: false, mode: 'SANDBOX' as 'SANDBOX' | 'LIVE', clientId: '' })
+const form = reactive({ enabled: false, mode: 'SANDBOX' as 'SANDBOX' | 'LIVE', clientId: '', webhookId: '' })
 const secretInput = ref('')
 const clearSecret = ref(false)
 const hasSecret = ref(false)
@@ -106,6 +119,7 @@ onMounted(async () => {
     form.enabled = s.enabled
     form.mode = s.mode
     form.clientId = s.clientId ?? ''
+    form.webhookId = s.webhookId ?? ''
     hasSecret.value = s.hasSecret
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Ошибка загрузки'
@@ -133,6 +147,7 @@ async function onSave() {
       mode: form.mode,
       clientId: form.clientId.trim() === '' ? null : form.clientId.trim(),
       secret,
+      webhookId: form.webhookId.trim() === '' ? null : form.webhookId.trim(),
     })
     hasSecret.value = s.hasSecret
     secretInput.value = ''

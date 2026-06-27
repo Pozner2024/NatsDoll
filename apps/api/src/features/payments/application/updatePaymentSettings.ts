@@ -17,11 +17,13 @@ export function makeUpdatePaymentSettings(repo: PaymentRepository): UpdatePaymen
     } else {
       secret = encryptSecret(input.secret)
     }
+    const webhookId = input.webhookId === undefined ? undefined : (input.webhookId || null)
     await repo.upsertSettings({
       enabled: input.enabled,
       mode: input.mode,
       clientId: input.clientId,
       secret,
+      webhookId,
     })
   }
 }

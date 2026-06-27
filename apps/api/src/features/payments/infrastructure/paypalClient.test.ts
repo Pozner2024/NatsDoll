@@ -70,3 +70,47 @@ describe('paypalClient.captureOrder', () => {
     expect(res.status).toBe('COMPLETED')
   })
 })
+
+describe('paypalClient.verifyWebhookSignature', () => {
+  const headers = {
+    transmissionId: 'tid',
+    transmissionTime: '2026-06-27T00:00:00Z',
+    certUrl: 'https://api.sandbox.paypal.com/cert',
+    authAlgo: 'SHA256withRSA',
+    transmissionSig: 'sig',
+  }
+
+  it('returns true when PayPal verification_status is SUCCESS', async () => {
+    const fetchFn = mockFetchSequence([
+      { ok: true, body: { access_token: 'tok' } },
+      { ok: true, body: { verification_status: 'SUCCESS' } },
+    ])
+    const client = makePaypalClient()
+    const ok = await client.verifyWebhookSignature({ creds, webhookId: 'WH-1', headers, rawBody: '{"event_type":"CHECKOUT.ORDER.APPROVED"}' })
+    expect(ok).toBe(true)
+    const body = JSON.parse(fetchFn.mock.calls[1][1].body)
+    expect(body.webhook_id).toBe('WH-1')
+    expect(body.transmission_id).toBe('tid')
+    expect(body.webhook_event.event_type).toBe('CHECKOUT.ORDER.APPROVED')
+  })
+
+  it('returns false when verification_status is not SUCCESS', async () => {
+    mockFetchSequence([
+      { ok: true, body: { access_token: 'tok' } },
+      { ok: true, body: { verification_status: 'FAILURE' } },
+    ])
+    const client = makePaypalClient()
+    const ok = await client.verifyWebhookSignature({ creds, webhookId: 'WH-1', headers, rawBody: '{}' })
+    expect(ok).toBe(false)
+  })
+
+  it('returns false when the verify request itself fails', async () => {
+    mockFetchSequence([
+      { ok: true, body: { access_token: 'tok' } },
+      { ok: false, status: 400, body: { error: 'bad' } },
+    ])
+    const client = makePaypalClient()
+    const ok = await client.verifyWebhookSignature({ creds, webhookId: 'WH-1', headers, rawBody: '{}' })
+    expect(ok).toBe(false)
+  })
+})

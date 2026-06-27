@@ -18,10 +18,19 @@ export interface CapturedPayment {
   invoiceId: string | null
 }
 
+export interface PaypalWebhookHeaders {
+  transmissionId: string
+  transmissionTime: string
+  certUrl: string
+  authAlgo: string
+  transmissionSig: string
+}
+
 export interface PaypalClient {
   createOrder(input: { creds: PaypalCreds; amountUsd: number; invoiceId: string }): Promise<CreatedPaypalOrder>
   captureOrder(input: { creds: PaypalCreds; paypalOrderId: string }): Promise<CapturedPayment>
   getOrderStatus(input: { creds: PaypalCreds; paypalOrderId: string }): Promise<CapturedPayment>
+  verifyWebhookSignature(input: { creds: PaypalCreds; webhookId: string; headers: PaypalWebhookHeaders; rawBody: string }): Promise<boolean>
 }
 
 // --- Settings ---
@@ -30,6 +39,7 @@ export interface PaymentSettingsView {
   mode: PaymentMode
   clientId: string | null
   hasSecret: boolean
+  webhookId: string | null
 }
 
 export interface UpdatePaymentSettingsInput {
@@ -37,6 +47,7 @@ export interface UpdatePaymentSettingsInput {
   mode: PaymentMode
   clientId: string | null
   secret?: string | null
+  webhookId?: string | null
 }
 
 export interface PublicPaymentConfig {
@@ -57,9 +68,10 @@ export interface OrderForPayment {
 }
 
 export interface PaymentRepository {
-  getSettings(): Promise<{ enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null } | null>
-  upsertSettings(data: { enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null | undefined }): Promise<void>
+  getSettings(): Promise<{ enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null; webhookId: string | null } | null>
+  upsertSettings(data: { enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null | undefined; webhookId: string | null | undefined }): Promise<void>
   getOrderForPayment(orderId: string): Promise<OrderForPayment | null>
+  getOrderForPaymentByNumber(orderNumber: number): Promise<OrderForPayment | null>
   setPaypalOrderId(orderId: string, paypalOrderId: string): Promise<void>
   markOrderPaid(orderId: string, captureId: string | null): Promise<void>
 }

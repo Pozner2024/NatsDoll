@@ -6,6 +6,7 @@ import type { GetPaymentConfig } from '../application/getPaymentConfig'
 import type { CreatePaypalOrder } from '../application/createPaypalOrder'
 import type { CapturePaypalPayment } from '../application/capturePaypalPayment'
 import type { ClaimPaypalPayment } from '../application/claimPaypalPayment'
+import type { HandlePaypalWebhook } from '../application/handlePaypalWebhook'
 
 const orderIdSchema = z.object({ orderId: z.string().min(1) })
 const claimSchema = z.object({ orderId: z.string().min(1), paypalOrderId: z.string().min(1) })
@@ -17,10 +18,25 @@ export function makePaymentRouter(
   createPaypalOrder: CreatePaypalOrder,
   capturePaypalPayment: CapturePaypalPayment,
   claimPaypalPayment: ClaimPaypalPayment,
+  handlePaypalWebhook: HandlePaypalWebhook,
 ) {
   const router = new Hono()
 
   router.get('/config', async (c) => c.json(await getPaymentConfig()))
+
+  // PayPal зовёт этот эндпоинт сам: без requireAuth и без rate-limit, защита — только
+  // проверка подписи внутри handlePaypalWebhook. Нужен сырой body для верификации.
+  router.post('/paypal/webhook', async (c) => {
+    const rawBody = await c.req.text()
+    const result = await handlePaypalWebhook(rawBody, {
+      transmissionId: c.req.header('paypal-transmission-id') ?? '',
+      transmissionTime: c.req.header('paypal-transmission-time') ?? '',
+      certUrl: c.req.header('paypal-cert-url') ?? '',
+      authAlgo: c.req.header('paypal-auth-algo') ?? '',
+      transmissionSig: c.req.header('paypal-transmission-sig') ?? '',
+    })
+    return c.json(result)
+  })
 
   router.post('/paypal/create-order', paymentLimiter.middleware, requireAuth, zValidator('json', orderIdSchema), async (c) => {
     const { userId } = c.get('auth')

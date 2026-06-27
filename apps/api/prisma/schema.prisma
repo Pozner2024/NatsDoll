@@ -338,6 +338,7 @@ model PaymentSettings {
   mode           PaymentMode @default(SANDBOX)
   paypalClientId String?
   paypalSecret   String?     // AES-256-GCM ciphertext; null = client-режим
+  paypalWebhookId String?    // id подписки webhook из PayPal Dashboard; null = webhook выключен
   updatedAt      DateTime    @updatedAt
 }
 

@@ -10,6 +10,7 @@ const updateSchema = z.object({
   mode: z.enum(['SANDBOX', 'LIVE']),
   clientId: z.string().max(200).nullable(),
   secret: z.string().max(200).nullable().optional(),
+  webhookId: z.string().max(200).nullable().optional(),
 })
 
 export function makeAdminPaymentRouter(

@@ -4,6 +4,7 @@ import type { EmailService } from '../../auth/infrastructure/emailService'
 import type { PaymentRepository, PaypalClient } from '../types'
 import type { MarkOrderPaid } from './markOrderPaid'
 
+export type CaptureOrderCore = (orderId: string) => Promise<{ status: string }>
 export type CapturePaypalPayment = (userId: string, orderId: string) => Promise<{ status: string }>
 
 async function alertCaptureUnsettled(
@@ -23,20 +24,22 @@ async function alertCaptureUnsettled(
   }
 }
 
-export function makeCapturePaypalPayment(
+// Ядро capture без проверки владельца: используется и HTTP-путём (через ownership-обёртку),
+// и webhook'ом (заказ уже сопоставлен по invoice_id, владелец нерелевантен).
+export function makeCaptureOrderCore(
   repo: Pick<PaymentRepository, 'getSettings' | 'getOrderForPayment'>,
   paypal: Pick<PaypalClient, 'captureOrder'>,
   markOrderPaid: MarkOrderPaid,
   decrypt: (s: string) => string,
   emailService: Pick<EmailService, 'sendPaymentCaptureAlert'>,
-): CapturePaypalPayment {
-  return async (userId, orderId) => {
+): CaptureOrderCore {
+  return async (orderId) => {
     const settings = await repo.getSettings()
     if (!settings || !settings.clientId || !settings.secret) {
       throw new AppError(409, 'Server-side payment is not available')
     }
     const order = await repo.getOrderForPayment(orderId)
-    if (!order || order.userId !== userId) {
+    if (!order) {
       throw new AppError(404, 'Order not found')
     }
     if (isPaidStatus(order.status)) {
@@ -81,5 +84,19 @@ export function makeCapturePaypalPayment(
       throw err
     }
     return { status: 'COMPLETED' }
+  }
+}
+
+// HTTP-путь: проверяет, что заказ принадлежит вызывающему пользователю, затем делегирует в ядро.
+export function makeCapturePaypalPayment(
+  repo: Pick<PaymentRepository, 'getOrderForPayment'>,
+  captureOrderCore: CaptureOrderCore,
+): CapturePaypalPayment {
+  return async (userId, orderId) => {
+    const order = await repo.getOrderForPayment(orderId)
+    if (!order || order.userId !== userId) {
+      throw new AppError(404, 'Order not found')
+    }
+    return captureOrderCore(orderId)
   }
 }

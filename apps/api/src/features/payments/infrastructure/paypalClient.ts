@@ -113,5 +113,25 @@ export function makePaypalClient(): PaypalClient {
       const body = (await res.json()) as { status?: string }
       return { status: body.status ?? 'UNKNOWN', captureId: extractCaptureId(body), ...extractDetails(body) }
     },
+
+    async verifyWebhookSignature({ creds, webhookId, headers, rawBody }): Promise<boolean> {
+      const token = await getAccessToken(creds)
+      const res = await fetch(`${baseUrl(creds.mode)}/v1/notifications/verify-webhook-signature`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auth_algo: headers.authAlgo,
+          cert_url: headers.certUrl,
+          transmission_id: headers.transmissionId,
+          transmission_sig: headers.transmissionSig,
+          transmission_time: headers.transmissionTime,
+          webhook_id: webhookId,
+          webhook_event: JSON.parse(rawBody),
+        }),
+      })
+      if (!res.ok) return false
+      const data = (await res.json()) as { verification_status?: string }
+      return data.verification_status === 'SUCCESS'
+    },
   }
 }

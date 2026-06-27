@@ -6,8 +6,8 @@ export function makeGetPaymentSettings(repo: PaymentRepository): GetPaymentSetti
   return async () => {
     const s = await repo.getSettings()
     if (!s) {
-      return { enabled: false, mode: 'SANDBOX', clientId: null, hasSecret: false }
+      return { enabled: false, mode: 'SANDBOX', clientId: null, hasSecret: false, webhookId: null }
     }
-    return { enabled: s.enabled, mode: s.mode, clientId: s.clientId, hasSecret: s.secret !== null }
+    return { enabled: s.enabled, mode: s.mode, clientId: s.clientId, hasSecret: s.secret !== null, webhookId: s.webhookId }
   }
 }

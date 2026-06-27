@@ -92,8 +92,10 @@ import {
   makeUpdatePaymentSettings,
   makeGetPaymentConfig,
   makeCreatePaypalOrder,
+  makeCaptureOrderCore,
   makeCapturePaypalPayment,
   makeClaimPaypalPayment,
+  makeHandlePaypalWebhook,
   makeMarkOrderPaid,
   makePaymentRouter,
   makeAdminPaymentRouter,
@@ -266,9 +268,11 @@ export function createApp() {
   const updatePaymentSettings = makeUpdatePaymentSettings(paymentRepo)
   const getPaymentConfig = makeGetPaymentConfig(paymentRepo)
   const createPaypalOrder = makeCreatePaypalOrder(paymentRepo, paypalClient, decryptSecret)
-  const capturePaypalPayment = makeCapturePaypalPayment(paymentRepo, paypalClient, markOrderPaid, decryptSecret, emailService)
+  const captureOrderCore = makeCaptureOrderCore(paymentRepo, paypalClient, markOrderPaid, decryptSecret, emailService)
+  const capturePaypalPayment = makeCapturePaypalPayment(paymentRepo, captureOrderCore)
   const claimPaypalPayment = makeClaimPaypalPayment(paymentRepo)
-  app.route('/payments', makePaymentRouter(getPaymentConfig, createPaypalOrder, capturePaypalPayment, claimPaypalPayment))
+  const handlePaypalWebhook = makeHandlePaypalWebhook(paymentRepo, paypalClient, captureOrderCore, decryptSecret)
+  app.route('/payments', makePaymentRouter(getPaymentConfig, createPaypalOrder, capturePaypalPayment, claimPaypalPayment, handlePaypalWebhook))
   app.route('/admin/payment-settings', makeAdminPaymentRouter(getPaymentSettings, updatePaymentSettings))
 
   // Favorites
