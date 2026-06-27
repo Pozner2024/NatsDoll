@@ -53,8 +53,10 @@ import {
   makeCreateOrder,
   makeGetMyOrders,
   makeGetOrder,
+  makeGuestCheckout,
   makeOrderRouter,
 } from './features/orders'
+import { issueTokensForUser } from './features/auth/application/issueTokens'
 import {
   makeFavoritesRepository,
   makeAddFavorite,
@@ -256,9 +258,13 @@ export function createApp() {
   const createOrder = makeCreateOrder(orderRepo, getActiveSale)
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
+  const guestCheckout = makeGuestCheckout(orderRepo, getActiveSale, orderRepo.getProductsForCheckout, authRepo, issueTokensForUser)
   app.use('/orders', requireAuth)
-  app.use('/orders/*', requireAuth)
-  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder))
+  app.use('/orders/*', async (c, next) => {
+    if (c.req.path === '/orders/guest') return next()
+    return requireAuth(c, next)
+  })
+  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder, guestCheckout))
 
   // Payments
   const paymentRepo = makePaymentRepository(prisma)

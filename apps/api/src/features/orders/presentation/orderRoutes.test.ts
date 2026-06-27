@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
 import { makeOrderRouter } from './orderRoutes'
+import { COOKIE_NAME } from '../../../shared/lib'
 import type { CreateOrder, GetMyOrders, GetOrder } from '../types'
 
 const mockAddress = {
@@ -22,7 +23,7 @@ function makeApp(
     c.set('auth', { userId: 'u1', role: 'CUSTOMER' })
     await next()
   })
-  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder))
+  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder, vi.fn() as never))
   return app
 }
 
@@ -75,5 +76,28 @@ describe('GET /orders/:id', () => {
     const body = await res.json() as typeof mockOrderDetail
     expect(body.id).toBe('order-1')
     expect(getOrder).toHaveBeenCalledWith('u1', 'order-1')
+  })
+})
+
+describe('POST /orders/guest', () => {
+  it('публичный, создаёт заказ и ставит refresh-cookie', async () => {
+    const guest = vi.fn().mockResolvedValue({
+      order: { id: 'o1', orderNumber: 7 },
+      tokens: { accessToken: 'AT', refreshToken: 'RT', user: {} },
+    })
+    const app = new Hono()
+    app.route('/', makeOrderRouter(vi.fn() as never, vi.fn() as never, vi.fn() as never, guest as never))
+    const res = await app.request('/orders/guest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'a@b.com',
+        shippingAddress: { fullName: 'A', line1: '1', city: 'NY', country: 'US', postalCode: '10001' },
+        items: [{ productId: 'p1', quantity: 1 }],
+      }),
+    })
+    expect(res.status).toBe(201)
+    expect(res.headers.get('set-cookie')).toContain(COOKIE_NAME)
+    expect(guest).toHaveBeenCalled()
   })
 })
