@@ -1,24 +1,71 @@
 import { defineStore } from 'pinia'
 import { computed, ref, readonly } from 'vue'
-import type { Cart } from './types'
+import type { Cart, CartItem } from './types'
 import {
   fetchCart,
   addCartItem,
   updateCartItem,
   removeCartItem,
 } from './cartApi'
+import {
+  type GuestCartItem,
+  loadGuestItems,
+  saveGuestItems,
+  clearGuestItems,
+  addGuestItem,
+  updateGuestItem,
+  removeGuestItem,
+  guestItemCount,
+  guestTotalAmount,
+} from './guestCart'
+import { useAuthStore } from '@/entities/user/store'
 
 const emptyCart = (): Cart => ({ items: [], totalAmount: 0, itemCount: 0 })
 
+function toCartItem(g: GuestCartItem): CartItem {
+  return {
+    id: g.productId,
+    productId: g.productId,
+    productSlug: '',
+    productName: g.productName,
+    productImage: g.productImage,
+    unitPrice: g.productPrice,
+    quantity: g.quantity,
+    subtotal: g.productPrice * g.quantity,
+    message: g.message,
+  }
+}
+
 export const useCartStore = defineStore('cart', () => {
   const cart = ref<Cart>(emptyCart())
+  const guestItemsRef = ref<GuestCartItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   let loaded = false
 
-  const itemCount = computed(() => cart.value.itemCount)
-  const totalAmount = computed(() => cart.value.totalAmount)
-  const items = computed(() => cart.value.items)
+  const items = computed<CartItem[]>(() => {
+    const auth = useAuthStore()
+    if (!auth.isLoggedIn) return guestItemsRef.value.map(toCartItem)
+    return cart.value.items
+  })
+
+  const itemCount = computed(() => {
+    const auth = useAuthStore()
+    if (!auth.isLoggedIn) return guestItemCount(guestItemsRef.value)
+    return cart.value.itemCount
+  })
+
+  const totalAmount = computed(() => {
+    const auth = useAuthStore()
+    if (!auth.isLoggedIn) return guestTotalAmount(guestItemsRef.value)
+    return cart.value.totalAmount
+  })
+
+  // Payload для /orders/guest (Task 12).
+  // Для залогиненных пользователей маппит серверные items — на случай shared-компонентов.
+  const guestItems = computed(() =>
+    guestItemsRef.value.map(({ productId, quantity, message }) => ({ productId, quantity, message })),
+  )
 
   // Сериализуем мутации корзины, чтобы параллельные клики (+/-/удаление)
   // применялись строго по порядку и ответы не приходили вразнобой.
@@ -31,6 +78,12 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   async function load(force = false): Promise<void> {
+    const auth = useAuthStore()
+    if (!auth.isLoggedIn) {
+      guestItemsRef.value = loadGuestItems()
+      loaded = true
+      return
+    }
     if (loaded && !force) return
     loading.value = true
     error.value = null
@@ -44,21 +97,61 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  async function add(input: { productId: string; quantity: number; message: string | null }): Promise<void> {
-    cart.value = await enqueue(() => addCartItem(input))
+  async function add(input: {
+    productId: string
+    quantity: number
+    message: string | null
+    productName?: string
+    productImage?: string | null
+    productPrice?: number
+  }): Promise<void> {
+    const auth = useAuthStore()
+    if (!auth.isLoggedIn) {
+      const updated = addGuestItem(guestItemsRef.value, {
+        productId: input.productId,
+        quantity: input.quantity,
+        message: input.message,
+        productName: input.productName ?? '',
+        productImage: input.productImage ?? null,
+        productPrice: input.productPrice ?? 0,
+      })
+      guestItemsRef.value = updated
+      saveGuestItems(updated)
+      loaded = true
+      return
+    }
+    cart.value = await enqueue(() =>
+      addCartItem({ productId: input.productId, quantity: input.quantity, message: input.message }),
+    )
     loaded = true
   }
 
   async function update(itemId: string, quantity: number): Promise<void> {
+    const auth = useAuthStore()
+    if (!auth.isLoggedIn) {
+      const updated = updateGuestItem(guestItemsRef.value, itemId, quantity)
+      guestItemsRef.value = updated
+      saveGuestItems(updated)
+      return
+    }
     cart.value = await enqueue(() => updateCartItem(itemId, quantity))
   }
 
   async function remove(itemId: string): Promise<void> {
+    const auth = useAuthStore()
+    if (!auth.isLoggedIn) {
+      const updated = removeGuestItem(guestItemsRef.value, itemId)
+      guestItemsRef.value = updated
+      saveGuestItems(updated)
+      return
+    }
     cart.value = await enqueue(() => removeCartItem(itemId))
   }
 
   function reset(): void {
     cart.value = emptyCart()
+    guestItemsRef.value = []
+    clearGuestItems()
     loaded = false
     error.value = null
   }
@@ -68,6 +161,7 @@ export const useCartStore = defineStore('cart', () => {
     items,
     itemCount,
     totalAmount,
+    guestItems,
     loading: readonly(loading),
     error: readonly(error),
     load,
