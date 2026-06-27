@@ -55,12 +55,23 @@ describe('requestPasswordReset', () => {
   })
 
   it('google-only user → sends account-exists email, no reset row', async () => {
-    const repo = makeRepo({ findByEmail: vi.fn().mockResolvedValue({ id: 'u1', email: 'a@b.com', passwordHash: null }) })
+    const repo = makeRepo({ findByEmail: vi.fn().mockResolvedValue({ id: 'u1', email: 'a@b.com', passwordHash: null, googleId: 'g1' }) })
     const fn = makeRequestPasswordReset(repo, email)
     const res = await fn('a@b.com')
     expect(res.message).toBe(GENERIC)
     expect(repo.createPasswordReset).not.toHaveBeenCalled()
     expect(email.sendAccountExistsEmail).toHaveBeenCalled()
+  })
+
+  it('sends a reset link to a passwordless guest (no googleId) so they can set a first password', async () => {
+    const guest = { id: 'g1', email: 'a@b.com', passwordHash: null, googleId: null }
+    const repo = { findByEmail: vi.fn().mockResolvedValue(guest), createPasswordReset: vi.fn().mockResolvedValue(undefined) }
+    const em = { sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined), sendAccountExistsEmail: vi.fn() }
+    const uc = makeRequestPasswordReset(repo as never, em as never)
+    await uc('a@b.com')
+    expect(repo.createPasswordReset).toHaveBeenCalled()
+    expect(em.sendPasswordResetEmail).toHaveBeenCalled()
+    expect(em.sendAccountExistsEmail).not.toHaveBeenCalled()
   })
 
   it('no user → no email, generic response', async () => {

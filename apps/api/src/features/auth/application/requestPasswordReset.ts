@@ -23,13 +23,17 @@ export function makeRequestPasswordReset(repo: AuthRepository, emailService: Ema
     }
 
     if (!user.passwordHash) {
-      await hash(`${DUMMY_HASH}${Date.now()}`).catch(() => undefined)
-      try {
-        await emailService.sendAccountExistsEmail(user.email, FRONTEND_URL)
-      } catch (err) {
-        console.error('[requestPasswordReset] failed to send account-exists email:', err)
+      // Google-аккаунт (passwordless, но с googleId) — у него есть вход, пароль не задаём.
+      if (user.googleId) {
+        await hash(`${DUMMY_HASH}${Date.now()}`).catch(() => undefined)
+        try {
+          await emailService.sendAccountExistsEmail(user.email, FRONTEND_URL)
+        } catch (err) {
+          console.error('[requestPasswordReset] failed to send account-exists email:', err)
+        }
+        return { message: GENERIC_MESSAGE }
       }
-      return { message: GENERIC_MESSAGE }
+      // Иначе это гость без пароля и без Google — разрешаем задать первый пароль (продолжаем ниже).
     }
 
     await hash(`${DUMMY_HASH}${Date.now()}`).catch(() => undefined)
