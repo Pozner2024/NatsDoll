@@ -2,7 +2,7 @@
 
 Интернет-магазин хэндмейд изделий из полимерной глины.
 
-**Стек:** Vue 3 + Hono + PostgreSQL + Prisma + Docker
+**Стек:** Nuxt 4 (Vue 3, SSR) + Hono + PostgreSQL + Prisma + Docker
 
 ## Локальный запуск
 

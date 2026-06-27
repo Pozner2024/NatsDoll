@@ -39,6 +39,7 @@ import {
   makeUpdateProfile,
   makeRequestPasswordReset,
   makeResetPassword,
+  issueTokensForUser,
 } from './features/auth'
 import {
   makeCartRepository,
@@ -56,7 +57,6 @@ import {
   makeGuestCheckout,
   makeOrderRouter,
 } from './features/orders'
-import { issueTokensForUser } from './features/auth/application/issueTokens'
 import {
   makeFavoritesRepository,
   makeAddFavorite,
