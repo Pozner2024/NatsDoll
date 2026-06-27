@@ -1,15 +1,10 @@
 import { AppError } from '../../../shared/errors'
 import { calcShipping } from '../../../shared/lib'
-import type { OrderRepository, GuestCheckoutInput, GuestOrderItem, OrderDetail } from '../types'
+import type { OrderRepository, GuestCheckoutInput, GuestOrderItem, OrderDetail, CheckoutProduct, GetProductsForCheckout } from '../types'
 import type { GetActiveSale } from '../../admin/types'
 import type { AuthRepository } from '../../auth/infrastructure/authRepository'
 import type { issueTokensForUser, AuthTokensResult } from '../../auth/application/issueTokens'
 
-export type CheckoutProduct = {
-  id: string; name: string; price: number; stock: number
-  isPublished: boolean; deletedAt: Date | null; categoryId: string
-}
-export type GetProductsForCheckout = (productIds: string[]) => Promise<CheckoutProduct[]>
 export type GuestCheckout = (input: GuestCheckoutInput) => Promise<{ order: OrderDetail; tokens: AuthTokensResult }>
 
 export function makeGuestCheckout(

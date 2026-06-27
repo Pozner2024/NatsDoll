@@ -245,6 +245,14 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
       if (!order) return null
       return toOrderDetail(order)
     },
+
+    async getProductsForCheckout(productIds) {
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true, price: true, stock: true, isPublished: true, deletedAt: true, categoryId: true },
+      })
+      return products.map((p) => ({ ...p, price: p.price.toNumber() }))
+    },
   }
 }
 

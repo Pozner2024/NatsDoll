@@ -76,8 +76,15 @@ export type CreateOrder = (userId: string, shippingAddress: ShippingAddress) => 
 export type GetMyOrders = (userId: string) => Promise<OrderSummary[]>
 export type GetOrder = (userId: string, orderId: string) => Promise<OrderDetail>
 
+export type CheckoutProduct = {
+  id: string; name: string; price: number; stock: number
+  isPublished: boolean; deletedAt: Date | null; categoryId: string
+}
+export type GetProductsForCheckout = (productIds: string[]) => Promise<CheckoutProduct[]>
+
 export interface OrderRepository {
   getCartItemsForCheckout(userId: string): Promise<CartItemForCheckout[]>
+  getProductsForCheckout(productIds: string[]): Promise<CheckoutProduct[]>
   createOrderFromCart(
     userId: string,
     items: CartItemForCheckout[],

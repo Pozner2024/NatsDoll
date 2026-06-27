@@ -13,6 +13,7 @@ function makeRepo(): OrderRepository {
     createOrderFromItems: vi.fn(),
     getMyOrders: vi.fn(),
     getOrderById: vi.fn(),
+    getProductsForCheckout: vi.fn(),
   }
 }
 
