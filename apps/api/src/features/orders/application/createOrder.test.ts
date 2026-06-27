@@ -17,6 +17,7 @@ function makeRepo(): OrderRepository {
   return {
     getCartItemsForCheckout: vi.fn(),
     createOrderFromCart: vi.fn(),
+    createOrderFromItems: vi.fn(),
     getMyOrders: vi.fn(),
     getOrderById: vi.fn(),
   }

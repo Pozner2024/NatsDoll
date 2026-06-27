@@ -45,6 +45,14 @@ export type OrderSummary = {
   firstItemImage: string | null
 }
 
+export type GuestOrderItem = {
+  productId: string
+  quantity: number
+  message: string | null
+  categoryId: string
+  productName: string
+}
+
 export type CartItemForCheckout = {
   id: string
   productId: string
@@ -67,6 +75,13 @@ export interface OrderRepository {
   createOrderFromCart(
     userId: string,
     items: CartItemForCheckout[],
+    shippingCost: number,
+    shippingAddress: ShippingAddress,
+    sale: ActiveSale | null,
+  ): Promise<OrderDetail>
+  createOrderFromItems(
+    userId: string,
+    items: GuestOrderItem[],
     shippingCost: number,
     shippingAddress: ShippingAddress,
     sale: ActiveSale | null,
