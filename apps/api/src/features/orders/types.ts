@@ -66,6 +66,12 @@ export type CartItemForCheckout = {
   categoryId: string
 }
 
+export type GuestCheckoutInput = {
+  email: string
+  shippingAddress: ShippingAddress
+  items: { productId: string; quantity: number; message: string | null }[]
+}
+
 export type CreateOrder = (userId: string, shippingAddress: ShippingAddress) => Promise<OrderDetail>
 export type GetMyOrders = (userId: string) => Promise<OrderSummary[]>
 export type GetOrder = (userId: string, orderId: string) => Promise<OrderDetail>
