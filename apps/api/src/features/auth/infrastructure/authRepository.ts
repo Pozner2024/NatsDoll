@@ -22,6 +22,8 @@ export type AuthRepository = {
   findByGoogleId(googleId: string): Promise<User | null>
   linkGoogleId(userId: string, googleId: string): Promise<User>
   createGoogleUser(data: { name: string; email: string; googleId: string }): Promise<User>
+  /** Создаёт гостевого пользователя без пароля и без Google (passwordless). */
+  createGuestUser(data: { name: string; email: string }): Promise<User>
   replaceUnverifiedWithGoogleUser(existingUnverifiedId: string, data: { name: string; email: string; googleId: string }): Promise<User>
   saveRefreshToken(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
   /** Чистит revoked-токены и оставляет только `maxActive` самых свежих активных. */
@@ -92,6 +94,8 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
 
     createGoogleUser: (data) =>
       prisma.user.create({ data: { ...data, emailVerified: true } }),
+
+    createGuestUser: (data) => prisma.user.create({ data }),
 
     replaceUnverifiedWithGoogleUser(existingUnverifiedId: string, data: { name: string; email: string; googleId: string }) {
       return prisma.$transaction(async (tx) => {

@@ -22,6 +22,7 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     findByGoogleId: vi.fn().mockResolvedValue(null),
     linkGoogleId: vi.fn().mockResolvedValue(mockUser),
     createGoogleUser: vi.fn().mockResolvedValue(mockUser),
+    createGuestUser: vi.fn(),
     replaceUnverifiedWithGoogleUser: vi.fn().mockResolvedValue(mockUser),
     saveRefreshToken: vi.fn().mockResolvedValue(undefined),
     pruneUserSessions: vi.fn().mockResolvedValue(undefined),
