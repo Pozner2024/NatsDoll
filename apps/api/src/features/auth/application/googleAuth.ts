@@ -15,10 +15,10 @@ export function makeGoogleAuth(repo: AuthRepository, getGoogleProfile: GetGoogle
     if (!user) {
       const existing = await repo.findByEmail(profile.email)
       if (existing) {
-        // Unverified локальный аккаунт = email никогда не был подтверждён владельцем,
-        // поэтому Google-юзер вытесняет его. Иначе атакующий, заранее зарегавший чужой email
-        // с известным паролем, получил бы доступ к аккаунту жертвы после её Google-входа.
-        if (!existing.emailVerified) {
+        // Вытесняем только unverified аккаунт С ПАРОЛЕМ (атакующий мог заранее задать пароль
+        // на чужой email). Passwordless-аккаунт (гость) безопасно связать — войти в него было
+        // нельзя, а delete сломал бы FK Restrict у его заказов.
+        if (!existing.emailVerified && existing.passwordHash) {
           user = await repo.replaceUnverifiedWithGoogleUser(existing.id, {
             name: profile.name,
             email: profile.email,

@@ -97,6 +97,23 @@ describe('googleAuth', () => {
     expect(result.user.id).toBe('u1')
   })
 
+  it('links Google to a passwordless guest account instead of replacing it', async () => {
+    const guest = { id: 'g1', email: 'a@b.com', name: 'A', emailVerified: false, passwordHash: null, googleId: null, role: 'CUSTOMER' }
+    const repo = {
+      findByGoogleId: vi.fn().mockResolvedValue(null),
+      findByEmail: vi.fn().mockResolvedValue(guest),
+      linkGoogleId: vi.fn().mockResolvedValue({ ...guest, googleId: 'gid', emailVerified: true }),
+      replaceUnverifiedWithGoogleUser: vi.fn(),
+      saveRefreshToken: vi.fn().mockResolvedValue(undefined),
+      pruneUserSessions: vi.fn().mockResolvedValue(undefined),
+    }
+    const getProfile = vi.fn().mockResolvedValue({ googleId: 'gid', email: 'a@b.com', name: 'A', emailVerified: true })
+    const uc = makeGoogleAuth(repo as never, getProfile as never)
+    await uc('code')
+    expect(repo.linkGoogleId).toHaveBeenCalledWith('g1', 'gid')
+    expect(repo.replaceUnverifiedWithGoogleUser).not.toHaveBeenCalled()
+  })
+
   it('удаляет существующего unverified пользователя и создаёт нового через Google (account takeover protection)', async () => {
     const unverifiedUser = { ...mockUser, emailVerified: false, googleId: null, passwordHash: 'hash' }
     const repo = makeRepo({
