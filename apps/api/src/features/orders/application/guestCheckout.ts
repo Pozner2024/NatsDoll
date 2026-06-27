@@ -13,6 +13,7 @@ export function makeGuestCheckout(
   getProductsForCheckout: GetProductsForCheckout,
   authRepo: Pick<AuthRepository, 'findByEmail' | 'createGuestUser' | 'saveRefreshToken' | 'pruneUserSessions'>,
   issueTokens: typeof issueTokensForUser,
+  requestPasswordReset: (email: string) => Promise<unknown>,
 ): GuestCheckout {
   return async (input) => {
     if (input.items.length === 0) {
@@ -40,12 +41,17 @@ export function makeGuestCheckout(
     })
 
     const existing = await authRepo.findByEmail(input.email)
-    if (existing && (existing.passwordHash || existing.googleId)) {
-      throw new AppError(409, 'An account with this email exists. Please sign in.')
+    if (existing) {
+      // На неаутентифицированном пути НИКОГДА не выдаём сессию в существующий аккаунт и не
+      // оформляем под ним заказ — иначе любой, кто введёт чужой email, получил бы доступ к
+      // данным владельца (account takeover). Гостю без способа входа шлём ссылку задать пароль,
+      // чтобы он мог войти и оформить заказ сам.
+      if (!existing.passwordHash && !existing.googleId) {
+        await requestPasswordReset(input.email)
+      }
+      throw new AppError(409, 'An account with this email exists. Please sign in or check your email.')
     }
-    const user = existing
-      ? { id: existing.id, name: existing.name, email: existing.email, role: existing.role }
-      : await authRepo.createGuestUser({ name: input.shippingAddress.fullName, email: input.email })
+    const user = await authRepo.createGuestUser({ name: input.shippingAddress.fullName, email: input.email })
 
     const totalItemCount = orderItems.reduce((sum, i) => sum + i.quantity, 0)
     const shippingCost = calcShipping(totalItemCount)
