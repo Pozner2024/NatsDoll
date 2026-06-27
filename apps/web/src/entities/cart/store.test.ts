@@ -8,7 +8,7 @@ vi.mock('./cartApi')
 // Мутируем объект между тестами — vi.mock закрывается над ссылкой.
 const authState = { isLoggedIn: true }
 
-vi.mock('@/entities/user/store', () => ({
+vi.mock('@/entities/user', () => ({
   useAuthStore: vi.fn(() => authState),
 }))
 

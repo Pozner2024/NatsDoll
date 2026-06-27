@@ -16,22 +16,30 @@ export type GuestCheckoutItem = {
 const STORAGE_KEY = 'natsdoll_guest_cart'
 
 export function loadGuestItems(): GuestCartItem[] {
+  if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed as GuestCartItem[]
+    return (parsed as unknown[]).filter(
+      (i): i is GuestCartItem =>
+        !!i &&
+        typeof (i as GuestCartItem).productId === 'string' &&
+        typeof (i as GuestCartItem).quantity === 'number',
+    )
   } catch {
     return []
   }
 }
 
 export function saveGuestItems(items: GuestCartItem[]): void {
+  if (typeof window === 'undefined') return
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
 }
 
 export function clearGuestItems(): void {
+  if (typeof window === 'undefined') return
   localStorage.removeItem(STORAGE_KEY)
 }
 

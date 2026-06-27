@@ -18,7 +18,7 @@ import {
   guestItemCount,
   guestTotalAmount,
 } from './guestCart'
-import { useAuthStore } from '@/entities/user/store'
+import { useAuthStore } from '@/entities/user'
 
 const emptyCart = (): Cart => ({ items: [], totalAmount: 0, itemCount: 0 })
 
