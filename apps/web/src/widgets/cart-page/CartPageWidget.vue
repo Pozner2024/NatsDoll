@@ -77,7 +77,7 @@
             autocomplete="email"
             class="cart-page__guest-email-input"
             placeholder="your@email.com"
-            @input="guestEmailError = ''; emailTaken = false"
+            @input="guestEmailError = ''; emailTaken = false; signInLinkSent = false"
           >
           <p
             v-if="guestEmailError"
@@ -86,7 +86,13 @@
             {{ guestEmailError }}
           </p>
           <p
-            v-if="emailTaken"
+            v-if="emailTaken && signInLinkSent"
+            class="cart-page__guest-email-taken"
+          >
+            We've emailed a sign-in link to {{ guestEmail }}. Check your inbox to continue.
+          </p>
+          <p
+            v-else-if="emailTaken"
             class="cart-page__guest-email-taken"
           >
             An account with this email exists —
@@ -96,6 +102,14 @@
               @click="authModal.open('login')"
             >
               sign in
+            </button>
+            or
+            <button
+              type="button"
+              class="cart-page__sign-in-btn"
+              @click="sendSignInLink"
+            >
+              email me a sign-in link
             </button>
           </p>
         </div>
@@ -185,6 +199,16 @@ const authModal = useAuthModal()
 const guestEmail = ref('')
 const guestEmailError = ref('')
 const emailTaken = ref(false)
+const signInLinkSent = ref(false)
+
+async function sendSignInLink() {
+  try {
+    await authStore.requestPasswordReset(guestEmail.value.trim())
+  } catch {
+    // generic flow: всё равно показываем «проверьте почту», не раскрывая существование аккаунта
+  }
+  signInLinkSent.value = true
+}
 
 const checkoutFormRef = ref<{ getValidatedAddress: () => ShippingAddress | null } | null>(null)
 const { pending, error: orderError, prepare } = usePendingOrder()
@@ -217,6 +241,7 @@ async function prepareOrder() {
     }
     guestEmailError.value = ''
     emailTaken.value = false
+    signInLinkSent.value = false
     try {
       return await prepare(address, {
         email: guestEmail.value.trim(),

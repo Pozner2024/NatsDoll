@@ -13,7 +13,6 @@ export function makeGuestCheckout(
   getProductsForCheckout: GetProductsForCheckout,
   authRepo: Pick<AuthRepository, 'findByEmail' | 'createGuestUser' | 'saveRefreshToken' | 'pruneUserSessions'>,
   issueTokens: typeof issueTokensForUser,
-  requestPasswordReset: (email: string) => Promise<unknown>,
 ): GuestCheckout {
   return async (input) => {
     if (input.items.length === 0) {
@@ -44,13 +43,9 @@ export function makeGuestCheckout(
     if (existing) {
       // На неаутентифицированном пути НИКОГДА не выдаём сессию в существующий аккаунт и не
       // оформляем под ним заказ — иначе любой, кто введёт чужой email, получил бы доступ к
-      // данным владельца (account takeover). Гостю без способа входа шлём ссылку задать пароль,
-      // чтобы он мог войти и оформить заказ сам.
-      if (!existing.passwordHash && !existing.googleId) {
-        // best-effort: сбой отправки не должен превращать детерминированный 409 в 500.
-        await requestPasswordReset(input.email).catch(() => undefined)
-      }
-      throw new AppError(409, 'An account with this email exists. Please sign in or check your email.')
+      // данным владельца (account takeover). Гостю без способа войти фронт предложит прислать
+      // ссылку для входа через штатный (rate-limited) /auth-эндпоинт сброса пароля.
+      throw new AppError(409, 'An account with this email exists. Please sign in.')
     }
     const user = await authRepo.createGuestUser({ name: input.shippingAddress.fullName, email: input.email })
 

@@ -16,11 +16,10 @@ function deps() {
       saveRefreshToken: vi.fn(), pruneUserSessions: vi.fn(),
     },
     issueTokens: vi.fn().mockResolvedValue({ accessToken: 'AT', refreshToken: 'RT', user: { id: 'u1', name: 'Anna', email: 'a@b.com', role: 'CUSTOMER' } }),
-    requestPasswordReset: vi.fn().mockResolvedValue({ message: 'ok' }),
   }
 }
 function make(d: ReturnType<typeof deps>) {
-  return makeGuestCheckout(d.orderRepo as never, d.getActiveSale as never, d.getProductsForCheckout as never, d.authRepo as never, d.issueTokens as never, d.requestPasswordReset as never)
+  return makeGuestCheckout(d.orderRepo as never, d.getActiveSale as never, d.getProductsForCheckout as never, d.authRepo as never, d.issueTokens as never)
 }
 
 describe('guestCheckout', () => {
@@ -30,31 +29,28 @@ describe('guestCheckout', () => {
     expect(d.authRepo.createGuestUser).toHaveBeenCalledWith({ name: 'Anna', email: 'a@b.com' })
     expect(d.orderRepo.createOrderFromItems).toHaveBeenCalled()
     expect(res.tokens.accessToken).toBe('AT')
-    expect(d.requestPasswordReset).not.toHaveBeenCalled()
   })
 
-  it('rejects with 409 when the email belongs to a real account (has password) and sends no reset link', async () => {
+  it('rejects with 409 when the email belongs to a real account (has password)', async () => {
     const d = deps()
     d.authRepo.findByEmail.mockResolvedValue({ id: 'u9', email: 'a@b.com', passwordHash: 'h', googleId: null })
     await expect(make(d)({ email: 'a@b.com', shippingAddress: address, items: [{ productId: 'p1', quantity: 1, message: null }] })).rejects.toThrow()
     expect(d.orderRepo.createOrderFromItems).not.toHaveBeenCalled()
-    expect(d.requestPasswordReset).not.toHaveBeenCalled()
+    expect(d.issueTokens).not.toHaveBeenCalled()
   })
 
-  it('rejects with 409 for a Google-only account and sends no reset link', async () => {
+  it('rejects with 409 for a Google-only account', async () => {
     const d = deps()
     d.authRepo.findByEmail.mockResolvedValue({ id: 'u9', email: 'a@b.com', passwordHash: null, googleId: 'g1' })
     await expect(make(d)({ email: 'a@b.com', shippingAddress: address, items: [{ productId: 'p1', quantity: 1, message: null }] })).rejects.toThrow()
     expect(d.orderRepo.createOrderFromItems).not.toHaveBeenCalled()
     expect(d.issueTokens).not.toHaveBeenCalled()
-    expect(d.requestPasswordReset).not.toHaveBeenCalled()
   })
 
-  it('NEVER issues a session into an existing passwordless guest account; emails a set-password link instead', async () => {
+  it('NEVER issues a session into or places an order under an existing passwordless guest account', async () => {
     const d = deps()
     d.authRepo.findByEmail.mockResolvedValue({ id: 'u1', email: 'a@b.com', name: 'Anna', passwordHash: null, googleId: null })
     await expect(make(d)({ email: 'a@b.com', shippingAddress: address, items: [{ productId: 'p1', quantity: 1, message: null }] })).rejects.toThrow()
-    expect(d.requestPasswordReset).toHaveBeenCalledWith('a@b.com')
     expect(d.orderRepo.createOrderFromItems).not.toHaveBeenCalled()
     expect(d.issueTokens).not.toHaveBeenCalled()
     expect(d.authRepo.createGuestUser).not.toHaveBeenCalled()
