@@ -12,6 +12,9 @@ const orderIdSchema = z.object({ orderId: z.string().min(1) })
 const claimSchema = z.object({ orderId: z.string().min(1), paypalOrderId: z.string().min(1) })
 
 const paymentLimiter = createRateLimiter({ max: 20, windowMs: 60_000 })
+// Публичный эндпоинт зовёт PayPal: лимит щедрый (под легитимную частоту доставок),
+// но не бесконечный — чтобы спам с мусорными заголовками не жёг наши OAuth/verify-запросы.
+const webhookLimiter = createRateLimiter({ max: 60, windowMs: 60_000 })
 
 export function makePaymentRouter(
   getPaymentConfig: GetPaymentConfig,
@@ -24,9 +27,9 @@ export function makePaymentRouter(
 
   router.get('/config', async (c) => c.json(await getPaymentConfig()))
 
-  // PayPal зовёт этот эндпоинт сам: без requireAuth и без rate-limit, защита — только
-  // проверка подписи внутри handlePaypalWebhook. Нужен сырой body для верификации.
-  router.post('/paypal/webhook', async (c) => {
+  // PayPal зовёт этот эндпоинт сам: без requireAuth, защита — проверка подписи внутри
+  // handlePaypalWebhook. Rate-limit ограничивает усиление через мусорные вызовы. Нужен сырой body.
+  router.post('/paypal/webhook', webhookLimiter.middleware, async (c) => {
     const rawBody = await c.req.text()
     const result = await handlePaypalWebhook(rawBody, {
       transmissionId: c.req.header('paypal-transmission-id') ?? '',

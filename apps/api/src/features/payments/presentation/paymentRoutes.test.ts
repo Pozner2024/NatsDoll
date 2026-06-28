@@ -66,4 +66,15 @@ describe('payment routes — публичность и auth-гейт', () => {
     expect(res.status).toBe(200)
     expect(webhook).toHaveBeenCalled()
   })
+
+  it('POST /paypal/webhook — rate-limited (429 после превышения лимита)', async () => {
+    const { app } = makeApp()
+    const headers = { 'Content-Type': 'application/json', 'x-real-ip': '203.0.113.7' }
+    const body = JSON.stringify({ event_type: 'PAYMENT.CAPTURE.COMPLETED' })
+    let last = 0
+    for (let i = 0; i < 61; i++) {
+      last = (await app.request('/payments/paypal/webhook', { method: 'POST', headers, body })).status
+    }
+    expect(last).toBe(429)
+  })
 })
