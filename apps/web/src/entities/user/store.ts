@@ -43,10 +43,21 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = token
   }
 
-  function setAuth(token: string, nextUser: User) {
+  // mergeGuestCart=true по умолчанию: при любом обычном входе (login, Google,
+  // verify-email, reset-password, а также silent-refresh в _doInitAuth) гостевую
+  // корзину сливаем с серверной. При пустом гостевом localStorage merge сводится
+  // к обычной загрузке (no-op), поэтому перезагрузка страницы безопасна.
+  // Guest-checkout передаёт false — там товары уже ушли в заказ, повторное
+  // слияние задвоило бы их и расход стока.
+  function setAuth(token: string, nextUser: User, options?: { mergeGuestCart?: boolean }) {
     accessToken.value = token
     user.value = nextUser
-    void useCartStore().load(true)
+    const cartStore = useCartStore()
+    if (options?.mergeGuestCart === false) {
+      void cartStore.load(true)
+    } else {
+      void cartStore.mergeGuestCart()
+    }
     void useFavoritesStore().load(true)
   }
 

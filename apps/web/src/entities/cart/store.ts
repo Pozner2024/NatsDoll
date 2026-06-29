@@ -97,6 +97,41 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // Вызывается из setAuth при входе: переносит гостевую корзину (localStorage)
+  // в серверную, затем грузит серверную. Товар, который не влез в сток или
+  // недоступен, молча пропускается — вход не должен падать из-за корзины.
+  // Идёт через enqueue, чтобы сериализоваться с пользовательскими мутациями.
+  async function mergeGuestCart(): Promise<void> {
+    const pending = loadGuestItems()
+    if (pending.length === 0) {
+      await load(true)
+      return
+    }
+    loading.value = true
+    error.value = null
+    try {
+      const finalCart = await enqueue(async () => {
+        let latest: Cart | null = null
+        for (const g of pending) {
+          try {
+            latest = await addCartItem({ productId: g.productId, quantity: g.quantity, message: g.message })
+          } catch {
+            // товар недоступен/без стока — пропускаем
+          }
+        }
+        return latest ?? await fetchCart()
+      })
+      cart.value = finalCart
+      clearGuestItems()
+      guestItemsRef.value = []
+      loaded = true
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to load cart'
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function add(input: {
     productId: string
     quantity: number
@@ -165,6 +200,7 @@ export const useCartStore = defineStore('cart', () => {
     loading: readonly(loading),
     error: readonly(error),
     load,
+    mergeGuestCart,
     add,
     update,
     remove,

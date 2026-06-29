@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { apiFetch, apiErrorMessage } from '@/shared'
 import { useAuthStore } from '@/entities/user'
+import { useCartStore } from '@/entities/cart'
 
 export class GuestEmailTakenError extends Error {
   constructor() {
@@ -50,7 +51,11 @@ export async function createGuestOrder(input: GuestOrderInput): Promise<{ orderI
   }
 
   const body = guestOrderResponseSchema.parse(await res.json())
-  useAuthStore().setAuth(body.accessToken, body.user)
+  // Гостевые товары уже committed в созданный заказ — чистим localStorage сразу,
+  // чтобы при брошенной оплате они не «осиротели» и не слились повторно при
+  // следующем входе. setAuth с mergeGuestCart:false поэтому грузит серверную корзину.
+  useCartStore().reset()
+  useAuthStore().setAuth(body.accessToken, body.user, { mergeGuestCart: false })
 
   return { orderId: body.order.id, orderNumber: body.order.orderNumber }
 }

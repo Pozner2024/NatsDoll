@@ -222,3 +222,104 @@ describe('cartStore — guest mode (localStorage)', () => {
     expect(api.removeCartItem).not.toHaveBeenCalled()
   })
 })
+
+// ---------------------------------------------------------------------------
+// Merge on login (guest localStorage → server cart)
+// ---------------------------------------------------------------------------
+describe('cartStore — mergeGuestCart', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    localStorage.clear()
+  })
+
+  it('pushes each guest item to server, clears localStorage, keeps server cart', async () => {
+    // Гость кладёт два товара
+    authState.isLoggedIn = false
+    const guest = useCartStore()
+    await guest.add({ productId: 'p1', quantity: 2, message: 'Hi', productName: 'A', productImage: null, productPrice: 10 })
+    await guest.add({ productId: 'p2', quantity: 1, message: null, productName: 'B', productImage: null, productPrice: 20 })
+
+    // Логинится — новый стор, серверный режим
+    setActivePinia(createPinia())
+    authState.isLoggedIn = true
+    // Каждый addCartItem возвращает нарастающую корзину — итоговой должна стать
+    // та, что вернул ПОСЛЕДНИЙ успешный вызов.
+    vi.mocked(api.addCartItem)
+      .mockResolvedValueOnce({
+        items: [{ id: 'ci-1', productId: 'p1', productSlug: 'p', productName: 'A', productImage: null, unitPrice: 10, quantity: 2, subtotal: 20, message: 'Hi' }],
+        totalAmount: 20,
+        itemCount: 2,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          { id: 'ci-1', productId: 'p1', productSlug: 'p', productName: 'A', productImage: null, unitPrice: 10, quantity: 2, subtotal: 20, message: 'Hi' },
+          { id: 'ci-2', productId: 'p2', productSlug: 'p', productName: 'B', productImage: null, unitPrice: 20, quantity: 1, subtotal: 20, message: null },
+        ],
+        totalAmount: 40,
+        itemCount: 3,
+      })
+
+    const store = useCartStore()
+    await store.mergeGuestCart()
+
+    expect(api.addCartItem).toHaveBeenCalledTimes(2)
+    expect(api.addCartItem).toHaveBeenNthCalledWith(1, { productId: 'p1', quantity: 2, message: 'Hi' })
+    expect(api.addCartItem).toHaveBeenNthCalledWith(2, { productId: 'p2', quantity: 1, message: null })
+    expect(api.fetchCart).not.toHaveBeenCalled()
+    expect(store.itemCount).toBe(3)
+    expect(localStorage.getItem('natsdoll_guest_cart')).toBeNull()
+  })
+
+  it('falls back to plain load when no guest items', async () => {
+    authState.isLoggedIn = true
+    vi.mocked(api.fetchCart).mockResolvedValue({ items: [], totalAmount: 0, itemCount: 0 })
+    const store = useCartStore()
+    await store.mergeGuestCart()
+    expect(api.addCartItem).not.toHaveBeenCalled()
+    expect(api.fetchCart).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips an out-of-stock guest item but merges the rest', async () => {
+    authState.isLoggedIn = false
+    const guest = useCartStore()
+    await guest.add({ productId: 'p1', quantity: 1, message: null, productName: 'A', productImage: null, productPrice: 10 })
+    await guest.add({ productId: 'p2', quantity: 1, message: null, productName: 'B', productImage: null, productPrice: 20 })
+
+    setActivePinia(createPinia())
+    authState.isLoggedIn = true
+    vi.mocked(api.addCartItem)
+      .mockRejectedValueOnce(new Error('Not enough stock'))
+      .mockResolvedValueOnce({
+        items: [{ id: 'ci-2', productId: 'p2', productSlug: 'p', productName: 'B', productImage: null, unitPrice: 20, quantity: 1, subtotal: 20, message: null }],
+        totalAmount: 20,
+        itemCount: 1,
+      })
+
+    const store = useCartStore()
+    await store.mergeGuestCart()
+
+    expect(api.addCartItem).toHaveBeenCalledTimes(2)
+    expect(store.itemCount).toBe(1)
+    expect(localStorage.getItem('natsdoll_guest_cart')).toBeNull()
+  })
+
+  it('keeps guest localStorage intact when merge fully fails', async () => {
+    authState.isLoggedIn = false
+    const guest = useCartStore()
+    await guest.add({ productId: 'p1', quantity: 1, message: null, productName: 'A', productImage: null, productPrice: 10 })
+
+    setActivePinia(createPinia())
+    authState.isLoggedIn = true
+    vi.mocked(api.addCartItem).mockRejectedValue(new Error('Not enough stock'))
+    vi.mocked(api.fetchCart).mockRejectedValue(new Error('Network down'))
+
+    const store = useCartStore()
+    await store.mergeGuestCart()
+
+    expect(store.error).toBe('Network down')
+    // localStorage не очищен — гостевые товары не потеряны
+    const stored = JSON.parse(localStorage.getItem('natsdoll_guest_cart')!)
+    expect(stored).toHaveLength(1)
+  })
+})
