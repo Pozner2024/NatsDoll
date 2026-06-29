@@ -162,9 +162,7 @@ const error = computed(() => orderStore.error)
 const claimed = ref(false)
 
 onMounted(() => {
-  if (!order.value || order.value.id !== props.orderId) {
-    orderStore.loadOrder(props.orderId)
-  }
+  orderStore.loadOrder(props.orderId)
 })
 
 async function onPaid() {
