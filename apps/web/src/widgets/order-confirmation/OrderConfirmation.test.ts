@@ -8,6 +8,7 @@ const state: { currentOrder: unknown; loading: boolean; error: string | null } =
   loading: false,
   error: null,
 }
+const routeQuery: { value: Record<string, string> } = { value: {} }
 
 vi.mock('@/entities/order', () => ({
   useOrderStore: () => ({
@@ -20,6 +21,11 @@ vi.mock('@/entities/order', () => ({
 
 vi.mock('@/features/paypal-payment', () => ({
   PaypalPayment: { name: 'PaypalPayment', template: '<div class="paypal-stub" />' },
+}))
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: routeQuery.value }),
+  RouterLink: { name: 'RouterLink', template: '<a><slot /></a>' },
 }))
 
 function makeOrder(status: string) {
@@ -37,7 +43,7 @@ function makeOrder(status: string) {
 function mountIt() {
   return mount(OrderConfirmation, {
     props: { orderId: 'o1' },
-    global: { stubs: { AppButton: true, RouterLink: true } },
+    global: { stubs: { AppButton: true } },
   })
 }
 
@@ -46,6 +52,7 @@ beforeEach(() => {
   state.currentOrder = null
   state.loading = false
   state.error = null
+  routeQuery.value = {}
 })
 
 describe('OrderConfirmation', () => {
@@ -70,5 +77,14 @@ describe('OrderConfirmation', () => {
     expect(wrapper.find('.order-confirmation__payment').exists()).toBe(false)
     expect(wrapper.find('.paypal-stub').exists()).toBe(false)
     expect(wrapper.find('.order-confirmation__subtitle').text()).toContain('Thank you')
+  })
+
+  it('PENDING + ?claimed=1 (client-режим) → «оплата проверяется», без кнопок оплаты', () => {
+    state.currentOrder = makeOrder('PENDING')
+    routeQuery.value = { claimed: '1' }
+    const wrapper = mountIt()
+    expect(wrapper.find('.order-confirmation__payment').exists()).toBe(true)
+    expect(wrapper.find('.paypal-stub').exists()).toBe(false)
+    expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('being verified')
   })
 })

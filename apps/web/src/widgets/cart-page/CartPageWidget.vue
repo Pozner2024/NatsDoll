@@ -144,8 +144,8 @@
             :amount-usd="grandTotal"
             :on-validate="validateAddress"
             :prepare-order="prepareOrder"
-            @paid="goToReceipt"
-            @claimed="goToReceipt"
+            @paid="goToReceipt(false)"
+            @claimed="goToReceipt(true)"
           />
           <AppButton
             v-else
@@ -260,10 +260,14 @@ async function prepareOrder() {
   return prepare(address)
 }
 
-function goToReceipt(): void {
+function goToReceipt(claimed: boolean): void {
   if (!pending.value) return
   cartStore.reset()
-  router.push({ name: 'order-confirmation', params: { id: pending.value.orderId } })
+  router.push({
+    name: 'order-confirmation',
+    params: { id: pending.value.orderId },
+    ...(claimed ? { query: { claimed: '1' } } : {}),
+  })
 }
 
 async function placeOrderFallback(): Promise<void> {

@@ -148,18 +148,19 @@
 
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
 import { useOrderStore } from '@/entities/order'
 import { PaypalPayment } from '@/features/paypal-payment'
 
 const props = defineProps<{ orderId: string }>()
 
+const route = useRoute()
 const orderStore = useOrderStore()
 const order = computed(() => orderStore.currentOrder)
 const loading = computed(() => orderStore.loading)
 const error = computed(() => orderStore.error)
-const claimed = ref(false)
+const claimed = ref(route.query.claimed === '1')
 
 onMounted(() => {
   orderStore.loadOrder(props.orderId)
