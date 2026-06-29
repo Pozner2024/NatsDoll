@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test('shop catalog golden path', async ({ page }) => {
   await page.goto('/shop')
+  await page.waitForLoadState('networkidle')
 
   await expect(page.getByRole('heading', { name: 'The shop' })).toBeVisible()
   await expect(page.locator('.category-pills__pill').first()).toBeVisible()
@@ -16,10 +17,10 @@ test('shop catalog golden path', async ({ page }) => {
   await expect(page).not.toHaveURL(/page=/)
 
   const firstCard = page.locator('.product-card').first()
-  const productHref = await firstCard.locator('a.product-card__link').getAttribute('href')
+  const productHref = await firstCard.locator('a.product-card__image-link').getAttribute('href')
   expect(productHref).toMatch(/^\/product\/.+/)
 
-  await firstCard.locator('a.product-card__link').click()
+  await firstCard.locator('a.product-card__image-link').click()
   await expect(page).toHaveURL(new RegExp(productHref!.replace(/[/]/g, '\\/')))
 
   await page.goBack()

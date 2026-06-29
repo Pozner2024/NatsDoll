@@ -5,6 +5,7 @@ const NEWSLETTER_URL = '**/newsletter/subscribe'
 test.describe('Newsletter subscribe', () => {
   test('успешная подписка показывает сообщение об успехе', async ({ page }) => {
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
     await page.route(NEWSLETTER_URL, (route) =>
       route.fulfill({ status: 200, body: '' })
     )
@@ -19,6 +20,7 @@ test.describe('Newsletter subscribe', () => {
 
   test('ошибка сервера показывает сообщение об ошибке', async ({ page }) => {
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
     await page.route(NEWSLETTER_URL, (route) =>
       route.fulfill({
         status: 400,
@@ -41,6 +43,7 @@ test.describe('Newsletter subscribe', () => {
     const requestHeld = new Promise<void>((res) => { resolveRequest = res })
 
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
     await page.locator('[data-testid="newsletter-email"]').scrollIntoViewIfNeeded()
 
     await page.route(NEWSLETTER_URL, async (route) => {
