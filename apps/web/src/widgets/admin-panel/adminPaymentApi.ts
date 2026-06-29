@@ -1,22 +1,32 @@
 import { z } from 'zod'
 import { authFetch, apiErrorMessage } from '@/shared'
 
-const settingsSchema = z.object({
-  enabled: z.boolean(),
-  mode: z.enum(['SANDBOX', 'LIVE']),
+const modeCredsSchema = z.object({
   clientId: z.string().nullable(),
   hasSecret: z.boolean(),
   webhookId: z.string().nullable(),
 })
 
+const settingsSchema = z.object({
+  enabled: z.boolean(),
+  mode: z.enum(['SANDBOX', 'LIVE']),
+  sandbox: modeCredsSchema,
+  live: modeCredsSchema,
+})
+
 export type PaymentSettings = z.infer<typeof settingsSchema>
+
+export interface UpdateModeCredsBody {
+  clientId: string | null
+  secret?: string | null
+  webhookId?: string | null
+}
 
 export interface UpdatePaymentSettingsBody {
   enabled: boolean
   mode: 'SANDBOX' | 'LIVE'
-  clientId: string | null
-  secret?: string | null
-  webhookId?: string | null
+  sandbox: UpdateModeCredsBody
+  live: UpdateModeCredsBody
 }
 
 export async function fetchPaymentSettings(): Promise<PaymentSettings> {

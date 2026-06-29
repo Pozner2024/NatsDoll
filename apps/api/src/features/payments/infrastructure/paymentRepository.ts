@@ -10,34 +10,59 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
     async getSettings() {
       const s = await prisma.paymentSettings.findUnique({ where: { id: SETTINGS_ID } })
       if (!s) return null
+      const isLive = s.mode === 'LIVE'
       return {
         enabled: s.enabled,
         mode: s.mode as PaymentMode,
-        clientId: s.paypalClientId,
-        secret: s.paypalSecret,
-        webhookId: s.paypalWebhookId,
+        clientId: isLive ? s.liveClientId : s.sandboxClientId,
+        secret: isLive ? s.liveSecret : s.sandboxSecret,
+        webhookId: isLive ? s.liveWebhookId : s.sandboxWebhookId,
+      }
+    },
+
+    async getAdminSettings() {
+      const s = await prisma.paymentSettings.findUnique({ where: { id: SETTINGS_ID } })
+      if (!s) return null
+      return {
+        enabled: s.enabled,
+        mode: s.mode as PaymentMode,
+        sandboxClientId: s.sandboxClientId,
+        sandboxSecret: s.sandboxSecret,
+        sandboxWebhookId: s.sandboxWebhookId,
+        liveClientId: s.liveClientId,
+        liveSecret: s.liveSecret,
+        liveWebhookId: s.liveWebhookId,
       }
     },
 
     async upsertSettings(data) {
-      const secretUpdate = data.secret === undefined ? {} : { paypalSecret: data.secret }
-      const webhookUpdate = data.webhookId === undefined ? {} : { paypalWebhookId: data.webhookId }
+      const { sandbox, live } = data
+      const sandboxSecretUpdate = sandbox.secret === undefined ? {} : { sandboxSecret: sandbox.secret }
+      const sandboxWebhookUpdate = sandbox.webhookId === undefined ? {} : { sandboxWebhookId: sandbox.webhookId }
+      const liveSecretUpdate = live.secret === undefined ? {} : { liveSecret: live.secret }
+      const liveWebhookUpdate = live.webhookId === undefined ? {} : { liveWebhookId: live.webhookId }
       await prisma.paymentSettings.upsert({
         where: { id: SETTINGS_ID },
         create: {
           id: SETTINGS_ID,
           enabled: data.enabled,
           mode: data.mode,
-          paypalClientId: data.clientId,
-          paypalSecret: data.secret ?? null,
-          paypalWebhookId: data.webhookId ?? null,
+          sandboxClientId: sandbox.clientId,
+          sandboxSecret: sandbox.secret ?? null,
+          sandboxWebhookId: sandbox.webhookId ?? null,
+          liveClientId: live.clientId,
+          liveSecret: live.secret ?? null,
+          liveWebhookId: live.webhookId ?? null,
         },
         update: {
           enabled: data.enabled,
           mode: data.mode,
-          paypalClientId: data.clientId,
-          ...secretUpdate,
-          ...webhookUpdate,
+          sandboxClientId: sandbox.clientId,
+          ...sandboxSecretUpdate,
+          ...sandboxWebhookUpdate,
+          liveClientId: live.clientId,
+          ...liveSecretUpdate,
+          ...liveWebhookUpdate,
         },
       })
     },

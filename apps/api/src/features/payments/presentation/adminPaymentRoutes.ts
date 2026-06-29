@@ -5,12 +5,17 @@ import { requireAuth, requireAdmin } from '../../../shared/middleware'
 import type { GetPaymentSettings } from '../application/getPaymentSettings'
 import type { UpdatePaymentSettings } from '../application/updatePaymentSettings'
 
-const updateSchema = z.object({
-  enabled: z.boolean(),
-  mode: z.enum(['SANDBOX', 'LIVE']),
+const modeCredsSchema = z.object({
   clientId: z.string().max(200).nullable(),
   secret: z.string().max(200).nullable().optional(),
   webhookId: z.string().max(200).nullable().optional(),
+})
+
+const updateSchema = z.object({
+  enabled: z.boolean(),
+  mode: z.enum(['SANDBOX', 'LIVE']),
+  sandbox: modeCredsSchema,
+  live: modeCredsSchema,
 })
 
 export function makeAdminPaymentRouter(

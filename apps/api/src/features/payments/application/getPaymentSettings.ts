@@ -4,10 +4,16 @@ export type GetPaymentSettings = () => Promise<PaymentSettingsView>
 
 export function makeGetPaymentSettings(repo: PaymentRepository): GetPaymentSettings {
   return async () => {
-    const s = await repo.getSettings()
+    const s = await repo.getAdminSettings()
     if (!s) {
-      return { enabled: false, mode: 'SANDBOX', clientId: null, hasSecret: false, webhookId: null }
+      const empty = { clientId: null, hasSecret: false, webhookId: null }
+      return { enabled: false, mode: 'SANDBOX', sandbox: { ...empty }, live: { ...empty } }
     }
-    return { enabled: s.enabled, mode: s.mode, clientId: s.clientId, hasSecret: s.secret !== null, webhookId: s.webhookId }
+    return {
+      enabled: s.enabled,
+      mode: s.mode,
+      sandbox: { clientId: s.sandboxClientId, hasSecret: s.sandboxSecret !== null, webhookId: s.sandboxWebhookId },
+      live: { clientId: s.liveClientId, hasSecret: s.liveSecret !== null, webhookId: s.liveWebhookId },
+    }
   }
 }

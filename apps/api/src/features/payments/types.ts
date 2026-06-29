@@ -34,20 +34,30 @@ export interface PaypalClient {
 }
 
 // --- Settings ---
-export interface PaymentSettingsView {
-  enabled: boolean
-  mode: PaymentMode
+export interface ModeCredsView {
   clientId: string | null
   hasSecret: boolean
   webhookId: string | null
 }
 
-export interface UpdatePaymentSettingsInput {
+export interface PaymentSettingsView {
   enabled: boolean
   mode: PaymentMode
+  sandbox: ModeCredsView
+  live: ModeCredsView
+}
+
+export interface UpdateModeCredsInput {
   clientId: string | null
   secret?: string | null
   webhookId?: string | null
+}
+
+export interface UpdatePaymentSettingsInput {
+  enabled: boolean
+  mode: PaymentMode
+  sandbox: UpdateModeCredsInput
+  live: UpdateModeCredsInput
 }
 
 export interface PublicPaymentConfig {
@@ -67,9 +77,34 @@ export interface OrderForPayment {
   paypalOrderId: string | null
 }
 
+export interface AdminPaymentSettings {
+  enabled: boolean
+  mode: PaymentMode
+  sandboxClientId: string | null
+  sandboxSecret: string | null
+  sandboxWebhookId: string | null
+  liveClientId: string | null
+  liveSecret: string | null
+  liveWebhookId: string | null
+}
+
+export interface UpsertModeCreds {
+  clientId: string | null
+  secret: string | null | undefined
+  webhookId: string | null | undefined
+}
+
+export interface UpsertPaymentSettingsData {
+  enabled: boolean
+  mode: PaymentMode
+  sandbox: UpsertModeCreds
+  live: UpsertModeCreds
+}
+
 export interface PaymentRepository {
   getSettings(): Promise<{ enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null; webhookId: string | null } | null>
-  upsertSettings(data: { enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null | undefined; webhookId: string | null | undefined }): Promise<void>
+  getAdminSettings(): Promise<AdminPaymentSettings | null>
+  upsertSettings(data: UpsertPaymentSettingsData): Promise<void>
   getOrderForPayment(orderId: string): Promise<OrderForPayment | null>
   getOrderForPaymentByNumber(orderNumber: number): Promise<OrderForPayment | null>
   setPaypalOrderId(orderId: string, paypalOrderId: string): Promise<void>

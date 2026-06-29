@@ -21,59 +21,77 @@
       </label>
 
       <label class="payment-settings__field">
-        <span class="payment-settings__label">Режим</span>
+        <span class="payment-settings__label">Активный режим</span>
         <select v-model="form.mode">
           <option value="SANDBOX">Sandbox (тест)</option>
           <option value="LIVE">Live (боевой)</option>
         </select>
-      </label>
-
-      <label class="payment-settings__field">
-        <span class="payment-settings__label">PayPal Client ID</span>
-        <input
-          v-model="form.clientId"
-          type="text"
-          autocomplete="off"
-        >
-      </label>
-
-      <label class="payment-settings__field">
-        <span class="payment-settings__label">PayPal Secret</span>
-        <input
-          v-model="secretInput"
-          type="password"
-          autocomplete="off"
-          :disabled="clearSecret"
-          :placeholder="hasSecret ? 'Secret задан — оставьте пустым, чтобы не менять' : 'Оставьте пустым, если не используете'"
-        >
         <small class="payment-settings__hint">
-          {{ hasSecret ? 'Secret задан. Оставьте поле пустым, чтобы не менять.' : 'С Secret оплата подтверждается автоматически; без него — вручную по сверке.' }}
+          Ключи Sandbox и Live хранятся раздельно — переключение режима не стирает ни один набор.
         </small>
       </label>
 
-      <label
-        v-if="hasSecret"
-        class="payment-settings__row"
+      <fieldset
+        v-for="m in modeSections"
+        :key="m.key"
+        class="payment-settings__section"
+        :class="{ 'payment-settings__section--active': form.mode === m.mode }"
       >
-        <input
-          v-model="clearSecret"
-          type="checkbox"
-        >
-        <span>Удалить сохранённый Secret (перейти в ручной режим)</span>
-      </label>
+        <legend class="payment-settings__section-title">
+          {{ m.label }}
+          <span
+            v-if="form.mode === m.mode"
+            class="payment-settings__badge"
+          >активный</span>
+        </legend>
 
-      <label class="payment-settings__field">
-        <span class="payment-settings__label">PayPal Webhook ID</span>
-        <input
-          v-model="form.webhookId"
-          type="text"
-          autocomplete="off"
-          placeholder="Из PayPal Dashboard → Webhooks"
+        <label class="payment-settings__field">
+          <span class="payment-settings__label">PayPal Client ID</span>
+          <input
+            v-model="form[m.key].clientId"
+            type="text"
+            autocomplete="off"
+          >
+        </label>
+
+        <label class="payment-settings__field">
+          <span class="payment-settings__label">PayPal Secret</span>
+          <input
+            v-model="form[m.key].secretInput"
+            type="password"
+            autocomplete="off"
+            :disabled="form[m.key].clearSecret"
+            :placeholder="form[m.key].hasSecret ? 'Secret задан — оставьте пустым, чтобы не менять' : 'Оставьте пустым, если не используете'"
+          >
+          <small class="payment-settings__hint">
+            {{ form[m.key].hasSecret ? 'Secret задан. Оставьте поле пустым, чтобы не менять.' : 'С Secret оплата подтверждается автоматически; без него — вручную по сверке.' }}
+          </small>
+        </label>
+
+        <label
+          v-if="form[m.key].hasSecret"
+          class="payment-settings__row"
         >
-        <small class="payment-settings__hint">
-          Подтверждает оплату, даже если покупатель закрыл вкладку после оплаты. Оставьте пустым, чтобы выключить.
-        </small>
-      </label>
+          <input
+            v-model="form[m.key].clearSecret"
+            type="checkbox"
+          >
+          <span>Удалить сохранённый Secret (перейти в ручной режим)</span>
+        </label>
+
+        <label class="payment-settings__field">
+          <span class="payment-settings__label">PayPal Webhook ID</span>
+          <input
+            v-model="form[m.key].webhookId"
+            type="text"
+            autocomplete="off"
+            placeholder="Из PayPal Dashboard → Webhooks"
+          >
+          <small class="payment-settings__hint">
+            Подтверждает оплату, даже если покупатель закрыл вкладку после оплаты. Оставьте пустым, чтобы выключить.
+          </small>
+        </label>
+      </fieldset>
 
       <button
         class="payment-settings__save"
@@ -103,24 +121,68 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { fetchPaymentSettings, savePaymentSettings } from '../adminPaymentApi'
+import type { PaymentSettings, UpdateModeCredsBody } from '../adminPaymentApi'
 
-const form = reactive({ enabled: false, mode: 'SANDBOX' as 'SANDBOX' | 'LIVE', clientId: '', webhookId: '' })
-const secretInput = ref('')
-const clearSecret = ref(false)
-const hasSecret = ref(false)
+type ModeForm = {
+  clientId: string
+  webhookId: string
+  secretInput: string
+  clearSecret: boolean
+  hasSecret: boolean
+}
+
+const modeSections = [
+  { key: 'sandbox', mode: 'SANDBOX', label: 'Sandbox (тест)' },
+  { key: 'live', mode: 'LIVE', label: 'Live (боевой)' },
+] as const
+
+function emptyModeForm(): ModeForm {
+  return { clientId: '', webhookId: '', secretInput: '', clearSecret: false, hasSecret: false }
+}
+
+const form = reactive({
+  enabled: false,
+  mode: 'SANDBOX' as 'SANDBOX' | 'LIVE',
+  sandbox: emptyModeForm(),
+  live: emptyModeForm(),
+})
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const saved = ref(false)
+
+function applySection(target: ModeForm, src: PaymentSettings['sandbox']): void {
+  target.clientId = src.clientId ?? ''
+  target.webhookId = src.webhookId ?? ''
+  target.hasSecret = src.hasSecret
+  target.secretInput = ''
+  target.clearSecret = false
+}
+
+function credsBody(m: ModeForm): UpdateModeCredsBody {
+  // null — очистить (ручной режим); undefined — не трогать; строка — заменить.
+  let secret: string | null | undefined
+  if (m.clearSecret) {
+    secret = null
+  } else if (m.secretInput === '') {
+    secret = undefined
+  } else {
+    secret = m.secretInput
+  }
+  return {
+    clientId: m.clientId.trim() === '' ? null : m.clientId.trim(),
+    secret,
+    webhookId: m.webhookId.trim() === '' ? null : m.webhookId.trim(),
+  }
+}
 
 onMounted(async () => {
   try {
     const s = await fetchPaymentSettings()
     form.enabled = s.enabled
     form.mode = s.mode
-    form.clientId = s.clientId ?? ''
-    form.webhookId = s.webhookId ?? ''
-    hasSecret.value = s.hasSecret
+    applySection(form.sandbox, s.sandbox)
+    applySection(form.live, s.live)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Ошибка загрузки'
   } finally {
@@ -133,25 +195,14 @@ async function onSave() {
   error.value = ''
   saved.value = false
   try {
-    // null — очистить (ручной режим); undefined — не трогать; строка — заменить.
-    let secret: string | null | undefined
-    if (clearSecret.value) {
-      secret = null
-    } else if (secretInput.value === '') {
-      secret = undefined
-    } else {
-      secret = secretInput.value
-    }
     const s = await savePaymentSettings({
       enabled: form.enabled,
       mode: form.mode,
-      clientId: form.clientId.trim() === '' ? null : form.clientId.trim(),
-      secret,
-      webhookId: form.webhookId.trim() === '' ? null : form.webhookId.trim(),
+      sandbox: credsBody(form.sandbox),
+      live: credsBody(form.live),
     })
-    hasSecret.value = s.hasSecret
-    secretInput.value = ''
-    clearSecret.value = false
+    applySection(form.sandbox, s.sandbox)
+    applySection(form.live, s.live)
     saved.value = true
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Ошибка'
@@ -188,6 +239,39 @@ async function onSave() {
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 14px 16px;
+    border: 1px solid rgb(44 24 16 / 0.15);
+    border-radius: 8px;
+
+    &--active {
+      border-color: var(--color-accent);
+      background: rgb(44 24 16 / 0.03);
+    }
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  &__badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    font-size: 0.68rem;
+    font-weight: 500;
   }
 
   &__field {

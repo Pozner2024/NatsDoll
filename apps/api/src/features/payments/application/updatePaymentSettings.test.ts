@@ -1,15 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { makeUpdatePaymentSettings } from './updatePaymentSettings'
 import { decryptSecret } from '../infrastructure/secretCrypto'
-import type { PaymentRepository } from '../types'
+import type { PaymentRepository, UpsertPaymentSettingsData } from '../types'
 
 beforeEach(() => { process.env.PAYMENT_ENCRYPTION_KEY = '0'.repeat(64) })
 
-function repoStub(): PaymentRepository & { saved: unknown } {
+function repoStub(): PaymentRepository & { saved: UpsertPaymentSettingsData | null } {
   const r = {
-    saved: null as unknown,
+    saved: null as UpsertPaymentSettingsData | null,
     async getSettings() { return null },
-    async upsertSettings(data: unknown) { r.saved = data },
+    async getAdminSettings() { return null },
+    async upsertSettings(data: UpsertPaymentSettingsData) { r.saved = data },
     async getOrderForPayment() { return null },
     async getOrderForPaymentByNumber() { return null },
     async setPaypalOrderId() {},
@@ -18,27 +19,68 @@ function repoStub(): PaymentRepository & { saved: unknown } {
   return r
 }
 
+const emptyCreds = { clientId: null, secret: undefined, webhookId: undefined }
+
 describe('updatePaymentSettings', () => {
-  it('encrypts secret before saving', async () => {
+  it('encrypts each mode secret independently before saving', async () => {
     const repo = repoStub()
     const update = makeUpdatePaymentSettings(repo)
-    await update({ enabled: false, mode: 'SANDBOX', clientId: 'cid', secret: 'plain-secret' })
-    const saved = repo.saved as { secret?: string }
-    const stored = saved.secret as string
-    expect(stored).not.toBe('plain-secret')
-    expect(decryptSecret(stored)).toBe('plain-secret')
+    await update({
+      enabled: false,
+      mode: 'SANDBOX',
+      sandbox: { clientId: 'sb-cid', secret: 'sandbox-secret', webhookId: undefined },
+      live: { clientId: 'lv-cid', secret: 'live-secret', webhookId: undefined },
+    })
+    const saved = repo.saved!
+    expect(saved.sandbox.secret).not.toBe('sandbox-secret')
+    expect(decryptSecret(saved.sandbox.secret as string)).toBe('sandbox-secret')
+    expect(decryptSecret(saved.live.secret as string)).toBe('live-secret')
   })
 
-  it('rejects enabling without clientId', async () => {
+  it('rejects enabling when the ACTIVE mode has no clientId (sandbox set, live empty)', async () => {
     const repo = repoStub()
     const update = makeUpdatePaymentSettings(repo)
-    await expect(update({ enabled: true, mode: 'LIVE', clientId: null, secret: undefined })).rejects.toThrow()
+    await expect(update({
+      enabled: true,
+      mode: 'LIVE',
+      sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
+      live: { clientId: null, secret: undefined, webhookId: undefined },
+    })).rejects.toThrow()
   })
 
-  it('passes secret:undefined through (keep existing)', async () => {
+  it('allows enabling when the active mode has a clientId', async () => {
     const repo = repoStub()
     const update = makeUpdatePaymentSettings(repo)
-    await update({ enabled: false, mode: 'SANDBOX', clientId: 'cid', secret: undefined })
-    expect((repo.saved as { secret?: unknown }).secret).toBeUndefined()
+    await update({
+      enabled: true,
+      mode: 'SANDBOX',
+      sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
+      live: { ...emptyCreds },
+    })
+    expect(repo.saved!.enabled).toBe(true)
+  })
+
+  it('passes secret:undefined through (keep existing) per mode', async () => {
+    const repo = repoStub()
+    const update = makeUpdatePaymentSettings(repo)
+    await update({
+      enabled: false,
+      mode: 'SANDBOX',
+      sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
+      live: { ...emptyCreds },
+    })
+    expect(repo.saved!.sandbox.secret).toBeUndefined()
+  })
+
+  it('passes secret:null through as clear', async () => {
+    const repo = repoStub()
+    const update = makeUpdatePaymentSettings(repo)
+    await update({
+      enabled: false,
+      mode: 'SANDBOX',
+      sandbox: { clientId: 'sb-cid', secret: null, webhookId: undefined },
+      live: { ...emptyCreds },
+    })
+    expect(repo.saved!.sandbox.secret).toBeNull()
   })
 })
