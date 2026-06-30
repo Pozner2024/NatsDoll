@@ -10,6 +10,7 @@ export type ProductListItem = {
   image: string | null
   stock: number
   categoryId?: string
+  hasMessage?: boolean
 }
 
 export type ProductListResponse = {

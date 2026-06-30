@@ -110,7 +110,7 @@ export const useCartStore = defineStore('cart', () => {
     loading.value = true
     error.value = null
     try {
-      const finalCart = await enqueue(async () => {
+      const merged = await enqueue(async () => {
         let latest: Cart | null = null
         for (const g of pending) {
           try {
@@ -119,9 +119,15 @@ export const useCartStore = defineStore('cart', () => {
             // товар недоступен/без стока — пропускаем
           }
         }
-        return latest ?? await fetchCart()
+        return latest
       })
-      cart.value = finalCart
+      // Ни один товар не удалось перенести — не трогаем гостевую корзину, иначе
+      // она пропадёт молча. Показываем текущую серверную корзину как есть.
+      if (merged === null) {
+        await load(true)
+        return
+      }
+      cart.value = merged
       clearGuestItems()
       guestItemsRef.value = []
       loaded = true

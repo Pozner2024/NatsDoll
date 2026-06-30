@@ -42,7 +42,7 @@ describe('productRepository.findMany', () => {
   it('filters by isPublished and deletedAt and applies pagination', async () => {
     const prisma = makePrismaMock()
     vi.mocked(prisma.product.findMany).mockResolvedValue([
-      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: ['img1'], stock: 1 } as never,
+      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: ['img1'], stock: 1, messageOptions: [] } as never,
     ])
     vi.mocked(prisma.product.count).mockResolvedValue(1)
 
@@ -56,7 +56,7 @@ describe('productRepository.findMany', () => {
     expect(calledWith.orderBy).toEqual({ createdAt: 'desc' })
     expect(result.total).toBe(1)
     expect(result.items).toEqual([
-      { id: 'p1', slug: 'p-1', name: 'P1', price: 10, image: 'img1', stock: 1 },
+      { id: 'p1', slug: 'p-1', name: 'P1', price: 10, image: 'img1', stock: 1, hasMessage: false },
     ])
   })
 
@@ -116,7 +116,7 @@ describe('productRepository.findMany', () => {
   it('returns null image when images array is empty', async () => {
     const prisma = makePrismaMock()
     vi.mocked(prisma.product.findMany).mockResolvedValue([
-      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: [], stock: 1 } as never,
+      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: [], stock: 1, messageOptions: [] } as never,
     ])
     vi.mocked(prisma.product.count).mockResolvedValue(1)
 
@@ -124,6 +124,19 @@ describe('productRepository.findMany', () => {
     const result = await repo.findMany({ sort: 'newest', page: 1, limit: 12 })
 
     expect(result.items[0]!.image).toBeNull()
+  })
+
+  it('sets hasMessage=true when the product has messageOptions', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 'p1', slug: 'p-1', name: 'P1', price: { toNumber: () => 10 } as never, images: ['img1'], stock: 1, messageOptions: ['Happy birthday!'] } as never,
+    ])
+    vi.mocked(prisma.product.count).mockResolvedValue(1)
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findMany({ sort: 'newest', page: 1, limit: 12 })
+
+    expect(result.items[0]!.hasMessage).toBe(true)
   })
 })
 

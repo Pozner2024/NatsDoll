@@ -100,6 +100,13 @@ const cartPrompt = useCartPrompt()
 const router = useRouter()
 
 async function onAdd() {
+  // Товар с выбором надписи нельзя добавить из карточки — надпись выбирается
+  // на странице товара. Туда и ведём (иначе гость положил бы товар без надписи,
+  // а сервер при оформлении/слиянии его отверг бы).
+  if (props.product.hasMessage) {
+    await router.push(`/product/${props.product.slug}`)
+    return
+  }
   try {
     await cartStore.add({
       productId: props.product.id,

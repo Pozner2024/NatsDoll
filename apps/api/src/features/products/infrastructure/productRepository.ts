@@ -9,6 +9,7 @@ const PRODUCT_SELECT = {
   images: true,
   stock: true,
   categoryId: true,
+  messageOptions: true,
 } as const
 
 function orderByForSort(sort: ProductSortOrder): Prisma.ProductOrderByWithRelationInput {
@@ -46,6 +47,7 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
         image: r.images[0] ?? null,
         stock: r.stock,
         categoryId: r.categoryId,
+        hasMessage: r.messageOptions.length > 0,
       }))
 
       return { items, total }

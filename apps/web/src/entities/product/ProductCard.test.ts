@@ -73,4 +73,12 @@ describe('ProductCard', () => {
     expect(wrapper.find('button.product-card__btn').exists()).toBe(true)
   })
 
+  it('navigates to the product page instead of adding when the product needs a message', async () => {
+    const wrapper = mountCard({ ...baseProduct, hasMessage: true })
+    const router = wrapper.vm.$router
+    await wrapper.find('button.product-card__btn').trigger('click')
+    await router.isReady()
+    expect(router.currentRoute.value.path).toBe('/product/sleeping-bunny')
+  })
+
 })

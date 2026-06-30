@@ -304,6 +304,26 @@ describe('cartStore — mergeGuestCart', () => {
     expect(localStorage.getItem('natsdoll_guest_cart')).toBeNull()
   })
 
+  it('keeps guest localStorage when every item is rejected (no silent loss)', async () => {
+    // Все товары отвергнуты сервером (например, требуют надписи → 400), но сама
+    // серверная корзина читается успешно. Раньше localStorage стирался и корзина
+    // пропадала молча — теперь, раз не слит ни один товар, гостевую корзину не трогаем.
+    authState.isLoggedIn = false
+    const guest = useCartStore()
+    await guest.add({ productId: 'p1', quantity: 1, message: null, productName: 'A', productImage: null, productPrice: 10 })
+
+    setActivePinia(createPinia())
+    authState.isLoggedIn = true
+    vi.mocked(api.addCartItem).mockRejectedValue(new Error('Message is required for this product'))
+    vi.mocked(api.fetchCart).mockResolvedValue({ items: [], totalAmount: 0, itemCount: 0 })
+
+    const store = useCartStore()
+    await store.mergeGuestCart()
+
+    const stored = JSON.parse(localStorage.getItem('natsdoll_guest_cart')!)
+    expect(stored).toHaveLength(1)
+  })
+
   it('keeps guest localStorage intact when merge fully fails', async () => {
     authState.isLoggedIn = false
     const guest = useCartStore()

@@ -9,6 +9,7 @@ export type Product = {
   salePercent?: number
   image: string | null
   stock: number
+  hasMessage?: boolean
 }
 
 export type ProductListResponse = {

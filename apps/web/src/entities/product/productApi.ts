@@ -11,6 +11,7 @@ const ProductSchema = z.object({
   salePercent: z.number().optional(),
   image: z.string().nullable(),
   stock: z.number().int().min(0),
+  hasMessage: z.boolean().optional(),
 }) satisfies z.ZodType<Product>
 
 const ProductListResponseSchema = z.object({
