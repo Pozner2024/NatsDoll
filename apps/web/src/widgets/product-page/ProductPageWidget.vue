@@ -65,8 +65,7 @@ import { useRoute, RouterLink } from 'vue-router'
 import { useAsyncData, createError, useSeoMeta, useHead, useRuntimeConfig } from 'nuxt/app'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import { useCartStore } from '@/entities/cart'
-import { useAuthStore } from '@/entities/user'
-import { useAuthModal, useCartPrompt, metaDescription, DEFAULT_OG_IMAGE } from '@/shared'
+import { useCartPrompt, metaDescription, DEFAULT_OG_IMAGE } from '@/shared'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -176,23 +175,19 @@ const productForFavorite = computed<Product | undefined>(() => {
 })
 
 const cartStore = useCartStore()
-const authStore = useAuthStore()
-const authModal = useAuthModal()
 const cartPrompt = useCartPrompt()
 const productInfoRef = ref<{ resetAdding: () => void } | null>(null)
 
 async function onAddToCart(payload: { quantity: number; message: string | null }): Promise<void> {
   try {
-    if (!authStore.isLoggedIn) {
-      authModal.open()
-      productInfoRef.value?.resetAdding()
-      return
-    }
     if (!product.value) return
     await cartStore.add({
       productId: product.value.id,
       quantity: payload.quantity,
       message: payload.message,
+      productName: product.value.name,
+      productImage: product.value.images[0] ?? null,
+      productPrice: product.value.salePrice ?? product.value.price,
     })
     cartPrompt.open()
   } catch (e) {

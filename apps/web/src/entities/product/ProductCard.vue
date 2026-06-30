@@ -90,25 +90,25 @@
 import { RouterLink, useRouter } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
 import { useCartStore } from '@/entities/cart'
-import { useAuthStore } from '@/entities/user'
-import { useAuthModal, useCartPrompt } from '@/shared'
+import { useCartPrompt } from '@/shared'
 import type { Product } from './types'
 
 const props = defineProps<{ product: Product; hideButton?: boolean }>()
 
 const cartStore = useCartStore()
-const authStore = useAuthStore()
-const authModal = useAuthModal()
 const cartPrompt = useCartPrompt()
 const router = useRouter()
 
 async function onAdd() {
-  if (!authStore.isLoggedIn) {
-    authModal.open()
-    return
-  }
   try {
-    await cartStore.add({ productId: props.product.id, quantity: 1, message: null })
+    await cartStore.add({
+      productId: props.product.id,
+      quantity: 1,
+      message: null,
+      productName: props.product.name,
+      productImage: props.product.image,
+      productPrice: props.product.salePrice ?? props.product.price,
+    })
     cartPrompt.open()
   } catch {
     await router.push(`/product/${props.product.slug}`)

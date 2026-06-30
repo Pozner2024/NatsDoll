@@ -282,7 +282,7 @@ async function placeOrderFallback(): Promise<void> {
   placingOrder.value = true
   try {
     const order = await prepareOrder()
-    if (order) goToReceipt()
+    if (order) goToReceipt(false)
   } finally {
     placingOrder.value = false
   }
