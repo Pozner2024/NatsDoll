@@ -32,6 +32,7 @@ export type OrderDetail = {
   shippingAddress: ShippingAddress
   trackingNumber: string | null
   createdAt: string
+  paymentClaimed: boolean
   items: OrderItemView[]
 }
 

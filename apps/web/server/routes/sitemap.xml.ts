@@ -14,11 +14,16 @@ export default defineEventHandler(async (event) => {
     $fetch<SitemapCategory[]>(`${apiBase}/categories`),
   ])
 
+  const latestMod = products
+    .map((p) => p.updatedAt.slice(0, 10))
+    .sort()
+    .at(-1)
+
   const urls = [
-    urlTag(`${siteUrl}/`),
-    urlTag(`${siteUrl}/gallery`),
-    urlTag(`${siteUrl}/shop`),
-    ...categories.map((c) => urlTag(`${siteUrl}/shop/${c.slug}`)),
+    urlTag(`${siteUrl}/`, latestMod),
+    urlTag(`${siteUrl}/gallery`, latestMod),
+    urlTag(`${siteUrl}/shop`, latestMod),
+    ...categories.map((c) => urlTag(`${siteUrl}/shop/${c.slug}`, latestMod)),
     ...products.map((p) => urlTag(`${siteUrl}/product/${p.slug}`, p.updatedAt.slice(0, 10))),
   ]
 

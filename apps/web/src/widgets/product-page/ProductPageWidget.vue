@@ -185,6 +185,7 @@ async function onAddToCart(payload: { quantity: number; message: string | null }
       productId: product.value.id,
       quantity: payload.quantity,
       message: payload.message,
+      productSlug: product.value.slug,
       productName: product.value.name,
       productImage: product.value.images[0] ?? null,
       productPrice: product.value.salePrice ?? product.value.price,

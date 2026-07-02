@@ -26,7 +26,7 @@ function toCartItem(g: GuestCartItem): CartItem {
   return {
     id: g.productId,
     productId: g.productId,
-    productSlug: '',
+    productSlug: g.productSlug,
     productName: g.productName,
     productImage: g.productImage,
     unitPrice: g.productPrice,
@@ -110,26 +110,36 @@ export const useCartStore = defineStore('cart', () => {
     loading.value = true
     error.value = null
     try {
-      const merged = await enqueue(async () => {
+      const { latest, kept } = await enqueue(async () => {
         let latest: Cart | null = null
+        const kept: GuestCartItem[] = []
         for (const g of pending) {
           try {
             latest = await addCartItem({ productId: g.productId, quantity: g.quantity, message: g.message })
-          } catch {
-            // товар недоступен/без стока — пропускаем
+          } catch (e) {
+            // 4xx — товар постоянно неприменим (нет стока/недоступен/нужна надпись): отбрасываем.
+            // 5xx или сетевая ошибка (статуса нет) — транзиент: сохраняем, чтобы не потерять молча.
+            const status = (e as { status?: number }).status
+            if (status === undefined || status >= 500) kept.push(g)
           }
         }
-        return latest
+        return { latest, kept }
       })
       // Ни один товар не удалось перенести — не трогаем гостевую корзину, иначе
       // она пропадёт молча. Показываем текущую серверную корзину как есть.
-      if (merged === null) {
+      if (latest === null) {
         await load(true)
         return
       }
-      cart.value = merged
-      clearGuestItems()
-      guestItemsRef.value = []
+      cart.value = latest
+      // Успешные удалены; в гостевой корзине оставляем только упавшие по транзиентной ошибке.
+      if (kept.length > 0) {
+        saveGuestItems(kept)
+        guestItemsRef.value = kept
+      } else {
+        clearGuestItems()
+        guestItemsRef.value = []
+      }
       loaded = true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load cart'
@@ -142,6 +152,7 @@ export const useCartStore = defineStore('cart', () => {
     productId: string
     quantity: number
     message: string | null
+    productSlug?: string
     productName?: string
     productImage?: string | null
     productPrice?: number
@@ -150,6 +161,7 @@ export const useCartStore = defineStore('cart', () => {
     if (!auth.isLoggedIn) {
       const updated = addGuestItem(guestItemsRef.value, {
         productId: input.productId,
+        productSlug: input.productSlug ?? '',
         quantity: input.quantity,
         message: input.message,
         productName: input.productName ?? '',

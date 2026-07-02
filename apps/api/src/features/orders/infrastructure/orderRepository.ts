@@ -230,6 +230,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           shippingAddress: true,
           trackingNumber: true,
           createdAt: true,
+          paypalOrderId: true,
           items: {
             select: {
               id: true,
@@ -266,6 +267,7 @@ type OrderRow = {
   shippingAddress: unknown
   trackingNumber: string | null
   createdAt: Date
+  paypalOrderId?: string | null
   items: Array<{
     id: string
     quantity: number
@@ -303,6 +305,7 @@ function toOrderDetail(order: OrderRow): OrderDetail {
     shippingAddress: order.shippingAddress as ShippingAddress,
     trackingNumber: order.trackingNumber,
     createdAt: order.createdAt.toISOString(),
+    paymentClaimed: order.paypalOrderId != null,
     items,
   }
 }

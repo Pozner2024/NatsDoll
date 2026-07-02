@@ -166,14 +166,19 @@ const order = computed(() => {
 const loading = computed(() => orderStore.loading)
 const error = computed(() => orderStore.error)
 
-const claimed = ref(false)
+// Источник истины — персистентный order.paymentClaimed: заказ, по которому платёж
+// уже заявлен (client-mode claim, статус ещё PENDING до ручной проверки), не должен
+// снова показывать кнопку оплаты, иначе пройдёт повторное списание. Локальный ref —
+// лишь мгновенная реакция на @claimed до перезагрузки заказа.
+const locallyClaimed = ref(false)
+const claimed = computed(() => locallyClaimed.value || order.value?.paymentClaimed === true)
 
 async function onPaid() {
   await orderStore.loadOrder(route.params.id as string)
 }
 
 function onClaimed() {
-  claimed.value = true
+  locallyClaimed.value = true
 }
 
 watch(

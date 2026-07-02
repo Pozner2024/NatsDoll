@@ -3,7 +3,7 @@ import { makeGuestCheckout } from './guestCheckout'
 
 const product = { id: 'p1', name: 'Doll', price: 16, stock: 5, isPublished: true, deletedAt: null, categoryId: 'c1' }
 const address = { fullName: 'Anna', line1: '1 St', city: 'NY', country: 'US', postalCode: '10001' }
-const order = { id: 'o1', orderNumber: 7, userId: 'u1', status: 'PENDING', totalAmount: 28, shippingCost: 12, shippingAddress: address, trackingNumber: null, createdAt: '2026-06-27T00:00:00Z', items: [] }
+const order = { id: 'o1', orderNumber: 7, userId: 'u1', status: 'PENDING', totalAmount: 28, shippingCost: 12, shippingAddress: address, trackingNumber: null, createdAt: '2026-06-27T00:00:00Z', paymentClaimed: false, items: [] }
 
 function deps() {
   return {

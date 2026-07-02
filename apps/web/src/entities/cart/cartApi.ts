@@ -33,7 +33,11 @@ export async function addCartItem(input: {
   message: string | null
 }): Promise<Cart> {
   const res = await authFetch('/cart/items', { method: 'POST', json: input })
-  if (!res.ok) throw new Error(await apiErrorMessage(res, 'Failed to add to cart'))
+  if (!res.ok) {
+    const error = new Error(await apiErrorMessage(res, 'Failed to add to cart'))
+    ;(error as Error & { status?: number }).status = res.status
+    throw error
+  }
   return CartSchema.parse(await res.json())
 }
 

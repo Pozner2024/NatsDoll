@@ -28,13 +28,14 @@ vi.mock('vue-router', () => ({
   RouterLink: { name: 'RouterLink', template: '<a><slot /></a>' },
 }))
 
-function makeOrder(status: string) {
+function makeOrder(status: string, paymentClaimed = false) {
   return {
     id: 'o1',
     orderNumber: 17,
     status,
     totalAmount: 29,
     shippingCost: 12,
+    paymentClaimed,
     items: [{ id: 'i1', productSlug: 'p', productName: 'P', productImage: null, subtotal: 17, quantity: 1, message: null }],
     shippingAddress: { fullName: 'N', line1: '1 St', city: 'NYC', postalCode: '10001', country: 'US' },
   }
@@ -84,6 +85,15 @@ describe('OrderConfirmation', () => {
     routeQuery.value = { claimed: '1' }
     const wrapper = mountIt()
     expect(wrapper.find('.order-confirmation__payment').exists()).toBe(true)
+    expect(wrapper.find('.paypal-stub').exists()).toBe(false)
+    expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('being verified')
+  })
+
+  it('PENDING + paymentClaimed без ?claimed=1 → оплата скрыта (защита от повторного списания)', () => {
+    // Заход из «My orders»/dashboard без query: источник истины — order.paymentClaimed,
+    // иначе повторно показалась бы кнопка оплаты уже оплаченного (client-mode) заказа.
+    state.currentOrder = makeOrder('PENDING', true)
+    const wrapper = mountIt()
     expect(wrapper.find('.paypal-stub').exists()).toBe(false)
     expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('being verified')
   })

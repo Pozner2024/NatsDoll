@@ -28,6 +28,7 @@ export type OrderDetail = {
   shippingCost: number
   shippingAddress: ShippingAddress
   createdAt: string
+  paymentClaimed: boolean
   items: OrderItemView[]
 }
 

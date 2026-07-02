@@ -1,5 +1,6 @@
 export type GuestCartItem = {
   productId: string
+  productSlug: string
   quantity: number
   message: string | null
   productName: string
@@ -47,6 +48,7 @@ export function addGuestItem(
   items: GuestCartItem[],
   input: {
     productId: string
+    productSlug: string
     quantity: number
     message: string | null
     productName: string

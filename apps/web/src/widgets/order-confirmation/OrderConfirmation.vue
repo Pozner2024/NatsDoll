@@ -160,7 +160,12 @@ const orderStore = useOrderStore()
 const order = computed(() => orderStore.currentOrder)
 const loading = computed(() => orderStore.loading)
 const error = computed(() => orderStore.error)
-const claimed = ref(route.query.claimed === '1')
+// Источник истины — персистентный order.paymentClaimed (иначе при заходе на ещё
+// PENDING заказ без ?claimed=1 — из «My orders» или после reload — снова покажется
+// кнопка оплаты и пройдёт повторное списание). Query и локальный ref дают лишь
+// мгновенную обратную связь до перезагрузки заказа.
+const locallyClaimed = ref(route.query.claimed === '1')
+const claimed = computed(() => locallyClaimed.value || order.value?.paymentClaimed === true)
 
 onMounted(() => {
   orderStore.loadOrder(props.orderId)
@@ -171,7 +176,7 @@ async function onPaid() {
 }
 
 function onClaimed() {
-  claimed.value = true
+  locallyClaimed.value = true
 }
 </script>
 

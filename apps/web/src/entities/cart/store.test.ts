@@ -289,7 +289,7 @@ describe('cartStore — mergeGuestCart', () => {
     setActivePinia(createPinia())
     authState.isLoggedIn = true
     vi.mocked(api.addCartItem)
-      .mockRejectedValueOnce(new Error('Not enough stock'))
+      .mockRejectedValueOnce(Object.assign(new Error('Not enough stock'), { status: 409 }))
       .mockResolvedValueOnce({
         items: [{ id: 'ci-2', productId: 'p2', productSlug: 'p', productName: 'B', productImage: null, unitPrice: 20, quantity: 1, subtotal: 20, message: null }],
         totalAmount: 20,
@@ -302,6 +302,34 @@ describe('cartStore — mergeGuestCart', () => {
     expect(api.addCartItem).toHaveBeenCalledTimes(2)
     expect(store.itemCount).toBe(1)
     expect(localStorage.getItem('natsdoll_guest_cart')).toBeNull()
+  })
+
+  it('keeps an item that failed with a transient (5xx) error during a partial merge', async () => {
+    authState.isLoggedIn = false
+    const guest = useCartStore()
+    await guest.add({ productId: 'p1', quantity: 1, message: null, productName: 'A', productImage: null, productPrice: 10 })
+    await guest.add({ productId: 'p2', quantity: 1, message: null, productName: 'B', productImage: null, productPrice: 20 })
+
+    setActivePinia(createPinia())
+    authState.isLoggedIn = true
+    // p1 падает по серверной ошибке (500) — транзиент, товар нельзя терять.
+    // p2 переносится успешно.
+    vi.mocked(api.addCartItem)
+      .mockRejectedValueOnce(Object.assign(new Error('Server error'), { status: 500 }))
+      .mockResolvedValueOnce({
+        items: [{ id: 'ci-2', productId: 'p2', productSlug: 'p', productName: 'B', productImage: null, unitPrice: 20, quantity: 1, subtotal: 20, message: null }],
+        totalAmount: 20,
+        itemCount: 1,
+      })
+
+    const store = useCartStore()
+    await store.mergeGuestCart()
+
+    // Серверная корзина обновлена перенесённым p2, а p1 сохранён в гостевой корзине.
+    expect(store.itemCount).toBe(1)
+    const stored = JSON.parse(localStorage.getItem('natsdoll_guest_cart')!)
+    expect(stored).toHaveLength(1)
+    expect(stored[0].productId).toBe('p1')
   })
 
   it('keeps guest localStorage when every item is rejected (no silent loss)', async () => {

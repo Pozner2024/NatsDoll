@@ -112,6 +112,7 @@ async function onAdd() {
       productId: props.product.id,
       quantity: 1,
       message: null,
+      productSlug: props.product.slug,
       productName: props.product.name,
       productImage: props.product.image,
       productPrice: props.product.salePrice ?? props.product.price,

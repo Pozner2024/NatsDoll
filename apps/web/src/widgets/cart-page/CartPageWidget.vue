@@ -290,7 +290,7 @@ async function placeOrderFallback(): Promise<void> {
 
 onMounted(async () => {
   if (!authStore.authReady) await authStore.initAuth()
-  if (authStore.isLoggedIn) await cartStore.load()
+  await cartStore.load()
   try {
     paymentConfig.value = await fetchPaymentConfig()
   } catch {
