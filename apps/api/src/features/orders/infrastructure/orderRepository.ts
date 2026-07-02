@@ -112,6 +112,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
             shippingAddress: true,
             trackingNumber: true,
             createdAt: true,
+            paymentClaimed: true,
             items: {
               select: {
                 id: true,
@@ -172,7 +173,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           },
           select: {
             id: true, orderNumber: true, shippingCost: true, userId: true, status: true,
-            totalAmount: true, shippingAddress: true, trackingNumber: true, createdAt: true,
+            totalAmount: true, shippingAddress: true, trackingNumber: true, createdAt: true, paymentClaimed: true,
             items: {
               select: {
                 id: true, quantity: true, price: true, originalPrice: true, message: true,
@@ -230,7 +231,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           shippingAddress: true,
           trackingNumber: true,
           createdAt: true,
-          paypalOrderId: true,
+          paymentClaimed: true,
           items: {
             select: {
               id: true,
@@ -267,7 +268,7 @@ type OrderRow = {
   shippingAddress: unknown
   trackingNumber: string | null
   createdAt: Date
-  paypalOrderId?: string | null
+  paymentClaimed: boolean
   items: Array<{
     id: string
     quantity: number
@@ -305,7 +306,7 @@ function toOrderDetail(order: OrderRow): OrderDetail {
     shippingAddress: order.shippingAddress as ShippingAddress,
     trackingNumber: order.trackingNumber,
     createdAt: order.createdAt.toISOString(),
-    paymentClaimed: order.paypalOrderId != null,
+    paymentClaimed: order.paymentClaimed,
     items,
   }
 }

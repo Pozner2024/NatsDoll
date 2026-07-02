@@ -89,15 +89,28 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
       await prisma.order.update({ where: { id: orderId }, data: { paypalOrderId } })
     },
 
-    async markOrderPaid(orderId: string, captureId: string | null): Promise<void> {
-      await prisma.$transaction(async (tx) => {
+    async claimPaypalOrder(orderId: string, paypalOrderId: string): Promise<void> {
+      await prisma.order.update({ where: { id: orderId }, data: { paypalOrderId, paymentClaimed: true } })
+    },
+
+    async markOrderPaid(orderId: string, captureId: string | null): Promise<boolean> {
+      return prisma.$transaction(async (tx) => {
         const order = await tx.order.findUnique({
           where: { id: orderId },
-          select: { status: true, items: { select: { productId: true, quantity: true, product: { select: { name: true } } } } },
+          select: { status: true, adminNote: true, items: { select: { productId: true, quantity: true, product: { select: { name: true } } } } },
         })
         if (!order) throw new AppError(404, 'Order not found')
-        if (isPaidStatus(order.status)) return // идемпотентность: сток уже списан
-        if (isTerminalStatus(order.status)) return // CANCELLED/REFUNDED не воскрешаем в PAID
+        if (isPaidStatus(order.status)) return true // идемпотентность: сток уже списан
+        if (isTerminalStatus(order.status)) return false // CANCELLED/REFUNDED не воскрешаем в PAID
+
+        const { count: claimed } = await tx.order.updateMany({
+          where: { id: orderId, status: 'PENDING' },
+          data: { status: 'PAID', paypalCaptureId: captureId },
+        })
+        if (claimed === 0) {
+          const current = await tx.order.findUnique({ where: { id: orderId }, select: { status: true } })
+          return current !== null && isPaidStatus(current.status)
+        }
 
         const stockIssues: string[] = []
         for (const item of order.items) {
@@ -108,16 +121,14 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
           if (count === 0) stockIssues.push(item.product.name)
         }
 
-        await tx.order.update({
-          where: { id: orderId },
-          data: {
-            status: 'PAID',
-            paypalCaptureId: captureId,
-            ...(stockIssues.length > 0
-              ? { adminNote: `⚠ Проверить остаток: ${stockIssues.join(', ')}` }
-              : {}),
-          },
-        })
+        if (stockIssues.length > 0) {
+          const warning = `⚠ Проверить остаток: ${stockIssues.join(', ')}`
+          await tx.order.update({
+            where: { id: orderId },
+            data: { adminNote: order.adminNote ? `${order.adminNote}\n${warning}` : warning },
+          })
+        }
+        return true
       })
     },
   }

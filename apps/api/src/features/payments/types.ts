@@ -108,5 +108,6 @@ export interface PaymentRepository {
   getOrderForPayment(orderId: string): Promise<OrderForPayment | null>
   getOrderForPaymentByNumber(orderNumber: number): Promise<OrderForPayment | null>
   setPaypalOrderId(orderId: string, paypalOrderId: string): Promise<void>
-  markOrderPaid(orderId: string, captureId: string | null): Promise<void>
+  claimPaypalOrder(orderId: string, paypalOrderId: string): Promise<void>
+  markOrderPaid(orderId: string, captureId: string | null): Promise<boolean>
 }

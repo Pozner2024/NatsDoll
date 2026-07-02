@@ -2,10 +2,12 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { makeTestPrisma, truncateAll } from './dbHelpers'
 import { createCategory, createProduct, createUser, createCartWithItem } from './factories'
 import { makeOrderRepository } from '../../src/features/orders/infrastructure/orderRepository'
+import { makePaymentRepository } from '../../src/features/payments/infrastructure/paymentRepository'
 import type { ShippingAddress } from '../../src/features/orders/types'
 
 const prisma = makeTestPrisma()
 const repo = makeOrderRepository(prisma)
+const paymentRepo = makePaymentRepository(prisma)
 
 const address: ShippingAddress = {
   fullName: 'Test User',
@@ -72,5 +74,34 @@ describe('orderRepository.createOrderFromCart (integration)', () => {
 
     const after = await prisma.product.findUniqueOrThrow({ where: { id: product.id } })
     expect(after.stock).toBe(1)
+  })
+})
+
+describe('orderRepository paymentClaimed (integration)', () => {
+  async function pendingOrder() {
+    const category = await createCategory(prisma)
+    const product = await createProduct(prisma, category.id, { stock: 5 })
+    const user = await createUser(prisma)
+    await createCartWithItem(prisma, user.id, product.id, 1)
+    const items = await repo.getCartItemsForCheckout(user.id)
+    return repo.createOrderFromCart(user.id, items, 0, address, null)
+  }
+
+  it('is false for a server-flow order that only has paypalOrderId bound (abandoned popup can still pay)', async () => {
+    const order = await pendingOrder()
+
+    await paymentRepo.setPaypalOrderId(order.id, 'PP-SERVER')
+
+    const detail = await repo.getOrderById(order.id)
+    expect(detail?.paymentClaimed).toBe(false)
+  })
+
+  it('is true after a client-mode claim', async () => {
+    const order = await pendingOrder()
+
+    await paymentRepo.claimPaypalOrder(order.id, 'PP-CLIENT')
+
+    const detail = await repo.getOrderById(order.id)
+    expect(detail?.paymentClaimed).toBe(true)
   })
 })

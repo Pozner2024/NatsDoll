@@ -3,14 +3,17 @@ import { makeCaptureOrderCore, makeCapturePaypalPayment } from './capturePaypalP
 
 const order = { id: 'o1', userId: 'u1', orderNumber: 7, status: 'PENDING', totalAmount: 42.5, paypalOrderId: 'PP-1' }
 
-function deps(captureResult: unknown) {
+function deps(captureResult: unknown, orderStatusResult?: unknown) {
   return {
     repo: {
       getSettings: vi.fn().mockResolvedValue({ enabled: true, mode: 'SANDBOX', clientId: 'cid', secret: 'enc', webhookId: null }),
       getOrderForPayment: vi.fn().mockResolvedValue(order),
     },
-    paypal: { captureOrder: vi.fn().mockResolvedValue(captureResult) },
-    markOrderPaid: vi.fn().mockResolvedValue(undefined),
+    paypal: {
+      captureOrder: vi.fn().mockResolvedValue(captureResult),
+      getOrderStatus: vi.fn().mockResolvedValue(orderStatusResult ?? null),
+    },
+    markOrderPaid: vi.fn().mockResolvedValue(true),
     decrypt: vi.fn().mockReturnValue('plain'),
     emailService: { sendPaymentCaptureAlert: vi.fn().mockResolvedValue(undefined) },
   }
@@ -43,10 +46,25 @@ describe('captureOrderCore verification', () => {
     expect(d.markOrderPaid).not.toHaveBeenCalled()
   })
 
-  it('marks paid on idempotent ORDER_ALREADY_CAPTURED (amount null, verify skipped)', async () => {
-    const d = deps({ status: 'COMPLETED', captureId: null, amount: null, currencyCode: null, invoiceId: null })
+  it('re-verifies via getOrderStatus on ORDER_ALREADY_CAPTURED and marks paid when details match', async () => {
+    const d = deps(
+      { status: 'COMPLETED', captureId: null, amount: null, currencyCode: null, invoiceId: null },
+      { status: 'COMPLETED', captureId: 'CAP-7', amount: '42.50', currencyCode: 'USD', invoiceId: 'natsdoll-7' },
+    )
     await core(d)('o1')
-    expect(d.markOrderPaid).toHaveBeenCalledWith('o1', null)
+    expect(d.paypal.getOrderStatus).toHaveBeenCalledWith({ creds: { clientId: 'cid', secret: 'plain', mode: 'SANDBOX' }, paypalOrderId: 'PP-1' })
+    expect(d.markOrderPaid).toHaveBeenCalledWith('o1', 'CAP-7')
+  })
+
+  it('rejects ORDER_ALREADY_CAPTURED when getOrderStatus reveals a mismatching amount (claim-substitution attack)', async () => {
+    vi.stubEnv('ADMIN_EMAIL', 'admin@natsdoll.com')
+    const d = deps(
+      { status: 'COMPLETED', captureId: null, amount: null, currencyCode: null, invoiceId: null },
+      { status: 'COMPLETED', captureId: 'CAP-EVIL', amount: '0.01', currencyCode: 'USD', invoiceId: 'natsdoll-7' },
+    )
+    await expect(core(d)('o1')).rejects.toThrow('Payment verification failed')
+    expect(d.markOrderPaid).not.toHaveBeenCalled()
+    expect(d.emailService.sendPaymentCaptureAlert).toHaveBeenCalled()
   })
 
   it('returns COMPLETED without re-capturing an already paid order (idempotent)', async () => {
@@ -56,6 +74,14 @@ describe('captureOrderCore verification', () => {
     expect(res.status).toBe('COMPLETED')
     expect(d.paypal.captureOrder).not.toHaveBeenCalled()
     expect(d.markOrderPaid).not.toHaveBeenCalled()
+  })
+
+  it('alerts admin and rejects when the order went terminal while money was being captured', async () => {
+    vi.stubEnv('ADMIN_EMAIL', 'admin@natsdoll.com')
+    const d = deps({ status: 'COMPLETED', captureId: 'CAP-1', amount: '42.50', currencyCode: 'USD', invoiceId: 'natsdoll-7' })
+    d.markOrderPaid.mockResolvedValue(false)
+    await expect(core(d)('o1')).rejects.toThrow()
+    expect(d.emailService.sendPaymentCaptureAlert).toHaveBeenCalledWith('admin@natsdoll.com', 7, 'CAP-1', expect.any(String))
   })
 
   it('alerts admin and rethrows when markOrderPaid fails after a successful capture', async () => {

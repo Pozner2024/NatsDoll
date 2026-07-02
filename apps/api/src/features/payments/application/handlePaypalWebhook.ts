@@ -1,6 +1,7 @@
 import { AppError } from '../../../shared/errors'
+import type { EmailService } from '../../auth/infrastructure/emailService'
 import type { PaymentRepository, PaypalClient, PaypalWebhookHeaders } from '../types'
-import type { CaptureOrderCore } from './capturePaypalPayment'
+import { alertCaptureUnsettled, type CaptureOrderCore } from './capturePaypalPayment'
 
 export type HandlePaypalWebhook = (rawBody: string, headers: PaypalWebhookHeaders) => Promise<{ handled: boolean }>
 
@@ -28,6 +29,7 @@ export function makeHandlePaypalWebhook(
   paypal: Pick<PaypalClient, 'verifyWebhookSignature'>,
   captureOrderCore: CaptureOrderCore,
   decrypt: (s: string) => string,
+  emailService: Pick<EmailService, 'sendPaymentCaptureAlert'>,
 ): HandlePaypalWebhook {
   return async (rawBody, headers) => {
     const settings = await repo.getSettings()
@@ -38,6 +40,12 @@ export function makeHandlePaypalWebhook(
     // Эндпоинт неаутентифицирован: отсекаем заведомо «пустые» вызовы до обращения к PayPal,
     // чтобы спам не жёг наши OAuth/verify-запросы (amplification).
     if (!headers.transmissionId || !headers.transmissionSig || !headers.transmissionTime || !headers.certUrl || !headers.authAlgo) {
+      return { handled: false }
+    }
+    let event: WebhookEvent
+    try {
+      event = JSON.parse(rawBody) as WebhookEvent
+    } catch {
       return { handled: false }
     }
     // Подлинность входящего уведомления обязательна до любого касания заказа.
@@ -51,7 +59,6 @@ export function makeHandlePaypalWebhook(
       throw new AppError(401, 'Invalid webhook signature')
     }
 
-    const event = JSON.parse(rawBody) as WebhookEvent
     const orderNumber = extractOrderNumber(event)
     if (orderNumber === null) return { handled: false }
     const order = await repo.getOrderForPaymentByNumber(orderNumber)
@@ -75,9 +82,14 @@ export function makeHandlePaypalWebhook(
             currency: { expected: 'USD', actual: amount?.currency_code ?? null, ok: currencyMatches },
             invoice: { expected: `natsdoll-${order.orderNumber}`, actual: event.resource?.invoice_id ?? null, ok: invoiceMatches },
           })
+          await alertCaptureUnsettled(emailService, order.orderNumber, event.resource?.id ?? null, new AppError(409, 'Payment verification failed'))
           return { handled: false }
         }
-        await repo.markOrderPaid(order.id, event.resource?.id ?? null)
+        const paid = await repo.markOrderPaid(order.id, event.resource?.id ?? null)
+        if (!paid) {
+          await alertCaptureUnsettled(emailService, order.orderNumber, event.resource?.id ?? null, new AppError(409, 'Order went into a final state during payment'))
+          return { handled: false }
+        }
         return { handled: true }
       }
       default:

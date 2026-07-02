@@ -4,9 +4,13 @@ import type { PaymentRepository } from '../types'
 export type ClaimPaypalPayment = (userId: string, orderId: string, paypalOrderId: string) => Promise<void>
 
 export function makeClaimPaypalPayment(
-  repo: Pick<PaymentRepository, 'getOrderForPayment' | 'setPaypalOrderId'>,
+  repo: Pick<PaymentRepository, 'getSettings' | 'getOrderForPayment' | 'claimPaypalOrder'>,
 ): ClaimPaypalPayment {
   return async (userId, orderId, paypalOrderId) => {
+    const settings = await repo.getSettings()
+    if (!settings?.enabled || settings.secret) {
+      throw new AppError(409, 'Claim is not available')
+    }
     const order = await repo.getOrderForPayment(orderId)
     if (!order || order.userId !== userId) {
       throw new AppError(404, 'Order not found')
@@ -20,6 +24,6 @@ export function makeClaimPaypalPayment(
     if (order.paypalOrderId) {
       return
     }
-    await repo.setPaypalOrderId(orderId, paypalOrderId)
+    await repo.claimPaypalOrder(orderId, paypalOrderId)
   }
 }

@@ -14,7 +14,8 @@ function repoStub(): PaymentRepository & { saved: UpsertPaymentSettingsData | nu
     async getOrderForPayment() { return null },
     async getOrderForPaymentByNumber() { return null },
     async setPaypalOrderId() {},
-    async markOrderPaid() {},
+    async claimPaypalOrder() {},
+    async markOrderPaid() { return true },
   }
   return r
 }
