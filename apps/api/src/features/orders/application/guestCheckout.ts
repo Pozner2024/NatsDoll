@@ -1,6 +1,6 @@
 import { AppError } from '../../../shared/errors'
 import { calcShipping } from '../../../shared/lib'
-import type { OrderRepository, GuestCheckoutInput, GuestOrderItem, OrderDetail, CheckoutProduct, GetProductsForCheckout } from '../types'
+import type { OrderRepository, GuestCheckoutInput, GuestOrderItem, OrderDetail, GetProductsForCheckout } from '../types'
 import type { GetActiveSale } from '../../admin/types'
 import type { AuthRepository } from '../../auth/infrastructure/authRepository'
 import type { issueTokensForUser, AuthTokensResult } from '../../auth/application/issueTokens'

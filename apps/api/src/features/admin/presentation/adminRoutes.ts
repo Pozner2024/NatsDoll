@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { z } from 'zod/v3'
-import { zValidator } from '../../../shared/lib/zValidator'
+import { zValidator } from '../../../shared/lib'
 import { requireAdmin } from '../../../shared/middleware'
 import type {
   GetDashboard, MarkAllMessagesRead,
@@ -11,7 +11,7 @@ import type {
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
   ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
   GetAnalytics,
-  CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale, SaleInput,
+  CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale,
   UploadProductImage,
 } from '../types'
 

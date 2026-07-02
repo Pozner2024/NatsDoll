@@ -106,8 +106,8 @@ cd apps/web && NODE_OPTIONS=--max-old-space-size=4096 npx nuxt typecheck
 node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic
 # tests api (--root обязателен, иначе не грузится vitest.setup.ts с секретами)
 node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/api --reporter=basic
-# lint
-cd apps/web && npx eslint app src --max-warnings=0
+# lint (api + web; из корня — там eslint.config.js. Гейтит деплой в deploy.yml)
+npx eslint apps/api/src apps/web/app apps/web/src --max-warnings=0
 ```
 
 ## Security invariants

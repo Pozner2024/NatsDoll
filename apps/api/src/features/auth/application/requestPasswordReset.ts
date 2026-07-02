@@ -26,11 +26,11 @@ export function makeRequestPasswordReset(repo: AuthRepository, emailService: Ema
       // Google-аккаунт (passwordless, но с googleId) — у него есть вход, пароль не задаём.
       if (user.googleId) {
         await hash(`${DUMMY_HASH}${Date.now()}`).catch(() => undefined)
-        try {
-          await emailService.sendAccountExistsEmail(user.email, FRONTEND_URL)
-        } catch (err) {
+        // Отправка вне критического пути ответа: сетевой вызов Resend не должен
+        // выдавать таймингом, существует ли аккаунт (user enumeration).
+        void emailService.sendAccountExistsEmail(user.email, FRONTEND_URL).catch((err) => {
           console.error('[requestPasswordReset] failed to send account-exists email:', err)
-        }
+        })
         return { message: GENERIC_MESSAGE }
       }
       // Иначе это гость без пароля и без Google — разрешаем задать первый пароль (продолжаем ниже).
@@ -41,11 +41,9 @@ export function makeRequestPasswordReset(repo: AuthRepository, emailService: Ema
     const tokenHash = hashToken(rawToken)
     const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS)
     await repo.createPasswordReset({ userId: user.id, tokenHash, expiresAt })
-    try {
-      await emailService.sendPasswordResetEmail(user.email, `${FRONTEND_URL}/reset-password?token=${rawToken}`)
-    } catch (err) {
+    void emailService.sendPasswordResetEmail(user.email, `${FRONTEND_URL}/reset-password?token=${rawToken}`).catch((err) => {
       console.error('[requestPasswordReset] failed to send reset email:', err)
-    }
+    })
     return { message: GENERIC_MESSAGE }
   }
 }

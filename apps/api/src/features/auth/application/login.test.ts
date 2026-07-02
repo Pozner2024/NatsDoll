@@ -50,6 +50,7 @@ const mockRepo: AuthRepository = {
   deleteEmailVerification: vi.fn(),
   finalizeEmailVerification: vi.fn(),
   replaceEmailVerification: vi.fn(),
+  resetUnverifiedRegistration: vi.fn(),
   createPasswordReset: vi.fn(),
   findPasswordReset: vi.fn(),
   deletePasswordReset: vi.fn(),

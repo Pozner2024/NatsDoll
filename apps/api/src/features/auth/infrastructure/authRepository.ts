@@ -42,6 +42,8 @@ export type AuthRepository = {
   finalizeEmailVerification(userId: string, verificationId: string): Promise<void>
   /** Транзакционно удаляет старые EmailVerification юзера и создаёт новую. */
   replaceEmailVerification(userId: string, data: { tokenHash: string; expiresAt: Date }): Promise<void>
+  /** Повторная регистрация на неверифицированный аккаунт: атомарно перезаписывает name+passwordHash и заменяет verification (анти pre-account-hijacking). */
+  resetUnverifiedRegistration(userId: string, data: { name: string; passwordHash: string; verification: { tokenHash: string; expiresAt: Date } }): Promise<void>
   createPasswordReset(data: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>
   findPasswordReset(tokenHash: string): Promise<{ id: string; userId: string; expiresAt: Date } | null>
   deletePasswordReset(id: string): Promise<void>
@@ -177,6 +179,19 @@ export function makeAuthRepository(prisma: PrismaClient): AuthRepository {
         await tx.emailVerification.deleteMany({ where: { userId } })
         await tx.emailVerification.create({
           data: { userId, tokenHash: data.tokenHash, expiresAt: data.expiresAt },
+        })
+      })
+    },
+
+    resetUnverifiedRegistration(userId, data) {
+      return prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: userId },
+          data: { name: data.name, passwordHash: data.passwordHash },
+        })
+        await tx.emailVerification.deleteMany({ where: { userId } })
+        await tx.emailVerification.create({
+          data: { userId, tokenHash: data.verification.tokenHash, expiresAt: data.verification.expiresAt },
         })
       })
     },

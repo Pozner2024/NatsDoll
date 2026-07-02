@@ -2,9 +2,11 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { makeTestPrisma, truncateAll } from './dbHelpers'
 import { createCategory, createProduct, createUser } from './factories'
 import { makeAdminRepository } from '../../src/features/admin/infrastructure/adminRepository'
+import { makePaymentRepository } from '../../src/features/payments/infrastructure/paymentRepository'
 
 const prisma = makeTestPrisma()
 const repo = makeAdminRepository(prisma)
+const paymentRepo = makePaymentRepository(prisma)
 
 beforeAll(async () => {
   await prisma.$connect()
@@ -123,5 +125,19 @@ describe('adminRepository.updateAdminOrder — stock restore (integration)', () 
 
     const after = await prisma.product.findUniqueOrThrow({ where: { id: productId } })
     expect(after.stock).toBe(0)
+  })
+
+  it('does not double-decrement stock when admin marks PAID concurrently with a payment capture', async () => {
+    const { productId, orderId } = await seedPendingOrder(5, 2)
+
+    await Promise.all([
+      repo.updateAdminOrder(orderId, { status: 'PAID' }),
+      paymentRepo.markOrderPaid(orderId, 'CAP-RACE'),
+    ])
+
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: productId } })
+    expect(after.stock).toBe(3)
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId } })
+    expect(order.status).toBe('PAID')
   })
 })

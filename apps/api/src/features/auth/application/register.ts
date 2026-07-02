@@ -23,23 +23,27 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
     const existing = await repo.findByEmail(data.email)
 
     if (existing) {
-      await hash(data.password).catch(() => undefined)
       if (existing.emailVerified) {
-        try {
-          await emailService.sendAccountExistsEmail(existing.email, FRONTEND_URL)
-        } catch (err) {
+        await hash(data.password).catch(() => undefined)
+        // Вне критического пути ответа — чтобы тайминг Resend не выдавал существование аккаунта.
+        void emailService.sendAccountExistsEmail(existing.email, FRONTEND_URL).catch((err) => {
           console.error('[register] failed to send account-exists email:', err)
-        }
+        })
       } else {
+        // Перезаписываем name+passwordHash последним регистрантом: verify подтвердит аккаунт
+        // с этим паролем, а письмо уходит владельцу почты — pre-account-hijacking закрыт.
+        const passwordHash = await hash(data.password)
         const rawToken = generateRefreshToken()
         const tokenHash = hashToken(rawToken)
         const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS)
-        await repo.replaceEmailVerification(existing.id, { tokenHash, expiresAt })
-        try {
-          await emailService.sendVerificationEmail(existing.email, verificationUrl(rawToken))
-        } catch (err) {
+        await repo.resetUnverifiedRegistration(existing.id, {
+          name: data.name,
+          passwordHash,
+          verification: { tokenHash, expiresAt },
+        })
+        void emailService.sendVerificationEmail(existing.email, verificationUrl(rawToken)).catch((err) => {
           console.error('[register] failed to send verification email:', err)
-        }
+        })
       }
       return { message: GENERIC_MESSAGE }
     }
@@ -64,12 +68,10 @@ export function makeRegister(repo: AuthRepository, emailService: EmailService) {
       throw err
     }
 
-    try {
-      await emailService.sendVerificationEmail(user.email, verificationUrl(rawToken))
-    } catch (err) {
+    void emailService.sendVerificationEmail(user.email, verificationUrl(rawToken)).catch((err) => {
       const message = err instanceof Error ? err.message : String(err)
       console.error('Failed to send verification email', { userId: user.id, message })
-    }
+    })
 
     return { message: GENERIC_MESSAGE }
   }

@@ -73,6 +73,7 @@ export async function uploadToS3(
         Body: body,
         ContentType: contentType,
         ACL: 'public-read',
+        CacheControl: 'public, max-age=31536000, immutable',
       }),
     )
   } catch (err) {

@@ -41,6 +41,7 @@ function makeRepo(overrides: Partial<AuthRepository> = {}): AuthRepository {
     deleteEmailVerification: vi.fn(),
     finalizeEmailVerification: vi.fn(),
     replaceEmailVerification: vi.fn().mockResolvedValue(undefined),
+    resetUnverifiedRegistration: vi.fn().mockResolvedValue(undefined),
     createPasswordReset: vi.fn(),
     findPasswordReset: vi.fn(),
     deletePasswordReset: vi.fn(),
@@ -77,14 +78,22 @@ describe('register', () => {
     expect(repo.replaceEmailVerification).not.toHaveBeenCalled()
   })
 
-  it('taken + unverified → resends verification, generic response', async () => {
+  it('taken + unverified → overwrites name+password and resends verification (anti pre-hijack)', async () => {
     const repo = makeRepo({
-      findByEmail: vi.fn().mockResolvedValue({ id: 'u9', email: 'a@b.com', emailVerified: false, passwordHash: 'h' }),
+      findByEmail: vi.fn().mockResolvedValue({ id: 'u9', email: 'a@b.com', emailVerified: false, passwordHash: 'attacker-hash' }),
     })
     const register = makeRegister(repo, email)
     const res = await register(data)
     expect(res.message).toBe(GENERIC)
-    expect(repo.replaceEmailVerification).toHaveBeenCalled()
+    // Пароль последнего регистранта перезаписывает прежний неверифицированный —
+    // иначе verify подтвердил бы аккаунт с паролем того, кто НЕ владеет почтой.
+    expect(repo.resetUnverifiedRegistration).toHaveBeenCalledTimes(1)
+    const call = (repo.resetUnverifiedRegistration as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(call[0]).toBe('u9')
+    expect(call[1].name).toBe('A')
+    expect(typeof call[1].passwordHash).toBe('string')
+    expect(call[1].passwordHash).not.toBe('attacker-hash')
+    expect(call[1].verification.tokenHash).toEqual(expect.any(String))
     expect(email.sendVerificationEmail).toHaveBeenCalled()
     expect(repo.createUserWithVerification).not.toHaveBeenCalled()
   })

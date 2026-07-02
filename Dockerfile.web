@@ -20,6 +20,8 @@ ENV NITRO_PORT=3000
 
 COPY --from=builder /app/apps/web/.output ./
 
+USER node
+
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

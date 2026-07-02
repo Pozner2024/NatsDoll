@@ -16,6 +16,13 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
+    // Публичные витрины — SWR-кэш готового HTML на 60с (отдаём мгновенно, обновляем в фоне).
+    // Данные (сток/цены) могут отставать до 60с; корзина/чекаут не кэшируются (ssr:false ниже).
+    '/': { swr: 60 },
+    '/shop': { swr: 60 },
+    '/shop/**': { swr: 60 },
+    '/product/**': { swr: 60 },
+    '/gallery': { swr: 60 },
     '/auth/**': { ssr: false },
     '/verify-email': { ssr: false },
     '/reset-password': { ssr: false },

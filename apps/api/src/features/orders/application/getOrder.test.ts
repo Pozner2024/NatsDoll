@@ -25,14 +25,14 @@ describe('getOrder', () => {
     await expect(getOrder('u1', 'order-999')).rejects.toMatchObject({ statusCode: 404 })
   })
 
-  it('throws 403 when order belongs to different user', async () => {
+  it('throws 404 (not 403) when order belongs to different user — no existence oracle', async () => {
     const repo = makeRepo()
     vi.mocked(repo.getOrderById).mockResolvedValue({
       id: 'order-1', orderNumber: 1, userId: 'other-user', status: 'PENDING', totalAmount: 10,
       shippingAddress: address, shippingCost: 0, trackingNumber: null, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, items: [],
     })
     const getOrder = makeGetOrder(repo)
-    await expect(getOrder('u1', 'order-1')).rejects.toMatchObject({ statusCode: 403 })
+    await expect(getOrder('u1', 'order-1')).rejects.toMatchObject({ statusCode: 404 })
   })
 
   it('returns order when userId matches', async () => {

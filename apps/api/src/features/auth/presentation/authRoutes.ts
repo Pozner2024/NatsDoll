@@ -5,7 +5,7 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
-import { zValidator } from '../../../shared/lib/zValidator'
+import { zValidator } from '../../../shared/lib'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { requireAuth, createRateLimiter } from '../../../shared/middleware'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS, FRONTEND_URL, COMMON_PASSWORDS } from '../../../shared/lib'

@@ -6,6 +6,8 @@ vi.mock('../../../shared/lib', () => ({
   COOKIE_NAME: 'refresh_token',
   REFRESH_TOKEN_TTL_SECONDS: 2592000,
   FRONTEND_URL: 'http://localhost:5173',
+  COMMON_PASSWORDS: new Set<string>(),
+  zValidator: () => (_c: unknown, next: () => unknown) => next(),
 }))
 
 vi.mock('../infrastructure/googleClient', () => ({

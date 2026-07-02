@@ -381,22 +381,27 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
 
       const newStatus = input.status as 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
 
-      // CANCELLED/REFUNDED — финал: вернуть заказ в рабочий статус нельзя (защита от
-      // денежного рассинхрона, напр. REFUNDED→PAID). Переход между терминальными разрешён.
-      if (isTerminalStatus(current.status) && newStatus !== current.status && !isTerminalStatus(newStatus)) {
-        throw new AppError(409, 'Order is in a final state and cannot be reactivated')
-      }
-
-      // Инвариант: сток списан ⟺ заказ в «оплаченном» статусе (PAID_STATUSES).
-      // Списание происходит при переходе в оплаченный статус (в т.ч. ручное PENDING→PAID),
-      // возврат — при уходе из оплаченного.
-      // PENDING→CANCELLED ничего не меняет: неоплаченный заказ склад не держал.
-      const wasCharged = PAID_STATUSES.includes(current.status as typeof PAID_STATUSES[number])
-      const willCharge = PAID_STATUSES.includes(newStatus as typeof PAID_STATUSES[number])
-      const shouldRestoreStock = wasCharged && !willCharge
-      const shouldReclaimStock = !wasCharged && willCharge
-
       await prisma.$transaction(async (tx) => {
+        // Статус читаем ПОД row-lock внутри транзакции: конкурентный переход (ручной
+        // PAID админом одновременно с markOrderPaid-capture) сериализуется, а решение о
+        // движении стока принимается по актуальному статусу — без двойного списания.
+        const locked = await tx.$queryRaw<{ status: string }[]>`SELECT status FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+        const currentStatus = locked[0]?.status ?? current.status
+
+        // CANCELLED/REFUNDED — финал: вернуть заказ в рабочий статус нельзя (защита от
+        // денежного рассинхрона, напр. REFUNDED→PAID). Переход между терминальными разрешён.
+        if (isTerminalStatus(currentStatus) && newStatus !== currentStatus && !isTerminalStatus(newStatus)) {
+          throw new AppError(409, 'Order is in a final state and cannot be reactivated')
+        }
+
+        // Инвариант: сток списан ⟺ заказ в «оплаченном» статусе (PAID_STATUSES).
+        // Списание — при переходе в оплаченный статус (в т.ч. ручное PENDING→PAID),
+        // возврат — при уходе из оплаченного. PENDING→CANCELLED склад не держал.
+        const wasCharged = PAID_STATUSES.includes(currentStatus as typeof PAID_STATUSES[number])
+        const willCharge = PAID_STATUSES.includes(newStatus as typeof PAID_STATUSES[number])
+        const shouldRestoreStock = wasCharged && !willCharge
+        const shouldReclaimStock = !wasCharged && willCharge
+
         await tx.order.update({
           where: { id: orderId },
           data: {

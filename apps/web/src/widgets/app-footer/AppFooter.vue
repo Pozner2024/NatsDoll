@@ -10,10 +10,18 @@
 
     <div class="app-footer__columns">
       <nav class="app-footer__col">
-        <p class="app-footer__col-title">Navigate</p>
+        <p class="app-footer__col-title">
+          Navigate
+        </p>
         <ul class="app-footer__links">
-          <li v-for="link in navLinks" :key="link.to">
-            <RouterLink class="app-footer__link" :to="link.to">
+          <li
+            v-for="link in navLinks"
+            :key="link.to"
+          >
+            <RouterLink
+              class="app-footer__link"
+              :to="link.to"
+            >
               {{ link.label }}
             </RouterLink>
           </li>
@@ -29,9 +37,14 @@
       </nav>
 
       <div class="app-footer__col">
-        <p class="app-footer__col-title">Follow</p>
+        <p class="app-footer__col-title">
+          Follow
+        </p>
         <ul class="app-footer__links">
-          <li v-for="social in socialLinks" :key="social.label">
+          <li
+            v-for="social in socialLinks"
+            :key="social.label"
+          >
             <a
               class="app-footer__link"
               :href="social.href"
@@ -49,7 +62,9 @@
       <NewsletterSubscribe />
     </div>
 
-    <p class="app-footer__copyright">© 2026 NatsDoll. All rights reserved.</p>
+    <p class="app-footer__copyright">
+      © 2026 NatsDoll. All rights reserved.
+    </p>
   </footer>
 </template>
 

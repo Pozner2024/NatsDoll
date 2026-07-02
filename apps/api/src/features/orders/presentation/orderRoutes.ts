@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
-import { zValidator } from '../../../shared/lib/zValidator'
+import { zValidator } from '../../../shared/lib'
 import { setCookie } from 'hono/cookie'
 import { createRateLimiter } from '../../../shared/middleware'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib'
@@ -23,7 +23,7 @@ const createOrderBodySchema = z.object({
 const guestItemSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive(),
-  message: z.string().max(500).nullable().optional(),
+  message: z.string().max(100).nullable().optional(),
 })
 
 const guestCheckoutSchema = z.object({

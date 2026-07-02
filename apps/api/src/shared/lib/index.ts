@@ -20,3 +20,4 @@ export { calcShipping, SHIPPING_BASE, SHIPPING_PER_EXTRA_ITEM } from './shipping
 export { saleApplies, applyDiscount, salePricing } from './sale'
 export type { SaleRule } from './sale'
 export { PAID_STATUSES, isPaidStatus, TERMINAL_STATUSES, isTerminalStatus } from './orderStatus'
+export { zValidator } from './zValidator'

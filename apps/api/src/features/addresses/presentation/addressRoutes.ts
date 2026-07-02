@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
-import { zValidator } from '../../../shared/lib/zValidator'
+import { zValidator } from '../../../shared/lib'
 import type { GetAddresses, CreateAddress, UpdateAddress, DeleteAddress, SetDefaultAddress } from '../types'
 
 const addressSchema = z.object({

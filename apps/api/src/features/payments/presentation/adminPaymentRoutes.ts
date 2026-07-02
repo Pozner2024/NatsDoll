@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
-import { zValidator } from '../../../shared/lib/zValidator'
+import { zValidator } from '../../../shared/lib'
 import { requireAuth, requireAdmin } from '../../../shared/middleware'
 import type { GetPaymentSettings } from '../application/getPaymentSettings'
 import type { UpdatePaymentSettings } from '../application/updatePaymentSettings'
