@@ -100,6 +100,14 @@ describe('captureOrderCore verification', () => {
     expect(d.markOrderPaid).not.toHaveBeenCalled()
   })
 
+  it('rejects when externalPageEnabled and does not capture or mark paid', async () => {
+    const d = deps({ status: 'COMPLETED', captureId: 'CAP-1', amount: '42.50', currencyCode: 'USD', invoiceId: 'natsdoll-7' })
+    d.repo.getSettings.mockResolvedValue({ enabled: true, mode: 'SANDBOX', clientId: 'cid', secret: 'enc', webhookId: null, externalPageEnabled: true })
+    await expect(core(d)('o1')).rejects.toThrow()
+    expect(d.paypal.captureOrder).not.toHaveBeenCalled()
+    expect(d.markOrderPaid).not.toHaveBeenCalled()
+  })
+
   it('alerts admin when verification fails after money was already captured', async () => {
     vi.stubEnv('ADMIN_EMAIL', 'admin@natsdoll.com')
     const d = deps({ status: 'COMPLETED', captureId: 'CAP-2', amount: '1.00', currencyCode: 'USD', invoiceId: 'natsdoll-7' })

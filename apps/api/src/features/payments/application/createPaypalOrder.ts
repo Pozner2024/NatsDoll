@@ -13,7 +13,7 @@ export function makeCreatePaypalOrder(
     if (!settings || !settings.enabled || !settings.clientId) {
       throw new AppError(409, 'Payments are not configured')
     }
-    if (!settings.secret) {
+    if (!settings.secret || settings.externalPageEnabled) {
       throw new AppError(409, 'Server-side payment is not available')
     }
     const order = await repo.getOrderForPayment(orderId)

@@ -35,7 +35,7 @@ export function makeCaptureOrderCore(
 ): CaptureOrderCore {
   return async (orderId) => {
     const settings = await repo.getSettings()
-    if (!settings || !settings.clientId || !settings.secret) {
+    if (!settings || !settings.clientId || !settings.secret || settings.externalPageEnabled) {
       throw new AppError(409, 'Server-side payment is not available')
     }
     const order = await repo.getOrderForPayment(orderId)
