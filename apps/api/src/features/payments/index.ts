@@ -10,6 +10,7 @@ export { makeCapturePaypalPayment, makeCaptureOrderCore } from './application/ca
 export { makeClaimPaypalPayment } from './application/claimPaypalPayment'
 export { makeCreateWooPayment } from './application/createWooPayment'
 export { makeHandlePaypalWebhook } from './application/handlePaypalWebhook'
+export { makeHandleWooWebhook } from './application/handleWooWebhook'
 export { makeMarkOrderPaid } from './application/markOrderPaid'
 export { makePaymentRouter } from './presentation/paymentRoutes'
 export { makeAdminPaymentRouter } from './presentation/adminPaymentRoutes'

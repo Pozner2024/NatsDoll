@@ -4,3 +4,4 @@
 process.env.NODE_ENV ??= 'test'
 process.env.JWT_SECRET ??= 'test-jwt-secret'
 process.env.HMAC_SECRET ??= 'test-hmac-secret'
+process.env.ADMIN_EMAIL ??= 'admin@test.local'
