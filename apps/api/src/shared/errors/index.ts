@@ -8,6 +8,10 @@ export class AppError extends Error {
     super(message)
     this.name = this.constructor.name
   }
+
+  get status(): AppErrorStatus {
+    return this.statusCode
+  }
 }
 
 export class NotFoundError extends AppError {
