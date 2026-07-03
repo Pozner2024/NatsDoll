@@ -3,24 +3,49 @@ import { Hono } from 'hono'
 import { makePaymentRouter } from './paymentRoutes'
 
 function makeApp(
-  config = vi.fn().mockResolvedValue({ enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false }),
+  config = vi.fn().mockResolvedValue({ enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false, external: false }),
   create = vi.fn(),
   capture = vi.fn(),
   claim = vi.fn(),
   webhook = vi.fn().mockResolvedValue({ handled: true }),
+  wooCreate = vi.fn().mockResolvedValue({ payUrl: 'https://pay.example.com/x' }),
+  wooWebhook = vi.fn().mockResolvedValue({ handled: true }),
 ) {
   const app = new Hono()
-  app.route('/payments', makePaymentRouter(config as never, create as never, capture as never, claim as never, webhook as never))
-  return { app, config, create, capture, claim, webhook }
+  app.route('/payments', makePaymentRouter(config as never, create as never, capture as never, claim as never, webhook as never, wooCreate as never, wooWebhook as never))
+  return { app, config, create, capture, claim, webhook, wooCreate, wooWebhook }
 }
 
 describe('payment routes — публичность и auth-гейт', () => {
   it('GET /payments/config — публичный (без auth), отдаёт конфиг', async () => {
-    const config = vi.fn().mockResolvedValue({ enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true })
+    const config = vi.fn().mockResolvedValue({ enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true, external: false })
     const { app } = makeApp(config)
     const res = await app.request('/payments/config')
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true })
+    expect(await res.json()).toEqual({ enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true, external: false })
+  })
+
+  it('POST /woo/create-payment без auth → 401, use-case не вызван', async () => {
+    const { app, wooCreate } = makeApp()
+    const res = await app.request('/payments/woo/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId: 'o1' }),
+    })
+    expect(res.status).toBe(401)
+    expect(wooCreate).not.toHaveBeenCalled()
+  })
+
+  it('POST /woo/webhook — публичный, передаёт подпись и raw body', async () => {
+    const { app, wooWebhook } = makeApp()
+    const body = JSON.stringify({ id: 7, status: 'processing' })
+    const res = await app.request('/payments/woo/webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-wc-webhook-signature': 'sig==' },
+      body,
+    })
+    expect(res.status).toBe(200)
+    expect(wooWebhook).toHaveBeenCalledWith(body, 'sig==')
   })
 
   it('POST /paypal/create-order без auth → 401, use-case не вызван', async () => {

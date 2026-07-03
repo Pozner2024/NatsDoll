@@ -101,6 +101,9 @@ import {
   makeMarkOrderPaid,
   makePaymentRouter,
   makeAdminPaymentRouter,
+  makeWooClient,
+  makeCreateWooPayment,
+  makeHandleWooWebhook,
 } from './features/payments'
 import {
   makeAdminRepository,
@@ -278,7 +281,10 @@ export function createApp() {
   const capturePaypalPayment = makeCapturePaypalPayment(paymentRepo, captureOrderCore)
   const claimPaypalPayment = makeClaimPaypalPayment(paymentRepo)
   const handlePaypalWebhook = makeHandlePaypalWebhook(paymentRepo, paypalClient, captureOrderCore, decryptSecret, emailService)
-  app.route('/payments', makePaymentRouter(getPaymentConfig, createPaypalOrder, capturePaypalPayment, claimPaypalPayment, handlePaypalWebhook))
+  const wooClient = makeWooClient()
+  const createWooPayment = makeCreateWooPayment(paymentRepo, wooClient, process.env.FRONTEND_URL ?? '')
+  const handleWooWebhook = makeHandleWooWebhook(paymentRepo, emailService, process.env.WOO_WEBHOOK_SECRET)
+  app.route('/payments', makePaymentRouter(getPaymentConfig, createPaypalOrder, capturePaypalPayment, claimPaypalPayment, handlePaypalWebhook, createWooPayment, handleWooWebhook))
   app.route('/admin/payment-settings', makeAdminPaymentRouter(getPaymentSettings, updatePaymentSettings))
 
   // Favorites

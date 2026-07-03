@@ -7,6 +7,8 @@ import type { CreatePaypalOrder } from '../application/createPaypalOrder'
 import type { CapturePaypalPayment } from '../application/capturePaypalPayment'
 import type { ClaimPaypalPayment } from '../application/claimPaypalPayment'
 import type { HandlePaypalWebhook } from '../application/handlePaypalWebhook'
+import type { CreateWooPayment } from '../application/createWooPayment'
+import type { HandleWooWebhook } from '../application/handleWooWebhook'
 
 const orderIdSchema = z.object({ orderId: z.string().min(1) })
 const claimSchema = z.object({ orderId: z.string().min(1), paypalOrderId: z.string().min(1) })
@@ -22,6 +24,8 @@ export function makePaymentRouter(
   capturePaypalPayment: CapturePaypalPayment,
   claimPaypalPayment: ClaimPaypalPayment,
   handlePaypalWebhook: HandlePaypalWebhook,
+  createWooPayment: CreateWooPayment,
+  handleWooWebhook: HandleWooWebhook,
 ) {
   const router = new Hono()
 
@@ -58,6 +62,17 @@ export function makePaymentRouter(
     const { orderId, paypalOrderId } = c.req.valid('json')
     await claimPaypalPayment(userId, orderId, paypalOrderId)
     return c.json({ ok: true })
+  })
+
+  router.post('/woo/create-payment', paymentLimiter.middleware, requireAuth, zValidator('json', orderIdSchema), async (c) => {
+    const { userId } = c.get('auth')
+    const { orderId } = c.req.valid('json')
+    return c.json(await createWooPayment(userId, orderId))
+  })
+
+  router.post('/woo/webhook', webhookLimiter.middleware, async (c) => {
+    const rawBody = await c.req.text()
+    return c.json(await handleWooWebhook(rawBody, c.req.header('x-wc-webhook-signature') ?? ''))
   })
 
   return router
