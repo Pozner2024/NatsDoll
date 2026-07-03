@@ -30,4 +30,9 @@ describe('getPaymentConfig', () => {
     const uc = makeGetPaymentConfig(repo({ enabled: true, mode: 'SANDBOX', clientId: 'cid', secret: 'super-secret', externalPageEnabled: false }) as never)
     expect(JSON.stringify(await uc())).not.toContain('super-secret')
   })
+
+  it('external-режим: clientId скрыт, external=true', async () => {
+    const uc = makeGetPaymentConfig(repo({ enabled: true, mode: 'LIVE', clientId: 'cid', secret: 'enc', webhookId: null, externalPageEnabled: true }) as never)
+    expect(await uc()).toEqual({ enabled: true, clientId: null, mode: 'LIVE', serverFlow: false, external: true })
+  })
 })

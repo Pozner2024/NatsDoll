@@ -92,4 +92,18 @@ describe('updatePaymentSettings', () => {
     })
     expect(repo.saved!.sandbox.secret).toBeNull()
   })
+
+  it('allows enabling with externalPageEnabled when the active mode has no clientId', async () => {
+    const repo = repoStub()
+    const update = makeUpdatePaymentSettings(repo)
+    await update({
+      enabled: true,
+      mode: 'LIVE',
+      sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
+      live: { clientId: null, secret: undefined, webhookId: undefined },
+      externalPageEnabled: true,
+    })
+    expect(repo.saved!.enabled).toBe(true)
+    expect(repo.saved!.externalPageEnabled).toBe(true)
+  })
 })
