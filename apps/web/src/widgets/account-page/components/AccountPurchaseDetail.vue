@@ -104,6 +104,10 @@
         >
           Payment received and is being verified. We'll confirm it shortly.
         </p>
+        <WooPayButton
+          v-else-if="externalMode"
+          :order-id="order.id"
+        />
         <PaypalPayment
           v-else
           :order-id="order.id"
@@ -148,11 +152,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { formatPrice, formatDate } from '@/shared'
 import { useOrderStore } from '@/entities/order'
-import { PaypalPayment } from '@/features/paypal-payment'
+import { PaypalPayment, fetchPaymentConfig, type PaymentConfig } from '@/features/paypal-payment'
+import { WooPayButton } from '@/features/woo-payment'
 
 const route = useRoute()
 const orderStore = useOrderStore()
@@ -172,6 +177,17 @@ const error = computed(() => orderStore.error)
 // лишь мгновенная реакция на @claimed до перезагрузки заказа.
 const locallyClaimed = ref(false)
 const claimed = computed(() => locallyClaimed.value || order.value?.paymentClaimed === true)
+
+const paymentConfig = ref<PaymentConfig | null>(null)
+const externalMode = computed(() => paymentConfig.value?.external === true)
+
+onMounted(async () => {
+  try {
+    paymentConfig.value = await fetchPaymentConfig()
+  } catch {
+    paymentConfig.value = null
+  }
+})
 
 async function onPaid() {
   await orderStore.loadOrder(route.params.id as string)
