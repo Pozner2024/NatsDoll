@@ -138,7 +138,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import DOMPurify from 'isomorphic-dompurify'
-import { AppButton, formatPrice, SHIPPING_BASE } from '@/shared'
+import { AppButton, formatPrice, plainTextToHtml, SHIPPING_BASE } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
 import MessageSelector from './MessageSelector.vue'
 
@@ -151,7 +151,7 @@ const messageError = ref<string | undefined>(undefined)
 const isAdding = ref(false)
 
 const safeDescription = computed(() =>
-  DOMPurify.sanitize(props.product.description, {
+  DOMPurify.sanitize(plainTextToHtml(props.product.description), {
     ALLOWED_TAGS: ['p', 'strong', 'em', 'ul', 'ol', 'li', 'br'],
     ALLOWED_ATTR: [],
   }),

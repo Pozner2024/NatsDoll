@@ -65,7 +65,7 @@ import { useRoute, RouterLink } from 'vue-router'
 import { useAsyncData, createError, useSeoMeta, useHead, useRuntimeConfig } from 'nuxt/app'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import { useCartStore } from '@/entities/cart'
-import { useCartPrompt, metaDescription, DEFAULT_OG_IMAGE } from '@/shared'
+import { useCartPrompt, metaDescription, productSeoTitle, DEFAULT_OG_IMAGE } from '@/shared'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -119,7 +119,7 @@ const seoDescription = computed(() =>
   product.value ? metaDescription(product.value.description) : '',
 )
 const seoTitle = computed(() =>
-  product.value ? `${product.value.name} — NatsDoll` : 'NatsDoll',
+  product.value ? productSeoTitle(product.value.name) : 'NatsDoll',
 )
 
 useSeoMeta({

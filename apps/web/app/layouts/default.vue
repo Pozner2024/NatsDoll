@@ -15,6 +15,7 @@
     <ContactModal />
     <AuthModal />
     <CartPromptModal />
+    <AppToaster />
   </div>
 </template>
 
@@ -25,6 +26,7 @@ import { AppFooter } from '@/widgets/app-footer'
 import { ContactModal } from '@/features/contact-modal'
 import { AuthModal } from '@/features/auth-modal'
 import { CartPromptModal } from '@/features/cart-prompt-modal'
+import { AppToaster } from '@/shared'
 import { useCategoryStore } from '@/entities/category'
 
 const categoryStore = useCategoryStore()

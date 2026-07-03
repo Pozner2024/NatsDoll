@@ -13,6 +13,7 @@
 
   --color-white: #ffffff;
   --color-error: #c0392b;
+  --color-success: #5b8c6e;
   --color-gold: #d4a017;
 
   --font-display: 'Playfair Display', serif;
@@ -41,6 +42,7 @@
   --z-admin-overlay: 200;
   --z-modal: calc(var(--z-admin-overlay) + 1);
   --z-lightbox: calc(var(--z-modal) + 1);
+  --z-toast: calc(var(--z-lightbox) + 1);
 }
 
 *,

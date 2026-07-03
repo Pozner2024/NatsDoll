@@ -19,9 +19,9 @@
     </div>
 
     <div class="hero-slider__overlay">
-      <p class="hero-slider__text">
+      <h1 class="hero-slider__text">
         Find a unique gift here
-      </p>
+      </h1>
       <p class="hero-slider__text hero-slider__text--sub">
         THE SHOP
       </p>

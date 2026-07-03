@@ -13,7 +13,7 @@ import { computed } from 'vue'
 import { HeartButton } from '@/shared'
 import { useAuthStore } from '@/entities/user'
 import { useFavoritesStore } from '@/entities/favorites'
-import { useAuthModal } from '@/shared'
+import { useAuthModal, useToast } from '@/shared'
 import type { Product } from '@/entities/product'
 
 const props = withDefaults(defineProps<{
@@ -28,6 +28,7 @@ const props = withDefaults(defineProps<{
 const authStore = useAuthStore()
 const favoritesStore = useFavoritesStore()
 const authModal = useAuthModal()
+const toast = useToast()
 
 const isActive = computed(() => favoritesStore.isFavorite(props.product.id))
 const isBusy = computed(() => favoritesStore.isToggling(props.product.id))
@@ -40,7 +41,8 @@ async function onClick() {
   try {
     await favoritesStore.toggle(props.product)
   } catch {
-    // ошибка уже сохранена в стор; UI откатится сам
+    // стор откатит UI сам; сообщаем пользователю, что действие не прошло
+    toast.error('Could not update favorites. Please try again.')
   }
 }
 </script>

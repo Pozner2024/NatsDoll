@@ -88,15 +88,15 @@
 
 <script setup lang="ts">
 import { RouterLink, useRouter } from 'vue-router'
-import { AppButton, formatPrice } from '@/shared'
+import { AppButton, formatPrice, useCartPrompt, useToast } from '@/shared'
 import { useCartStore } from '@/entities/cart'
-import { useCartPrompt } from '@/shared'
 import type { Product } from './types'
 
 const props = defineProps<{ product: Product; hideButton?: boolean }>()
 
 const cartStore = useCartStore()
 const cartPrompt = useCartPrompt()
+const toast = useToast()
 const router = useRouter()
 
 async function onAdd() {
@@ -118,7 +118,8 @@ async function onAdd() {
       productPrice: props.product.salePrice ?? props.product.price,
     })
     cartPrompt.open()
-  } catch {
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : 'Could not add to cart')
     await router.push(`/product/${props.product.slug}`)
   }
 }

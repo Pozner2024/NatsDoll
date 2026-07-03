@@ -37,6 +37,11 @@ describe('HeroSlider', () => {
     expect(wrapper.find('.app-button').text()).toBe('Explore')
   })
 
+  it('главный текст hero — заголовок h1 (единственный h1 главной)', () => {
+    const wrapper = mountSlider()
+    expect(wrapper.find('h1.hero-slider__text').text()).toBe('Find a unique gift here')
+  })
+
   it('активный слайд по умолчанию — первый', () => {
     const wrapper = mountSlider()
     expect(wrapper.find('.hero-slider__slide--active').exists()).toBe(true)

@@ -24,5 +24,26 @@ useSeoMeta({
   ogType: 'website',
   twitterCard: 'summary_large_image',
 })
-useHead({ link: [{ rel: 'canonical', href: `${siteUrl}/` }] })
+useHead({
+  link: [{ rel: 'canonical', href: `${siteUrl}/` }],
+  script: [
+    {
+      type: 'application/ld+json',
+      textContent: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'NatsDoll',
+        url: `${siteUrl}/`,
+        logo: `${siteUrl}/favicon-512.png`,
+        sameAs: [
+          'https://www.instagram.com/natsdoll_',
+          'https://www.pinterest.com/natalyapoznyak/',
+          'https://www.facebook.com/NatsDolls',
+          'https://www.tiktok.com/@natsdoll_',
+          'https://www.etsy.com/shop/GiftsQueenShop',
+        ],
+      }),
+    },
+  ],
+})
 </script>
