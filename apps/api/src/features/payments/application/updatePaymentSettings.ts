@@ -20,7 +20,7 @@ function toUpsertCreds(input: UpdateModeCredsInput): UpsertModeCreds {
 export function makeUpdatePaymentSettings(repo: PaymentRepository): UpdatePaymentSettings {
   return async (input) => {
     const activeClientId = input.mode === 'LIVE' ? input.live.clientId : input.sandbox.clientId
-    if (input.enabled && !activeClientId) {
+    if (input.enabled && !input.externalPageEnabled && !activeClientId) {
       throw new AppError(400, 'Client ID is required to enable payments')
     }
     await repo.upsertSettings({
@@ -28,6 +28,7 @@ export function makeUpdatePaymentSettings(repo: PaymentRepository): UpdatePaymen
       mode: input.mode,
       sandbox: toUpsertCreds(input.sandbox),
       live: toUpsertCreds(input.live),
+      externalPageEnabled: input.externalPageEnabled,
     })
   }
 }

@@ -7,6 +7,7 @@ const settings = {
   enabled: false, mode: 'SANDBOX' as const,
   sandbox: { clientId: null, hasSecret: false, webhookId: null },
   live: { clientId: null, hasSecret: false, webhookId: null },
+  externalPageEnabled: false,
 }
 
 function makeApp() {
@@ -22,6 +23,7 @@ const validBody = {
   mode: 'SANDBOX',
   sandbox: { clientId: 'cid', secret: 'sec', webhookId: null },
   live: { clientId: null },
+  externalPageEnabled: false,
 }
 
 function bearer(token: string) {

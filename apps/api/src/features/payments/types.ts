@@ -45,6 +45,7 @@ export interface PaymentSettingsView {
   mode: PaymentMode
   sandbox: ModeCredsView
   live: ModeCredsView
+  externalPageEnabled: boolean
 }
 
 export interface UpdateModeCredsInput {
@@ -58,6 +59,7 @@ export interface UpdatePaymentSettingsInput {
   mode: PaymentMode
   sandbox: UpdateModeCredsInput
   live: UpdateModeCredsInput
+  externalPageEnabled: boolean
 }
 
 export interface PublicPaymentConfig {
@@ -65,6 +67,7 @@ export interface PublicPaymentConfig {
   clientId: string | null
   mode: PaymentMode
   serverFlow: boolean
+  external: boolean
 }
 
 // --- Repository ---
@@ -86,6 +89,7 @@ export interface AdminPaymentSettings {
   liveClientId: string | null
   liveSecret: string | null
   liveWebhookId: string | null
+  externalPageEnabled: boolean
 }
 
 export interface UpsertModeCreds {
@@ -99,10 +103,50 @@ export interface UpsertPaymentSettingsData {
   mode: PaymentMode
   sandbox: UpsertModeCreds
   live: UpsertModeCreds
+  externalPageEnabled: boolean
+}
+
+export interface WooLineItem {
+  name: string
+  quantity: number
+  subtotalUsd: number
+}
+
+export interface WooCreateOrderInput {
+  orderNumber: number
+  lineItems: WooLineItem[]
+  shippingUsd: number
+  customerName: string
+  customerEmail: string
+  returnUrl: string
+}
+
+export interface WooCreatedOrder {
+  wooOrderId: number
+  wooOrderKey: string
+}
+
+export interface WooClient {
+  createOrder(input: WooCreateOrderInput): Promise<WooCreatedOrder>
+  payUrl(wooOrderId: number, wooOrderKey: string): string
+}
+
+export interface OrderForWooPayment {
+  id: string
+  userId: string
+  orderNumber: number
+  status: string
+  totalAmount: number
+  shippingCost: number
+  wooOrderId: number | null
+  wooOrderKey: string | null
+  customerName: string
+  customerEmail: string
+  items: WooLineItem[]
 }
 
 export interface PaymentRepository {
-  getSettings(): Promise<{ enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null; webhookId: string | null } | null>
+  getSettings(): Promise<{ enabled: boolean; mode: PaymentMode; clientId: string | null; secret: string | null; webhookId: string | null; externalPageEnabled: boolean } | null>
   getAdminSettings(): Promise<AdminPaymentSettings | null>
   upsertSettings(data: UpsertPaymentSettingsData): Promise<void>
   getOrderForPayment(orderId: string): Promise<OrderForPayment | null>
@@ -110,4 +154,7 @@ export interface PaymentRepository {
   setPaypalOrderId(orderId: string, paypalOrderId: string): Promise<void>
   claimPaypalOrder(orderId: string, paypalOrderId: string): Promise<void>
   markOrderPaid(orderId: string, captureId: string | null): Promise<boolean>
+  getOrderForWooPayment(orderId: string): Promise<OrderForWooPayment | null>
+  setWooOrder(orderId: string, wooOrderId: number, wooOrderKey: string): Promise<boolean>
+  getOrderByWooOrderId(wooOrderId: number): Promise<OrderForPayment | null>
 }

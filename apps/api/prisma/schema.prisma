@@ -154,6 +154,8 @@ model Order {
   paypalOrderId   String?     @unique
   paypalCaptureId String?
   paymentClaimed  Boolean     @default(false)
+  wooOrderId      Int?        @unique
+  wooOrderKey     String?
   shippingAddress Json
   shippingCost    Decimal     @db.Decimal(10, 2) @default(0)
   trackingNumber  String?
@@ -343,6 +345,7 @@ model PaymentSettings {
   liveClientId     String?
   liveSecret       String?     // AES-256-GCM ciphertext; null = client-режим
   liveWebhookId    String?     // id подписки webhook из PayPal Dashboard; null = webhook выключен
+  externalPageEnabled Boolean @default(false)
   updatedAt        DateTime    @updatedAt
 }
 
