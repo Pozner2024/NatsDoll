@@ -118,6 +118,16 @@
         >
           Payment received and is being verified. We'll confirm it shortly.
         </p>
+        <p
+          v-else-if="returnedFromPayment"
+          class="order-confirmation__payment-pending"
+        >
+          Payment is being processed…
+        </p>
+        <WooPayButton
+          v-else-if="externalMode"
+          :order-id="order.id"
+        />
         <PaypalPayment
           v-else
           :order-id="order.id"
@@ -147,11 +157,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { AppButton, formatPrice } from '@/shared'
 import { useOrderStore } from '@/entities/order'
-import { PaypalPayment } from '@/features/paypal-payment'
+import { PaypalPayment, fetchPaymentConfig, type PaymentConfig } from '@/features/paypal-payment'
+import { WooPayButton } from '@/features/woo-payment'
+
+const POLL_INTERVAL_MS = 3000
+const POLL_MAX_ATTEMPTS = 10
 
 const props = defineProps<{ orderId: string }>()
 
@@ -167,8 +181,45 @@ const error = computed(() => orderStore.error)
 const locallyClaimed = ref(route.query.claimed === '1')
 const claimed = computed(() => locallyClaimed.value || order.value?.paymentClaimed === true)
 
-onMounted(() => {
-  orderStore.loadOrder(props.orderId)
+const paymentConfig = ref<PaymentConfig | null>(null)
+const externalMode = computed(() => paymentConfig.value?.external === true)
+const returnedFromPayment = ref(route.query.paid === '1')
+let pollTimer: ReturnType<typeof setInterval> | null = null
+let pollAttempts = 0
+
+function stopPolling(): void {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+function startPolling(): void {
+  if (pollTimer) return
+  pollTimer = setInterval(async () => {
+    pollAttempts += 1
+    await orderStore.loadOrder(props.orderId)
+    if (order.value?.status !== 'PENDING') {
+      stopPolling()
+      return
+    }
+    if (pollAttempts >= POLL_MAX_ATTEMPTS) {
+      returnedFromPayment.value = false
+      stopPolling()
+    }
+  }, POLL_INTERVAL_MS)
+}
+
+onUnmounted(stopPolling)
+
+onMounted(async () => {
+  await orderStore.loadOrder(props.orderId)
+  try {
+    paymentConfig.value = await fetchPaymentConfig()
+  } catch {
+    paymentConfig.value = null
+  }
+  if (returnedFromPayment.value && order.value?.status === 'PENDING') startPolling()
 })
 
 async function onPaid() {
