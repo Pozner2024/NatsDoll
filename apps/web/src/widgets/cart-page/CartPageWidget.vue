@@ -294,7 +294,7 @@ onMounted(async () => {
   try {
     paymentConfig.value = await fetchPaymentConfig()
   } catch {
-    paymentConfig.value = { enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false }
+    paymentConfig.value = { enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false, external: false }
   }
 })
 

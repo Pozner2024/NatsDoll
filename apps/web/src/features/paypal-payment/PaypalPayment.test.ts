@@ -21,9 +21,9 @@ function installPaypal() {
   }
 }
 
-function mountServer(config: Partial<{ enabled: boolean; clientId: string | null; serverFlow: boolean }> = {}) {
+function mountServer(config: Partial<{ enabled: boolean; clientId: string | null; serverFlow: boolean; external: boolean }> = {}) {
   vi.mocked(api.fetchPaymentConfig).mockResolvedValue({
-    enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true, ...config,
+    enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true, external: false, ...config,
   } as never)
   return mount(PaypalPayment, { props: { orderId: 'o1', orderNumber: 7, amountUsd: 25 } })
 }
@@ -110,7 +110,7 @@ describe('PaypalPayment', () => {
     it('reject, когда onValidate возвращает false', async () => {
       const onValidate = vi.fn().mockReturnValue(false)
       vi.mocked(api.fetchPaymentConfig).mockResolvedValue({
-        enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true,
+        enabled: true, clientId: 'cid', mode: 'SANDBOX', serverFlow: true, external: false,
       } as never)
       const wrapper = mount(PaypalPayment, { props: { orderId: 'o1', orderNumber: 7, amountUsd: 25, onValidate } })
       await flushPromises()
