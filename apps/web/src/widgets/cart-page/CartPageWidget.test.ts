@@ -25,6 +25,10 @@ vi.mock('@/features/paypal-payment', () => ({
   fetchPaymentConfig,
 }))
 
+vi.mock('@/features/woo-payment', () => ({
+  WooPayButton: { name: 'WooPayButton', template: '<div class="woo-pay-stub" />' },
+}))
+
 vi.mock('@/entities/cart', () => ({
   useCartStore: () => ({
     items: [{ id: '1', quantity: 1, productName: 'Clay ring', unitPrice: 25, subtotal: 25 }],
@@ -95,6 +99,7 @@ describe('CartPageWidget — выбор кнопки оплаты по конф�
     const wrapper = mountWidget()
     await flushPromises()
     expect(wrapper.find('.paypal-stub').exists()).toBe(true)
+    expect(wrapper.find('.woo-pay-stub').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Place order')
   })
 
@@ -104,6 +109,14 @@ describe('CartPageWidget — выбор кнопки оплаты по конф�
     await flushPromises()
     expect(wrapper.find('.paypal-stub').exists()).toBe(false)
     expect(wrapper.text()).toContain('Place order')
+  })
+
+  it('в external-режиме показывает WooPayButton вместо PayPal-кнопок', async () => {
+    fetchPaymentConfig.mockResolvedValue({ enabled: true, clientId: null, mode: 'LIVE', serverFlow: false, external: true })
+    const wrapper = mountWidget()
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'WooPayButton' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'PaypalPayment' }).exists()).toBe(false)
   })
 
   it('включена, но без clientId → fallback «Place order»', async () => {

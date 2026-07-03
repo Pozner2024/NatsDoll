@@ -138,8 +138,15 @@
           <span>{{ formatPrice(grandTotal) }}</span>
         </p>
         <template v-if="paymentsReady">
+          <WooPayButton
+            v-if="paymentsEnabled && paymentConfig?.external"
+            class="cart-page__pay"
+            :on-validate="validateAddress"
+            :prepare-order="prepareOrder"
+            @redirecting="onExternalRedirect"
+          />
           <PaypalPayment
-            v-if="paymentsEnabled"
+            v-else-if="paymentsEnabled"
             class="cart-page__pay"
             :amount-usd="grandTotal"
             :on-validate="validateAddress"
@@ -176,6 +183,7 @@ import { useAuthStore } from '@/entities/user'
 import { CheckoutForm } from '@/features/checkout-form'
 import { PaypalPayment, fetchPaymentConfig } from '@/features/paypal-payment'
 import type { PaymentConfig } from '@/features/paypal-payment'
+import { WooPayButton } from '@/features/woo-payment'
 import { usePendingOrder } from './usePendingOrder'
 import { GuestEmailTakenError } from './guestCheckoutApi'
 import type { ShippingAddress } from '@/entities/order'
@@ -215,7 +223,7 @@ const { pending, error: orderError, prepare } = usePendingOrder()
 
 const paymentConfig = ref<PaymentConfig | null>(null)
 const paymentsReady = computed(() => paymentConfig.value !== null)
-const paymentsEnabled = computed(() => !!paymentConfig.value?.enabled && !!paymentConfig.value.clientId)
+const paymentsEnabled = computed(() => !!paymentConfig.value?.enabled && (!!paymentConfig.value.clientId || !!paymentConfig.value.external))
 const placingOrder = ref(false)
 
 function validateAddress(): boolean {
@@ -258,6 +266,10 @@ async function prepareOrder() {
   }
 
   return prepare(address)
+}
+
+function onExternalRedirect(): void {
+  cartStore.reset()
 }
 
 function goToReceipt(claimed: boolean): void {
