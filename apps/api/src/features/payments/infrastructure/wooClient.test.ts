@@ -47,16 +47,16 @@ describe('wooClient', () => {
 
   it('503 когда env не настроен', async () => {
     delete process.env.WOO_CONSUMER_SECRET
-    await expect(makeWooClient().createOrder(input)).rejects.toMatchObject({ status: 503 })
+    await expect(makeWooClient().createOrder(input)).rejects.toMatchObject({ statusCode: 503 })
   })
 
   it('502 когда Woo ответил ошибкой', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('boom', { status: 500 })))
-    await expect(makeWooClient().createOrder(input)).rejects.toMatchObject({ status: 502 })
+    await expect(makeWooClient().createOrder(input)).rejects.toMatchObject({ statusCode: 502 })
   })
 
   it('502 когда в ответе нет id/order_key', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 201 })))
-    await expect(makeWooClient().createOrder(input)).rejects.toMatchObject({ status: 502 })
+    await expect(makeWooClient().createOrder(input)).rejects.toMatchObject({ statusCode: 502 })
   })
 })
