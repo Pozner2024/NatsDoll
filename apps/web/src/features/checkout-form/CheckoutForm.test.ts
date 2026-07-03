@@ -1,12 +1,20 @@
 import { setActivePinia, createPinia } from 'pinia'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CheckoutForm from './CheckoutForm.vue'
 import { useAddressStore } from '@/entities/address'
+import { useAuthStore } from '@/entities/user'
+
+vi.mock('@/entities/user', () => ({ useAuthStore: vi.fn() }))
+
+function setLoggedIn(isLoggedIn: boolean): void {
+  vi.mocked(useAuthStore).mockReturnValue({ isLoggedIn } as never)
+}
 
 describe('CheckoutForm.getValidatedAddress', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    setLoggedIn(true)
     vi.spyOn(useAddressStore(), 'load').mockResolvedValue()
   })
 
@@ -25,5 +33,27 @@ describe('CheckoutForm.getValidatedAddress', () => {
 
     const result = (wrapper.vm as unknown as { getValidatedAddress: () => unknown }).getValidatedAddress()
     expect(result).toEqual({ fullName: 'Nat', line1: '1 St', city: 'NY', country: 'US', postalCode: '10001' })
+  })
+})
+
+describe('CheckoutForm — загрузка адресной книги', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('гость: не запрашивает адреса (иначе 401 сотрёт гостевую корзину через clearAuth)', async () => {
+    setLoggedIn(false)
+    const load = vi.spyOn(useAddressStore(), 'load').mockResolvedValue()
+    mount(CheckoutForm)
+    await flushPromises()
+    expect(load).not.toHaveBeenCalled()
+  })
+
+  it('залогинен: загружает адреса и префилл дефолтным адресом', async () => {
+    setLoggedIn(true)
+    const load = vi.spyOn(useAddressStore(), 'load').mockResolvedValue()
+    mount(CheckoutForm)
+    await flushPromises()
+    expect(load).toHaveBeenCalled()
   })
 })
