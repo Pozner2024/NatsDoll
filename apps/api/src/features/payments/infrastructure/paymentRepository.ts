@@ -123,7 +123,7 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
         items: o.items.map((i) => ({
           name: i.product.name,
           quantity: i.quantity,
-          subtotalUsd: i.price.toNumber() * i.quantity,
+          subtotalUsd: i.price.mul(i.quantity).toNumber(),
         })),
       }
     },

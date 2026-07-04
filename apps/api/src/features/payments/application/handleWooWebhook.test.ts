@@ -38,6 +38,14 @@ describe('handleWooWebhook', () => {
     expect(result).toEqual({ handled: true })
   })
 
+  it('нестандартный формат суммы («29.0») всё равно подтверждает оплату', async () => {
+    const { repo, uc } = makeDeps()
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.0', currency: 'USD', transaction_id: 'TX1' })
+    const result = await uc(body, sign(body))
+    expect(repo.markOrderPaid).toHaveBeenCalledWith('o1', 'TX1')
+    expect(result).toEqual({ handled: true })
+  })
+
   it('невалидная подпись → 401, заказ не тронут', async () => {
     const { repo, uc } = makeDeps()
     await expect(uc(paidEvent, sign(paidEvent, 'wrong'))).rejects.toMatchObject({ statusCode: 401 })

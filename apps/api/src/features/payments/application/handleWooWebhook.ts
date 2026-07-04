@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { AppError } from '../../../shared/errors'
 import type { EmailService } from '../../auth/infrastructure/emailService'
 import { alertCaptureUnsettled } from './capturePaypalPayment'
+import { matchesAmountUsd } from './matchesAmountUsd'
 import type { PaymentRepository } from '../types'
 
 export type HandleWooWebhook = (rawBody: string, signature: string) => Promise<{ handled: boolean }>
@@ -48,7 +49,7 @@ export function makeHandleWooWebhook(
       return { handled: false }
     }
     const transactionId = typeof event.transaction_id === 'string' && event.transaction_id !== '' ? event.transaction_id : null
-    const amountMatches = event.total === order.totalAmount.toFixed(2)
+    const amountMatches = matchesAmountUsd(event.total, order.totalAmount)
     const currencyMatches = event.currency === 'USD'
     if (!amountMatches || !currencyMatches) {
       console.error('[handleWooWebhook] amount verification mismatch', {

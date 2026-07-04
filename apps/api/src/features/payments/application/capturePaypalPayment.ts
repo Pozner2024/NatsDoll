@@ -2,6 +2,7 @@ import { AppError } from '../../../shared/errors'
 import { isPaidStatus, isTerminalStatus } from '../../../shared/lib'
 import type { EmailService } from '../../auth/infrastructure/emailService'
 import type { PaymentRepository, PaypalClient } from '../types'
+import { matchesAmountUsd } from './matchesAmountUsd'
 import type { MarkOrderPaid } from './markOrderPaid'
 
 export type CaptureOrderCore = (orderId: string) => Promise<{ status: string }>
@@ -66,7 +67,7 @@ export function makeCaptureOrderCore(
       if (details.amount === null) {
         details = await paypal.getOrderStatus({ creds, paypalOrderId: order.paypalOrderId })
       }
-      const amountMatches = details.amount === order.totalAmount.toFixed(2)
+      const amountMatches = matchesAmountUsd(details.amount, order.totalAmount)
       const currencyMatches = details.currencyCode === 'USD'
       const invoiceMatches = details.invoiceId === `natsdoll-${order.orderNumber}`
       if (!amountMatches || !currencyMatches || !invoiceMatches) {
