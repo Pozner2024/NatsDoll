@@ -1634,6 +1634,11 @@ git commit -m "feat(web): external payment page toggle in admin settings"
 ```yaml
   wp-db:
     image: mariadb:11
+    # Тюнинг под VPS 2 ГБ: маленький buffer pool (БД WP крошечная), performance_schema
+    # выключен (экономит ~100 МБ), скромный лимит коннектов. mem_limit — верхний потолок
+    # против runaway, не жёсткая резервация (штатно MariaDB держится ~150–200 МБ).
+    command: --innodb-buffer-pool-size=64M --performance-schema=OFF --max-connections=50
+    mem_limit: 512m
     environment:
       MARIADB_DATABASE: wordpress
       MARIADB_USER: wordpress
@@ -1645,6 +1650,7 @@ git commit -m "feat(web): external payment page toggle in admin settings"
 
   wordpress:
     image: wordpress:6
+    mem_limit: 512m
     environment:
       WORDPRESS_DB_HOST: wp-db
       WORDPRESS_DB_NAME: wordpress
@@ -1655,6 +1661,8 @@ git commit -m "feat(web): external payment page toggle in admin settings"
         define('WP_HOME', 'https://pay.natsdoll.com');
         define('WP_SITEURL', 'https://pay.natsdoll.com');
         define('DISALLOW_FILE_EDIT', true);
+        define('WP_MEMORY_LIMIT', '128M');
+        define('WP_MAX_MEMORY_LIMIT', '128M');
     volumes:
       - wp_data:/var/www/html
       - ./infra/wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
@@ -1692,8 +1700,27 @@ pay.natsdoll.com {
 
 - [ ] **Step 3: Подготовка сервера (ДО пуша)**
 
-- Пользователь: докупить место на VPS; добавить в Namecheap A-запись `pay` → `89.127.205.44`.
+- Пользователь: увеличить VPS до 2 ГБ ОЗУ / 20 ГБ диска; добавить в Namecheap A-запись `pay` → `89.127.205.44`.
 - Через diag/redeploy-workflow или вручную: дополнить `/home/natalia/natsdoll/.env`: `WP_DB_PASSWORD`, `WP_DB_ROOT_PASSWORD` (openssl rand -hex 16), `WOO_BASE_URL=https://pay.natsdoll.com`, остальные `WOO_*` — ПОКА пустыми (заполнятся после настройки Woo, api переживает пустые значения: create-payment отдаст 503, вебхук — handled:false).
+
+- [ ] **Step 3b: Swap-файл на сервере (подушка памяти для 2 ГБ ОЗУ)**
+
+На VPS (по SSH/workflow), один раз. Гасит редкие пики памяти (одновременные посетители, момент деплоя со старым+новым контейнером), чтобы WordPress/MariaDB/SSR не упали по OOM:
+
+```bash
+# создать 2 ГБ swap, если ещё нет
+if [ ! -f /swapfile ]; then
+  sudo fallocate -l 2G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+fi
+sudo sysctl vm.swappiness=10   # своп только под реальным давлением
+free -h                        # проверить, что Swap: 2.0Gi виден
+```
+
+Лимиты памяти WordPress/MariaDB уже заложены в `docker-compose.prod.yml` (Step 1: `mem_limit: 512m` + тюнинг MariaDB + `WP_MEMORY_LIMIT`).
 
 - [ ] **Step 4: Пуш и деплой**
 
