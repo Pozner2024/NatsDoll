@@ -190,7 +190,9 @@ git commit -m "feat(payments): WordPress payment page scaffolding (mu-plugins, d
 - [ ] **Step 1: Поднять контейнеры**
 
 Run: `docker compose up -d wp-db wordpress`
-Открыть `http://localhost:8080` → мастер установки: язык English, Site Title «NatsDoll Payments», admin-логин/пароль сохранить у пользователя, Search engine visibility — галку «Discourage» ПОСТАВИТЬ.
+Открыть `http://localhost:8080` → мастер установки: язык English, Site Title «NatsDoll» (tagline «Secure checkout»), admin-логин/пароль сохранить у пользователя, Search engine visibility — галку «Discourage» ПОСТАВИТЬ.
+
+Брендинг страницы оплаты (шрифты/цвета/логотип NatsDoll, скрытие корзины, смягчение плашки) применяется автоматически мини-плагином `infra/wordpress/mu-plugins/natsdoll-branding.php` — отдельной настройки в админке не требует, едет вместе с деплоем.
 
 - [ ] **Step 2: Установить и настроить WooCommerce**
 
