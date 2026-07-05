@@ -21,6 +21,7 @@ function makeRepo(): OrderRepository {
     getMyOrders: vi.fn(),
     getOrderById: vi.fn(),
     getProductsForCheckout: vi.fn(),
+    cancelPendingOrder: vi.fn(),
   }
 }
 

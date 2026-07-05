@@ -69,3 +69,8 @@ export async function fetchOrder(orderId: string): Promise<OrderDetail> {
   if (!res.ok) throw new Error('Order not found')
   return orderDetailSchema.parse(await res.json())
 }
+
+export async function cancelOrder(orderId: string): Promise<void> {
+  const res = await authFetch(`/orders/${orderId}/cancel`, { method: 'POST' })
+  if (!res.ok) throw new Error('Failed to cancel order')
+}

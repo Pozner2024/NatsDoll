@@ -55,6 +55,7 @@ import {
   makeGetMyOrders,
   makeGetOrder,
   makeGuestCheckout,
+  makeCancelOwnOrder,
   makeOrderRouter,
 } from './features/orders'
 import {
@@ -262,12 +263,13 @@ export function createApp() {
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
   const guestCheckout = makeGuestCheckout(orderRepo, getActiveSale, orderRepo.getProductsForCheckout, authRepo, issueTokensForUser)
+  const cancelOwnOrder = makeCancelOwnOrder(orderRepo)
   app.use('/orders', requireAuth)
   app.use('/orders/*', async (c, next) => {
     if (c.req.method === 'POST' && c.req.path === '/orders/guest') return next()
     return requireAuth(c, next)
   })
-  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder, guestCheckout))
+  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder, guestCheckout, cancelOwnOrder))
 
   // Payments
   const paymentRepo = makePaymentRepository(prisma)

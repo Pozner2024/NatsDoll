@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, readonly } from 'vue'
 import type { OrderDetail, OrderSummary, ShippingAddress } from './types'
-import { placeOrder, fetchMyOrders, fetchOrder } from './orderApi'
+import { placeOrder, fetchMyOrders, fetchOrder, cancelOrder } from './orderApi'
 
 export const useOrderStore = defineStore('order', () => {
   const currentOrder = ref<OrderDetail | null>(null)
@@ -48,6 +48,11 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  async function cancel(orderId: string): Promise<void> {
+    await cancelOrder(orderId)
+    myOrders.value = myOrders.value.filter((o) => o.id !== orderId)
+  }
+
   return {
     currentOrder: readonly(currentOrder),
     myOrders: readonly(myOrders),
@@ -56,5 +61,6 @@ export const useOrderStore = defineStore('order', () => {
     create,
     loadMyOrders,
     loadOrder,
+    cancel,
   }
 })

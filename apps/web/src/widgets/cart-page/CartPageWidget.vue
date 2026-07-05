@@ -12,6 +12,37 @@
     </p>
 
     <div
+      v-if="pendingOrder"
+      class="cart-page__pending-order"
+    >
+      <p class="cart-page__pending-order-text">
+        You have an unpaid order #{{ pendingOrder.orderNumber }} for {{ formatPrice(pendingOrder.totalAmount) }}.
+      </p>
+      <div class="cart-page__pending-order-actions">
+        <AppButton
+          class="cart-page__pending-order-btn"
+          @click="goToPendingOrder"
+        >
+          Pay
+        </AppButton>
+        <button
+          type="button"
+          class="cart-page__pending-order-cancel"
+          :disabled="cancellingOrder"
+          @click="onCancelPendingOrder"
+        >
+          {{ cancellingOrder ? 'Cancelling…' : 'Cancel order' }}
+        </button>
+      </div>
+      <p
+        v-if="cancelError"
+        class="cart-page__pending-order-error"
+      >
+        {{ cancelError }}
+      </p>
+    </div>
+
+    <div
       v-if="loading"
       class="cart-page__loading"
     >
@@ -180,6 +211,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { AppButton, formatPrice, calcShipping, useAuthModal, validateEmail } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
+import { useOrderStore } from '@/entities/order'
 import { CheckoutForm } from '@/features/checkout-form'
 import { PaypalPayment, fetchPaymentConfig } from '@/features/paypal-payment'
 import type { PaymentConfig } from '@/features/paypal-payment'
@@ -192,6 +224,35 @@ import CartLineItem from './components/CartLineItem.vue'
 const router = useRouter()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
+const orderStore = useOrderStore()
+
+const dismissedOrderId = ref<string | null>(null)
+const pendingOrder = computed(() => {
+  if (!authStore.isLoggedIn) return null
+  return orderStore.myOrders.find((o) => o.status === 'PENDING' && o.id !== dismissedOrderId.value) ?? null
+})
+const cancellingOrder = ref(false)
+const cancelError = ref('')
+
+function goToPendingOrder(): void {
+  if (!pendingOrder.value) return
+  router.push({ name: 'order-confirmation', params: { id: pendingOrder.value.id } })
+}
+
+async function onCancelPendingOrder(): Promise<void> {
+  if (!pendingOrder.value) return
+  const orderId = pendingOrder.value.id
+  cancelError.value = ''
+  cancellingOrder.value = true
+  try {
+    await orderStore.cancel(orderId)
+    dismissedOrderId.value = orderId
+  } catch {
+    cancelError.value = 'Could not cancel the order'
+  } finally {
+    cancellingOrder.value = false
+  }
+}
 
 const items = computed(() => cartStore.items)
 const itemCount = computed(() => cartStore.itemCount)
@@ -303,6 +364,7 @@ async function placeOrderFallback(): Promise<void> {
 onMounted(async () => {
   if (!authStore.authReady) await authStore.initAuth()
   await cartStore.load()
+  if (authStore.isLoggedIn) await orderStore.loadMyOrders()
   try {
     paymentConfig.value = await fetchPaymentConfig()
   } catch {
@@ -376,6 +438,57 @@ async function onRemove(itemId: string): Promise<void> {
     background: rgb(180 30 30 / 0.08);
     color: rgb(180 30 30 / 1);
     font-size: var(--fs-sm);
+  }
+
+  &__pending-order {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-accent);
+    border-radius: 6px;
+    background: rgb(var(--btn-gradient-light) / 0.4);
+  }
+
+  &__pending-order-text {
+    flex: 1 1 220px;
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--fs-sm);
+  }
+
+  &__pending-order-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+
+  &__pending-order-btn {
+    --btn-font-size: var(--fs-sm);
+  }
+
+  &__pending-order-cancel {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    text-decoration: underline;
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__pending-order-error {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--color-error);
   }
 
   &__layout {

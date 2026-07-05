@@ -248,6 +248,16 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
       return toOrderDetail(order)
     },
 
+    async cancelPendingOrder(userId: string, orderId: string): Promise<boolean> {
+      // Атомарный CAS по образцу markOrderPaid: сток при PENDING не резервировался,
+      // поэтому отмена — чистая смена статуса без компенсации стока.
+      const { count } = await prisma.order.updateMany({
+        where: { id: orderId, userId, status: 'PENDING' },
+        data: { status: 'CANCELLED' },
+      })
+      return count === 1
+    },
+
     async getProductsForCheckout(productIds) {
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },

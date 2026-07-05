@@ -5,7 +5,7 @@ import { defineComponent, h } from 'vue'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 
-const { fetchPaymentConfig, mockAuthState, createGuestOrder, GuestEmailTakenError } = vi.hoisted(() => {
+const { fetchPaymentConfig, mockAuthState, mockOrderState, createGuestOrder, GuestEmailTakenError } = vi.hoisted(() => {
   class GuestEmailTakenErrorClass extends Error {
     constructor() {
       super('An account with this email exists. Please sign in.')
@@ -15,8 +15,25 @@ const { fetchPaymentConfig, mockAuthState, createGuestOrder, GuestEmailTakenErro
   return {
     fetchPaymentConfig: vi.fn(),
     mockAuthState: { isLoggedIn: true },
+    mockOrderState: { myOrders: [] as { id: string; orderNumber: number; status: string; totalAmount: number }[] },
     createGuestOrder: vi.fn(),
     GuestEmailTakenError: GuestEmailTakenErrorClass,
+  }
+})
+
+const cancelOrderMock = vi.fn(async (id: string) => {
+  mockOrderState.myOrders = mockOrderState.myOrders.filter((o) => o.id !== id)
+})
+
+vi.mock('@/entities/order', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/entities/order')>()
+  return {
+    ...actual,
+    useOrderStore: () => ({
+      get myOrders() { return mockOrderState.myOrders },
+      loadMyOrders: vi.fn(),
+      cancel: cancelOrderMock,
+    }),
   }
 })
 
@@ -91,6 +108,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
   mockAuthState.isLoggedIn = true
+  mockOrderState.myOrders = []
 })
 
 describe('CartPageWidget — выбор кнопки оплаты по конфигу', () => {
@@ -201,5 +219,58 @@ describe('CartPageWidget — guest checkout (email field)', () => {
     expect(wrapper.find('.cart-page__guest-email-taken').exists()).toBe(true)
     expect(wrapper.text()).toContain('An account with this email exists')
     expect(wrapper.find('.cart-page__sign-in-btn').exists()).toBe(true)
+  })
+})
+
+describe('CartPageWidget — незавершённый заказ (баннер)', () => {
+  beforeEach(() => {
+    fetchPaymentConfig.mockResolvedValue({ enabled: true, clientId: 'abc', mode: 'SANDBOX', serverFlow: true, external: false })
+  })
+
+  it('нет PENDING-заказа → баннер не показывается', async () => {
+    const wrapper = mountWidget()
+    await flushPromises()
+    expect(wrapper.find('.cart-page__pending-order').exists()).toBe(false)
+  })
+
+  it('есть PENDING-заказ → баннер с номером и суммой, кнопки Pay/Cancel', async () => {
+    mockOrderState.myOrders = [{ id: 'o30', orderNumber: 30, status: 'PENDING', totalAmount: 67.7 }]
+    const wrapper = mountWidget()
+    await flushPromises()
+    const banner = wrapper.find('.cart-page__pending-order')
+    expect(banner.exists()).toBe(true)
+    expect(banner.text()).toContain('#30')
+    expect(banner.text()).toContain('$67.70')
+  })
+
+  it('гость не видит баннер (не запрашивается myOrders)', async () => {
+    mockAuthState.isLoggedIn = false
+    mockOrderState.myOrders = [{ id: 'o30', orderNumber: 30, status: 'PENDING', totalAmount: 67.7 }]
+    const wrapper = mountWidget()
+    await flushPromises()
+    expect(wrapper.find('.cart-page__pending-order').exists()).toBe(false)
+  })
+
+  it('клик Cancel order → вызывает cancel и скрывает баннер', async () => {
+    mockOrderState.myOrders = [{ id: 'o30', orderNumber: 30, status: 'PENDING', totalAmount: 67.7 }]
+    const wrapper = mountWidget()
+    await flushPromises()
+
+    await wrapper.find('.cart-page__pending-order-cancel').trigger('click')
+    await flushPromises()
+
+    expect(cancelOrderMock).toHaveBeenCalledWith('o30')
+    expect(wrapper.find('.cart-page__pending-order').exists()).toBe(false)
+  })
+
+  it('клик Pay → переходит на order-confirmation этого заказа', async () => {
+    mockOrderState.myOrders = [{ id: 'o30', orderNumber: 30, status: 'PENDING', totalAmount: 67.7 }]
+    const wrapper = mountWidget()
+    await flushPromises()
+
+    await wrapper.find('.cart-page__pending-order-btn').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/orders/o30')
   })
 })

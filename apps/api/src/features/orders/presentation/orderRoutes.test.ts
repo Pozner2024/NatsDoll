@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
 import { makeOrderRouter } from './orderRoutes'
 import { COOKIE_NAME } from '../../../shared/lib'
-import type { CreateOrder, GetMyOrders, GetOrder } from '../types'
+import type { CreateOrder, GetMyOrders, GetOrder, CancelOwnOrder } from '../types'
 
 const mockAddress = {
   fullName: 'Natasha', line1: '123 St', city: 'NY', country: 'US', postalCode: '10001',
@@ -17,13 +17,14 @@ function makeApp(
   createOrder: CreateOrder,
   getMyOrders: GetMyOrders,
   getOrder: GetOrder,
+  cancelOwnOrder: CancelOwnOrder = vi.fn(),
 ) {
   const app = new Hono()
   app.use('*', async (c, next) => {
     c.set('auth', { userId: 'u1', role: 'CUSTOMER' })
     await next()
   })
-  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder, vi.fn() as never))
+  app.route('/', makeOrderRouter(createOrder, getMyOrders, getOrder, vi.fn() as never, cancelOwnOrder))
   return app
 }
 
@@ -79,6 +80,16 @@ describe('GET /orders/:id', () => {
   })
 })
 
+describe('POST /orders/:id/cancel', () => {
+  it('вызывает cancelOwnOrder с userId и orderId', async () => {
+    const cancelOwnOrder = vi.fn().mockResolvedValue(undefined)
+    const app = makeApp(vi.fn(), vi.fn(), vi.fn(), cancelOwnOrder)
+    const res = await app.request('/orders/order-1/cancel', { method: 'POST' })
+    expect(res.status).toBe(200)
+    expect(cancelOwnOrder).toHaveBeenCalledWith('u1', 'order-1')
+  })
+})
+
 describe('POST /orders/guest', () => {
   it('публичный, создаёт заказ и ставит refresh-cookie', async () => {
     const guest = vi.fn().mockResolvedValue({
@@ -86,7 +97,7 @@ describe('POST /orders/guest', () => {
       tokens: { accessToken: 'AT', refreshToken: 'RT', user: {} },
     })
     const app = new Hono()
-    app.route('/', makeOrderRouter(vi.fn() as never, vi.fn() as never, vi.fn() as never, guest as never))
+    app.route('/', makeOrderRouter(vi.fn() as never, vi.fn() as never, vi.fn() as never, guest as never, vi.fn() as never))
     const res = await app.request('/orders/guest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

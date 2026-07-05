@@ -58,4 +58,17 @@ describe('useOrderStore', () => {
     await store.loadMyOrders()
     expect(store.myOrders).toHaveLength(1)
   })
+
+  it('cancel() removes the order from myOrders', async () => {
+    vi.mocked(api.fetchMyOrders).mockResolvedValue([
+      { id: 'o1', orderNumber: 1, status: 'PENDING', totalAmount: 20, itemCount: 1,
+        createdAt: '2026-05-21T00:00:00.000Z', firstItemImage: null },
+    ])
+    vi.mocked(api.cancelOrder).mockResolvedValue(undefined)
+    const store = useOrderStore()
+    await store.loadMyOrders()
+    await store.cancel('o1')
+    expect(store.myOrders).toHaveLength(0)
+    expect(api.cancelOrder).toHaveBeenCalledWith('o1')
+  })
 })

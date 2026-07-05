@@ -4,7 +4,7 @@ import { zValidator } from '../../../shared/lib'
 import { setCookie } from 'hono/cookie'
 import { createRateLimiter } from '../../../shared/middleware'
 import { COOKIE_NAME, REFRESH_TOKEN_TTL_SECONDS } from '../../../shared/lib'
-import type { CreateOrder, GetMyOrders, GetOrder } from '../types'
+import type { CreateOrder, GetMyOrders, GetOrder, CancelOwnOrder } from '../types'
 import type { GuestCheckout } from '../application/guestCheckout'
 
 const shippingAddressSchema = z.object({
@@ -49,6 +49,7 @@ export function makeOrderRouter(
   getMyOrders: GetMyOrders,
   getOrder: GetOrder,
   guestCheckout: GuestCheckout,
+  cancelOwnOrder: CancelOwnOrder,
 ) {
   const router = new Hono()
 
@@ -70,6 +71,13 @@ export function makeOrderRouter(
     const orderId = c.req.param('id')
     const order = await getOrder(userId, orderId)
     return c.json(order)
+  })
+
+  router.post('/orders/:id/cancel', async (c) => {
+    const { userId } = c.get('auth')
+    const orderId = c.req.param('id')
+    await cancelOwnOrder(userId, orderId)
+    return c.json({ ok: true })
   })
 
   router.post('/orders/guest', guestLimiter.middleware, zValidator('json', guestCheckoutSchema), async (c) => {

@@ -76,6 +76,7 @@ export type GuestCheckoutInput = {
 export type CreateOrder = (userId: string, shippingAddress: ShippingAddress) => Promise<OrderDetail>
 export type GetMyOrders = (userId: string) => Promise<OrderSummary[]>
 export type GetOrder = (userId: string, orderId: string) => Promise<OrderDetail>
+export type CancelOwnOrder = (userId: string, orderId: string) => Promise<void>
 
 export type CheckoutProduct = {
   id: string; name: string; price: number; stock: number
@@ -102,4 +103,5 @@ export interface OrderRepository {
   ): Promise<OrderDetail>
   getMyOrders(userId: string): Promise<OrderSummary[]>
   getOrderById(orderId: string): Promise<OrderDetail | null>
+  cancelPendingOrder(userId: string, orderId: string): Promise<boolean>
 }
