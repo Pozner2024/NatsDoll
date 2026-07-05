@@ -14,6 +14,14 @@ export type EmailService = {
   sendTrackingNotification(to: string, name: string, orderNumber: number, trackingNumber: string): Promise<void>
   sendContactNotification(adminEmail: string, fromName: string, fromEmail: string, message: string): Promise<void>
   sendPaymentCaptureAlert(adminEmail: string, orderNumber: number, captureId: string | null, reason: string): Promise<void>
+  sendOrderConfirmation(
+    to: string,
+    name: string,
+    orderNumber: number,
+    items: { productName: string; quantity: number }[],
+    totalAmount: number,
+  ): Promise<void>
+  sendNewOrderAlert(adminEmail: string, orderNumber: number, customerEmail: string, totalAmount: number): Promise<void>
 }
 
 export function makeEmailService(): EmailService {
@@ -141,6 +149,38 @@ export function makeEmailService(): EmailService {
           <p>Tracking number: <strong>${escapeHtml(trackingNumber)}</strong></p>
           <p>You can track your order using this number with your shipping carrier.</p>
           <p>You can also view your order details in your <a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/account/purchases">account cabinet</a>.</p>
+        `,
+      })
+    },
+    async sendOrderConfirmation(to, name, orderNumber, items, totalAmount) {
+      // SECURITY: имена товаров и покупателя — user/admin-controlled контент, экранируем через escapeHtml.
+      const itemsHtml = items
+        .map((item) => `<li>${escapeHtml(item.productName)} × ${item.quantity}</li>`)
+        .join('')
+      await send({
+        from: 'noreply@natsdoll.com',
+        to,
+        subject: `Order confirmed — #${orderNumber} — NatsDoll`,
+        html: `
+          <p>Hi ${escapeHtml(name)},</p>
+          <p>Thanks for your order! We've received <strong>order #${orderNumber}</strong>:</p>
+          <ul>${itemsHtml}</ul>
+          <p>Total: <strong>$${totalAmount.toFixed(2)}</strong></p>
+          <p>You can track your order in your <a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/account/purchases">account cabinet</a>.</p>
+        `,
+      })
+    },
+    async sendNewOrderAlert(adminEmail, orderNumber, customerEmail, totalAmount) {
+      // SECURITY: только server-controlled значения (orderNumber/totalAmount из БД) и
+      // customerEmail (уже провалидирован Zod-схемой на входе checkout) — экранируем на всякий случай.
+      await send({
+        from: 'noreply@natsdoll.com',
+        to: adminEmail,
+        subject: `New order #${orderNumber} — NatsDoll`,
+        html: `
+          <p>New order <strong>#${orderNumber}</strong> from ${escapeHtml(customerEmail)}.</p>
+          <p>Total: <strong>$${totalAmount.toFixed(2)}</strong></p>
+          <p><a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/admin/orders">View in admin panel</a></p>
         `,
       })
     },

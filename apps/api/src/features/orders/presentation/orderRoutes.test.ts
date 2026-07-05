@@ -10,7 +10,7 @@ const mockAddress = {
 
 const mockOrderDetail = {
   id: 'order-1', userId: 'u1', status: 'PENDING', totalAmount: 10,
-  shippingAddress: mockAddress, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, items: [],
+  shippingAddress: mockAddress, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
 }
 
 function makeApp(

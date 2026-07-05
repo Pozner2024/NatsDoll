@@ -30,7 +30,7 @@ describe('getOrder', () => {
     const repo = makeRepo()
     vi.mocked(repo.getOrderById).mockResolvedValue({
       id: 'order-1', orderNumber: 1, userId: 'other-user', status: 'PENDING', totalAmount: 10,
-      shippingAddress: address, shippingCost: 0, trackingNumber: null, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, items: [],
+      shippingAddress: address, shippingCost: 0, trackingNumber: null, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
     })
     const getOrder = makeGetOrder(repo)
     await expect(getOrder('u1', 'order-1')).rejects.toMatchObject({ statusCode: 404 })
@@ -40,7 +40,7 @@ describe('getOrder', () => {
     const repo = makeRepo()
     const order = {
       id: 'order-1', orderNumber: 1, userId: 'u1', status: 'PENDING', totalAmount: 10,
-      shippingAddress: address, shippingCost: 0, trackingNumber: null, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, items: [],
+      shippingAddress: address, shippingCost: 0, trackingNumber: null, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
     }
     vi.mocked(repo.getOrderById).mockResolvedValue(order)
     const getOrder = makeGetOrder(repo)

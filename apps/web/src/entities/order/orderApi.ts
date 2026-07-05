@@ -33,6 +33,7 @@ const orderDetailSchema = z.object({
   shippingAddress: shippingAddressSchema,
   createdAt: z.string(),
   paymentClaimed: z.boolean(),
+  isGuestAccount: z.boolean(),
   items: z.array(orderItemSchema),
 })
 

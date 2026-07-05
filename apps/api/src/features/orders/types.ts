@@ -33,6 +33,7 @@ export type OrderDetail = {
   trackingNumber: string | null
   createdAt: string
   paymentClaimed: boolean
+  isGuestAccount: boolean
   items: OrderItemView[]
 }
 

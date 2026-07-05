@@ -25,6 +25,13 @@
         <p class="order-confirmation__id">
           Order #{{ order.orderNumber }}
         </p>
+        <p
+          v-if="order.isGuestAccount"
+          class="order-confirmation__guest-note"
+        >
+          We've created an account for you to track this order — no password was set.
+          To sign in later, use "Forgot password" on the sign-in form with this email.
+        </p>
       </div>
 
       <div class="order-confirmation__layout">
@@ -275,6 +282,13 @@ function onClaimed() {
   }
 
   &__id {
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+  }
+
+  &__guest-note {
+    max-width: 480px;
+    margin: 0.75rem auto 0;
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
   }

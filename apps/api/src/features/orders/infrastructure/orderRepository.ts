@@ -113,6 +113,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
             trackingNumber: true,
             createdAt: true,
             paymentClaimed: true,
+            user: { select: { passwordHash: true, googleId: true } },
             items: {
               select: {
                 id: true,
@@ -174,6 +175,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           select: {
             id: true, orderNumber: true, shippingCost: true, userId: true, status: true,
             totalAmount: true, shippingAddress: true, trackingNumber: true, createdAt: true, paymentClaimed: true,
+            user: { select: { passwordHash: true, googleId: true } },
             items: {
               select: {
                 id: true, quantity: true, price: true, originalPrice: true, message: true,
@@ -232,6 +234,7 @@ export function makeOrderRepository(prisma: PrismaClient): OrderRepository {
           trackingNumber: true,
           createdAt: true,
           paymentClaimed: true,
+          user: { select: { passwordHash: true, googleId: true } },
           items: {
             select: {
               id: true,
@@ -279,6 +282,7 @@ type OrderRow = {
   trackingNumber: string | null
   createdAt: Date
   paymentClaimed: boolean
+  user: { passwordHash: string | null; googleId: string | null }
   items: Array<{
     id: string
     quantity: number
@@ -317,6 +321,7 @@ function toOrderDetail(order: OrderRow): OrderDetail {
     trackingNumber: order.trackingNumber,
     createdAt: order.createdAt.toISOString(),
     paymentClaimed: order.paymentClaimed,
+    isGuestAccount: order.user.passwordHash === null && order.user.googleId === null,
     items,
   }
 }

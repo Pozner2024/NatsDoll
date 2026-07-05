@@ -3,6 +3,7 @@ import { calcShipping } from '../../../shared/lib'
 import type { OrderRepository, GuestCheckoutInput, GuestOrderItem, OrderDetail, GetProductsForCheckout } from '../types'
 import type { GetActiveSale } from '../../admin/types'
 import type { AuthRepository } from '../../auth/infrastructure/authRepository'
+import type { EmailService } from '../../auth/infrastructure/emailService'
 import type { issueTokensForUser, AuthTokensResult } from '../../auth/application/issueTokens'
 
 export type GuestCheckout = (input: GuestCheckoutInput) => Promise<{ order: OrderDetail; tokens: AuthTokensResult }>
@@ -13,6 +14,7 @@ export function makeGuestCheckout(
   getProductsForCheckout: GetProductsForCheckout,
   authRepo: Pick<AuthRepository, 'findByEmail' | 'createGuestUser' | 'saveRefreshToken' | 'pruneUserSessions'>,
   issueTokens: typeof issueTokensForUser,
+  emailService: EmailService,
 ): GuestCheckout {
   return async (input) => {
     if (input.items.length === 0) {
@@ -55,6 +57,21 @@ export function makeGuestCheckout(
 
     const order = await orderRepo.createOrderFromItems(user.id, orderItems, shippingCost, input.shippingAddress, sale)
     const tokens = await issueTokens(authRepo as never, user as never)
+
+    try {
+      await emailService.sendOrderConfirmation(input.email, input.shippingAddress.fullName, order.orderNumber, order.items, order.totalAmount)
+    } catch (err) {
+      console.error('Failed to send order confirmation:', err)
+    }
+    const adminEmail = process.env.ADMIN_EMAIL
+    if (adminEmail) {
+      try {
+        await emailService.sendNewOrderAlert(adminEmail, order.orderNumber, input.email, order.totalAmount)
+      } catch (err) {
+        console.error('Failed to send new order alert:', err)
+      }
+    }
+
     return { order, tokens }
   }
 }

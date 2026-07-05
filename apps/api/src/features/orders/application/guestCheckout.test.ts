@@ -3,7 +3,7 @@ import { makeGuestCheckout } from './guestCheckout'
 
 const product = { id: 'p1', name: 'Doll', price: 16, stock: 5, isPublished: true, deletedAt: null, categoryId: 'c1' }
 const address = { fullName: 'Anna', line1: '1 St', city: 'NY', country: 'US', postalCode: '10001' }
-const order = { id: 'o1', orderNumber: 7, userId: 'u1', status: 'PENDING', totalAmount: 28, shippingCost: 12, shippingAddress: address, trackingNumber: null, createdAt: '2026-06-27T00:00:00Z', paymentClaimed: false, items: [] }
+const order = { id: 'o1', orderNumber: 7, userId: 'u1', status: 'PENDING', totalAmount: 28, shippingCost: 12, shippingAddress: address, trackingNumber: null, createdAt: '2026-06-27T00:00:00Z', paymentClaimed: false, isGuestAccount: true, items: [] }
 
 function deps() {
   return {
@@ -16,10 +16,11 @@ function deps() {
       saveRefreshToken: vi.fn(), pruneUserSessions: vi.fn(),
     },
     issueTokens: vi.fn().mockResolvedValue({ accessToken: 'AT', refreshToken: 'RT', user: { id: 'u1', name: 'Anna', email: 'a@b.com', role: 'CUSTOMER' } }),
+    emailService: { sendOrderConfirmation: vi.fn(), sendNewOrderAlert: vi.fn() },
   }
 }
 function make(d: ReturnType<typeof deps>) {
-  return makeGuestCheckout(d.orderRepo as never, d.getActiveSale as never, d.getProductsForCheckout as never, d.authRepo as never, d.issueTokens as never)
+  return makeGuestCheckout(d.orderRepo as never, d.getActiveSale as never, d.getProductsForCheckout as never, d.authRepo as never, d.issueTokens as never, d.emailService as never)
 }
 
 describe('guestCheckout', () => {
@@ -29,6 +30,15 @@ describe('guestCheckout', () => {
     expect(d.authRepo.createGuestUser).toHaveBeenCalledWith({ name: 'Anna', email: 'a@b.com' })
     expect(d.orderRepo.createOrderFromItems).toHaveBeenCalled()
     expect(res.tokens.accessToken).toBe('AT')
+    expect(d.emailService.sendOrderConfirmation).toHaveBeenCalledWith('a@b.com', 'Anna', 7, [], 28)
+  })
+
+  it('ADMIN_EMAIL задан → отправляет алерт админу', async () => {
+    process.env.ADMIN_EMAIL = 'admin@natsdoll.com'
+    const d = deps()
+    await make(d)({ email: 'a@b.com', shippingAddress: address, items: [{ productId: 'p1', quantity: 1, message: null }] })
+    expect(d.emailService.sendNewOrderAlert).toHaveBeenCalledWith('admin@natsdoll.com', 7, 'a@b.com', 28)
+    delete process.env.ADMIN_EMAIL
   })
 
   it('rejects with 409 when the email belongs to a real account (has password)', async () => {

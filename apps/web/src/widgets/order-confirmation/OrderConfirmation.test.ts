@@ -36,7 +36,7 @@ vi.mock('vue-router', () => ({
   RouterLink: { name: 'RouterLink', template: '<a><slot /></a>' },
 }))
 
-function makeOrder(status: string, paymentClaimed = false) {
+function makeOrder(status: string, paymentClaimed = false, isGuestAccount = false) {
   return {
     id: 'o1',
     orderNumber: 17,
@@ -44,6 +44,7 @@ function makeOrder(status: string, paymentClaimed = false) {
     totalAmount: 29,
     shippingCost: 12,
     paymentClaimed,
+    isGuestAccount,
     items: [{ id: 'i1', productSlug: 'p', productName: 'P', productImage: null, subtotal: 17, quantity: 1, message: null }],
     shippingAddress: { fullName: 'N', line1: '1 St', city: 'NYC', postalCode: '10001', country: 'US' },
   }
@@ -82,6 +83,19 @@ describe('OrderConfirmation', () => {
     expect(wrapper.find('.order-confirmation__payment').exists()).toBe(true)
     expect(wrapper.find('.paypal-stub').exists()).toBe(true)
     expect(wrapper.find('.order-confirmation__subtitle').text()).toContain('complete your payment')
+  })
+
+  it('isGuestAccount → показывает подсказку про сброс пароля', async () => {
+    state.currentOrder = makeOrder('PENDING', false, true)
+    const wrapper = await mountIt()
+    expect(wrapper.find('.order-confirmation__guest-note').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Forgot password')
+  })
+
+  it('не гостевой аккаунт → подсказки нет', async () => {
+    state.currentOrder = makeOrder('PENDING', false, false)
+    const wrapper = await mountIt()
+    expect(wrapper.find('.order-confirmation__guest-note').exists()).toBe(false)
   })
 
   it('оплаченный заказ → блок оплаты скрыт, благодарственный подзаголовок', async () => {

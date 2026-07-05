@@ -9,7 +9,7 @@ const address = {
 }
 const order = {
   id: 'ord-1', orderNumber: 42, status: 'PENDING', totalAmount: 37, shippingCost: 12,
-  shippingAddress: address, createdAt: '2026-06-23T00:00:00.000Z', paymentClaimed: false, items: [],
+  shippingAddress: address, createdAt: '2026-06-23T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
 }
 
 describe('usePendingOrder', () => {

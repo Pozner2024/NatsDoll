@@ -11,7 +11,7 @@ const mockAddress = {
 
 const mockOrder = {
   id: 'order-1', orderNumber: 1, status: 'PENDING', totalAmount: 20, shippingCost: 0,
-  shippingAddress: mockAddress, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, items: [],
+  shippingAddress: mockAddress, createdAt: '2026-05-21T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
 }
 
 describe('useOrderStore', () => {

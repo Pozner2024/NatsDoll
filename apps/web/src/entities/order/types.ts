@@ -29,6 +29,7 @@ export type OrderDetail = {
   shippingAddress: ShippingAddress
   createdAt: string
   paymentClaimed: boolean
+  isGuestAccount: boolean
   items: OrderItemView[]
 }
 
