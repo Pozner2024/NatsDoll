@@ -147,6 +147,25 @@ ul.wc_payment_methods,
   border-radius: 12px !important;
 }
 
+.woocommerce-order-pay #payment ul.wc_payment_methods {
+  min-height: 160px;
+}
+
+.woocommerce-order-pay #payment .payment_box,
+.woocommerce-order-pay #payment .payment_box label {
+  font-size: 0.9rem !important;
+}
+
+.woocommerce-order-pay #payment .payment_box input,
+.woocommerce-order-pay #payment .payment_box iframe,
+.woocommerce-order-pay #payment .payment_box [id^='ppcp-credit-card-gateway-card'] {
+  font-size: 16px !important;
+  min-height: 0 !important;
+  height: 2.4rem !important;
+  padding: 0.35em 0.7em !important;
+  box-sizing: border-box;
+}
+
 .woocommerce-order-pay .order_details tfoot .total .amount {
   color: var(--nd-accent) !important;
 }
@@ -169,8 +188,8 @@ ul.wc_payment_methods,
   }
 
   .woocommerce-order-pay #order_review > #payment {
-    flex: 0 0 420px;
-    max-width: 420px;
+    flex: 0 0 340px;
+    max-width: 340px;
     margin-top: 0 !important;
   }
 }
