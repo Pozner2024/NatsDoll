@@ -160,10 +160,6 @@ ul.wc_payment_methods,
 .woocommerce-order-pay #payment .payment_box iframe,
 .woocommerce-order-pay #payment .payment_box [id^='ppcp-credit-card-gateway-card'] {
   font-size: 16px !important;
-  min-height: 0 !important;
-  height: 2.4rem !important;
-  padding: 0.35em 0.7em !important;
-  box-sizing: border-box;
 }
 
 .woocommerce-order-pay .order_details tfoot .total .amount {
@@ -183,13 +179,16 @@ ul.wc_payment_methods,
   }
 
   .woocommerce-order-pay #order_review > table.shop_table {
-    flex: 1 1 auto;
     margin: 0 !important;
   }
 
+  .woocommerce-order-pay #order_review > table.shop_table,
   .woocommerce-order-pay #order_review > #payment {
-    flex: 0 0 340px;
-    max-width: 340px;
+    flex: 1 1 50%;
+    max-width: 50%;
+  }
+
+  .woocommerce-order-pay #order_review > #payment {
     margin-top: 0 !important;
   }
 }
