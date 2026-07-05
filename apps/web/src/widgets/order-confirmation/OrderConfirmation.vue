@@ -20,9 +20,7 @@
           Order placed!
         </h1>
         <p class="order-confirmation__subtitle">
-          {{ order.status === 'PENDING'
-            ? 'Almost there — complete your payment below.'
-            : "Thank you for your order. It's already on its way to you." }}
+          {{ subtitle }}
         </p>
         <p class="order-confirmation__id">
           Order #{{ order.orderNumber }}
@@ -122,7 +120,9 @@
           v-else-if="returnedFromPayment"
           class="order-confirmation__payment-pending"
         >
-          Payment is being processed…
+          {{ pollExhausted
+            ? "Payment received — confirmation is taking longer than usual. We'll update your order shortly, check My orders later."
+            : 'Payment is being processed…' }}
         </p>
         <WooPayButton
           v-else-if="externalMode"
@@ -165,7 +165,7 @@ import { PaypalPayment, fetchPaymentConfig, type PaymentConfig } from '@/feature
 import { WooPayButton } from '@/features/woo-payment'
 
 const POLL_INTERVAL_MS = 3000
-const POLL_MAX_ATTEMPTS = 10
+const POLL_MAX_ATTEMPTS = 40
 
 const props = defineProps<{ orderId: string }>()
 
@@ -183,9 +183,16 @@ const claimed = computed(() => locallyClaimed.value || order.value?.paymentClaim
 
 const paymentConfig = ref<PaymentConfig | null>(null)
 const externalMode = computed(() => paymentConfig.value?.external === true)
-const returnedFromPayment = ref(route.query.paid === '1')
+const returnedFromPayment = route.query.paid === '1'
+const pollExhausted = ref(false)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let pollAttempts = 0
+
+const subtitle = computed(() => {
+  if (order.value?.status !== 'PENDING') return "Thank you for your order. It's already on its way to you."
+  if (returnedFromPayment || claimed.value) return 'Payment is being processed…'
+  return 'Almost there — complete your payment below.'
+})
 
 function stopPolling(): void {
   if (pollTimer) {
@@ -204,7 +211,7 @@ function startPolling(): void {
       return
     }
     if (pollAttempts >= POLL_MAX_ATTEMPTS) {
-      returnedFromPayment.value = false
+      pollExhausted.value = true
       stopPolling()
     }
   }, POLL_INTERVAL_MS)
@@ -219,7 +226,7 @@ onMounted(async () => {
   } catch {
     paymentConfig.value = null
   }
-  if (returnedFromPayment.value && order.value?.status === 'PENDING') startPolling()
+  if (returnedFromPayment && order.value?.status === 'PENDING') startPolling()
 })
 
 async function onPaid() {

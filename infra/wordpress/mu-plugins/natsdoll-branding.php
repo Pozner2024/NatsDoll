@@ -164,12 +164,13 @@ ul.wc_payment_methods,
   }
 
   .woocommerce-order-pay #order_review > table.shop_table {
-    flex: 1 1 55%;
+    flex: 1 1 auto;
     margin: 0 !important;
   }
 
   .woocommerce-order-pay #order_review > #payment {
-    flex: 1 1 45%;
+    flex: 0 0 420px;
+    max-width: 420px;
     margin-top: 0 !important;
   }
 }

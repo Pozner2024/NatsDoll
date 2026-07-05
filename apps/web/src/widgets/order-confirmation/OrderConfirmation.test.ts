@@ -119,6 +119,13 @@ describe('OrderConfirmation', () => {
     expect(wrapper.find('.woo-stub').exists()).toBe(false)
   })
 
+  it('PENDING + ?paid=1 → подзаголовок «Payment is being processed», не «complete your payment»', async () => {
+    state.currentOrder = makeOrder('PENDING')
+    routeQuery.value = { paid: '1' }
+    const wrapper = await mountIt()
+    expect(wrapper.find('.order-confirmation__subtitle').text()).toContain('Payment is being processed')
+  })
+
   it('external-конфиг без ?paid=1 → рендерится WooPayButton, PaypalPayment — нет', async () => {
     state.currentOrder = makeOrder('PENDING')
     fetchPaymentConfig.mockResolvedValue({ external: true, clientId: null })
@@ -164,6 +171,24 @@ describe('OrderConfirmation', () => {
       await wrapper.vm.$nextTick()
 
       expect(wrapper.find('.order-confirmation__payment-pending').exists()).toBe(false)
+    })
+
+    it('после исчерпания поллинга кнопка оплаты не возвращается, сообщение о задержке', async () => {
+      state.currentOrder = makeOrder('PENDING')
+      routeQuery.value = { paid: '1' }
+      const wrapper = mount(OrderConfirmation, {
+        props: { orderId: 'o1' },
+        global: { stubs: { AppButton: true } },
+      })
+      await flushPromises()
+
+      await vi.advanceTimersByTimeAsync(40 * 3000)
+      await flushPromises()
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.find('.paypal-stub').exists()).toBe(false)
+      expect(wrapper.find('.woo-stub').exists()).toBe(false)
+      expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('taking longer')
     })
   })
 })
