@@ -152,7 +152,7 @@ ul.wc_payment_methods,
 
 @media (min-width: 782px) {
   .woocommerce-order-pay .woocommerce {
-    max-width: 920px !important;
+    max-width: min(1840px, 94vw) !important;
   }
 
   .woocommerce-order-pay #order_review {
