@@ -149,6 +149,29 @@ ul.wc_payment_methods,
 .woocommerce-order-pay .order_details tfoot .total .amount {
   color: var(--nd-accent) !important;
 }
+
+@media (min-width: 782px) {
+  .woocommerce-order-pay .woocommerce {
+    max-width: 920px !important;
+  }
+
+  .woocommerce-order-pay #order_review {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    max-width: none !important;
+  }
+
+  .woocommerce-order-pay #order_review > table.shop_table {
+    flex: 1 1 55%;
+    margin: 0 !important;
+  }
+
+  .woocommerce-order-pay #order_review > #payment {
+    flex: 1 1 45%;
+    margin-top: 0 !important;
+  }
+}
 CSS
     );
 });
