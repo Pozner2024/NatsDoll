@@ -38,6 +38,7 @@ export function makeWooClient(): WooClient {
         body: JSON.stringify({
           status: 'pending',
           currency: 'USD',
+          customer_id: 0,
           billing: { first_name: firstName, last_name: lastName, email: input.customerEmail },
           line_items: input.lineItems.map((li) => ({
             product_id: env.placeholderProductId,
