@@ -124,7 +124,6 @@ button.wp-element-button {
 .wc-block-components-notice-banner.is-error {
   background: #fff !important;
   border: 1px solid var(--nd-border) !important;
-  border-left: 4px solid var(--nd-accent) !important;
   border-radius: 10px !important;
   color: var(--nd-text) !important;
 }

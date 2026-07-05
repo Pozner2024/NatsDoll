@@ -90,7 +90,7 @@ const toast = useToast()
     }
 
     &--info {
-      border-left-color: var(--color-accent);
+      border-left-color: transparent;
     }
   }
 

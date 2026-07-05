@@ -448,7 +448,6 @@ async function onRemove(itemId: string): Promise<void> {
     margin-bottom: 1.5rem;
     padding: 0.9rem 1rem;
     border: 1px solid var(--color-border);
-    border-left: 4px solid var(--color-accent);
     border-radius: 6px;
     background: rgb(var(--btn-gradient-light) / 0.4);
   }
