@@ -40,7 +40,8 @@ body {
 .wp-block-woocommerce-cart-link,
 .wp-block-navigation,
 .wp-block-page-list,
-header .wc-block-mini-cart__button {
+header .wc-block-mini-cart__button,
+.woocommerce-order-pay .ppcp-messages {
   display: none !important;
 }
 
@@ -152,13 +153,13 @@ ul.wc_payment_methods,
 
 @media (min-width: 782px) {
   .woocommerce-order-pay .woocommerce {
-    max-width: min(1840px, 94vw) !important;
+    max-width: min(1840px, 96vw) !important;
   }
 
   .woocommerce-order-pay #order_review {
     display: flex;
     align-items: flex-start;
-    gap: 2rem;
+    gap: 1rem;
     max-width: none !important;
   }
 
