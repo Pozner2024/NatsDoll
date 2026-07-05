@@ -100,6 +100,7 @@ export type AdminRepository = {
   updateProduct(id: string, input: AdminProductInput): Promise<void>
   deleteProduct(id: string): Promise<void>
   togglePublish(id: string): Promise<{ isPublished: boolean }>
+  moveProductCategory(id: string, categoryId: string): Promise<void>
   // categories
   listCategoriesWithCount(): Promise<AdminCategoryItem[]>
   createCategory(name: string, slug: string): Promise<{ id: string }>
@@ -120,6 +121,7 @@ export type CreateProduct = (input: AdminProductInput) => Promise<{ id: string }
 export type UpdateProduct = (id: string, input: AdminProductInput) => Promise<void>
 export type DeleteProduct = (id: string) => Promise<void>
 export type TogglePublish = (id: string) => Promise<{ isPublished: boolean }>
+export type MoveProductCategory = (id: string, categoryId: string) => Promise<void>
 export type ListCategoriesWithCount = () => Promise<AdminCategoryItem[]>
 export type CreateCategory = (name: string, slug: string) => Promise<{ id: string }>
 export type UpdateCategory = (id: string, name: string, slug: string) => Promise<void>

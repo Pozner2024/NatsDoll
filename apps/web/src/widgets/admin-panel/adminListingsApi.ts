@@ -95,6 +95,15 @@ export function useAdminListings() {
     await load()
   }
 
+  async function moveCategory(id: string, categoryId: string) {
+    const res = await authFetch(`/admin/products/${id}/category`, {
+      method: 'PATCH',
+      json: { categoryId },
+    })
+    if (!res.ok) return
+    await load()
+  }
+
   function setFilter(patch: Partial<AdminListingsFilters>) {
     if (patch.search !== undefined || patch.categoryId !== undefined || patch.status !== undefined) {
       filters.value = { ...filters.value, ...patch, page: 1 }
@@ -106,5 +115,5 @@ export function useAdminListings() {
   watch(filters, load, { deep: true })
   onMounted(load)
 
-  return { data, isLoading, error, filters, setFilter, togglePublish, deleteProduct, load }
+  return { data, isLoading, error, filters, setFilter, togglePublish, deleteProduct, moveCategory, load }
 }

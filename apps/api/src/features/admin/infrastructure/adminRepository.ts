@@ -619,6 +619,10 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       return { isPublished: !product.isPublished }
     },
 
+    async moveProductCategory(id: string, categoryId: string) {
+      await prisma.product.update({ where: { id }, data: { categoryId } })
+    },
+
     async listCategoriesWithCount() {
       const rows = await prisma.category.findMany({
         orderBy: { position: 'asc' },

@@ -15,6 +15,7 @@ function makeRepo(): AdminRepository {
     updateProduct: vi.fn(),
     deleteProduct: vi.fn(),
     togglePublish: vi.fn(),
+    moveProductCategory: vi.fn(),
     listCategoriesWithCount: vi.fn(),
     createCategory: vi.fn(),
     updateCategory: vi.fn(),

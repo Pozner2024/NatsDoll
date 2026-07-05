@@ -95,8 +95,10 @@
         v-for="product in data.items"
         :key="product.id"
         :product="product"
+        :categories="categoryOptions"
         @toggle-publish="togglePublish"
         @delete="deleteProduct"
+        @move-category="moveCategory"
       />
     </div>
 
@@ -130,7 +132,7 @@ import AdminCategoriesSection from './AdminCategoriesSection.vue'
 import { useAdminListings } from '../adminListingsApi'
 import { useAdminCategories } from '../adminCategoriesApi'
 
-const { data, isLoading, error, filters, setFilter, togglePublish, deleteProduct, load } = useAdminListings()
+const { data, isLoading, error, filters, setFilter, togglePublish, deleteProduct, moveCategory, load } = useAdminListings()
 const { categories } = useAdminCategories()
 
 const categoryOptions = computed(() => categories.value)

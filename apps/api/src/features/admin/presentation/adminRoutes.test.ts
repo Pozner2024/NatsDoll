@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { makeAdminRouter } from './adminRoutes'
 import type {
   GetDashboard, MarkAllMessagesRead, DashboardResponse,
-  ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish,
+  ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish, MoveProductCategory,
   ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
   AdminProductListResponse, AdminCategoryItem,
   GetAdminProduct, AdminProductDetail,
@@ -37,6 +37,7 @@ function makeApp(overrides: {
   updateProduct?: UpdateProduct
   deleteProduct?: DeleteProduct
   togglePublish?: TogglePublish
+  moveProductCategory?: MoveProductCategory
   listCategoriesWithCount?: ListCategoriesWithCount
   createCategory?: CreateCategory
   updateCategory?: UpdateCategory
@@ -68,6 +69,7 @@ function makeApp(overrides: {
     overrides.updateProduct ?? vi.fn().mockResolvedValue(undefined),
     overrides.deleteProduct ?? vi.fn().mockResolvedValue(undefined),
     overrides.togglePublish ?? vi.fn().mockResolvedValue({ isPublished: false }),
+    overrides.moveProductCategory ?? vi.fn().mockResolvedValue(undefined),
     overrides.listCategoriesWithCount ?? vi.fn().mockResolvedValue(mockCategories),
     overrides.createCategory ?? vi.fn().mockResolvedValue({ id: 'c1' }),
     overrides.updateCategory ?? vi.fn().mockResolvedValue(undefined),
@@ -105,7 +107,7 @@ describe('GET /admin/dashboard', () => {
     const app = new Hono()
     app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'CUSTOMER' }); await next() })
     app.route('/admin', makeAdminRouter(
-      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
+      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
     ))
     const res = await app.request('/admin/dashboard')
     expect(res.status).toBe(403)
@@ -166,6 +168,30 @@ describe('PATCH /admin/products/:id/toggle-publish', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as { isPublished: boolean }
     expect(body.isPublished).toBe(true)
+  })
+})
+
+describe('PATCH /admin/products/:id/category', () => {
+  it('moves product to a new category', async () => {
+    const moveProductCategory = vi.fn().mockResolvedValue(undefined)
+    const app = makeApp({ moveProductCategory })
+    const res = await app.request('/admin/products/p1/category', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoryId: 'c2' }),
+    })
+    expect(res.status).toBe(200)
+    expect(moveProductCategory).toHaveBeenCalledWith('p1', 'c2')
+  })
+
+  it('rejects an empty categoryId', async () => {
+    const app = makeApp()
+    const res = await app.request('/admin/products/p1/category', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoryId: '' }),
+    })
+    expect(res.status).toBe(400)
   })
 })
 

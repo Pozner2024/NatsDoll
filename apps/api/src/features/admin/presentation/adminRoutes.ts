@@ -5,7 +5,7 @@ import { zValidator } from '../../../shared/lib'
 import { requireAdmin } from '../../../shared/middleware'
 import type {
   GetDashboard, MarkAllMessagesRead,
-  ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish,
+  ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish, MoveProductCategory,
   ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
   GetAdminProduct,
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
@@ -45,6 +45,10 @@ const productBodySchema = z.object({
 const categoryBodySchema = z.object({
   name: z.string().min(1),
   slug: slugSchema,
+})
+
+const moveCategoryBodySchema = z.object({
+  categoryId: z.string().min(1),
 })
 
 const orderListQuerySchema = z.object({
@@ -101,6 +105,7 @@ export function makeAdminRouter(
   updateProduct: UpdateProduct,
   deleteProduct: DeleteProduct,
   togglePublish: TogglePublish,
+  moveProductCategory: MoveProductCategory,
   listCategoriesWithCount: ListCategoriesWithCount,
   createCategory: CreateCategory,
   updateCategory: UpdateCategory,
@@ -205,6 +210,13 @@ export function makeAdminRouter(
     const id = c.req.param('id')
     const result = await togglePublish(id)
     return c.json(result)
+  })
+
+  router.patch('/products/:id/category', zValidator('json', moveCategoryBodySchema), async (c) => {
+    const id = c.req.param('id')
+    const { categoryId } = c.req.valid('json')
+    await moveProductCategory(id, categoryId)
+    return c.json({ ok: true })
   })
 
   router.get('/products/:id', async (c) => {

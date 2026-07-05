@@ -115,6 +115,7 @@ import {
   makeUpdateProduct,
   makeDeleteProduct,
   makeTogglePublish,
+  makeMoveProductCategory,
   makeListCategoriesWithCount,
   makeCreateCategory,
   makeUpdateCategory,
@@ -259,10 +260,10 @@ export function createApp() {
 
   // Orders
   const orderRepo = makeOrderRepository(prisma)
-  const createOrder = makeCreateOrder(orderRepo, getActiveSale)
+  const createOrder = makeCreateOrder(orderRepo, getActiveSale, authRepo, emailService)
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
-  const guestCheckout = makeGuestCheckout(orderRepo, getActiveSale, orderRepo.getProductsForCheckout, authRepo, issueTokensForUser)
+  const guestCheckout = makeGuestCheckout(orderRepo, getActiveSale, orderRepo.getProductsForCheckout, authRepo, issueTokensForUser, emailService)
   const cancelOwnOrder = makeCancelOwnOrder(orderRepo)
   app.use('/orders', requireAuth)
   app.use('/orders/*', async (c, next) => {
@@ -334,6 +335,7 @@ export function createApp() {
   const updateProduct = makeUpdateProduct(adminRepo)
   const deleteProduct = makeDeleteProduct(adminRepo)
   const togglePublish = makeTogglePublish(adminRepo)
+  const moveProductCategory = makeMoveProductCategory(adminRepo)
   const listCategoriesWithCount = makeListCategoriesWithCount(adminRepo)
   const createCategory = makeCreateCategory(adminRepo)
   const updateCategory = makeUpdateCategory(adminRepo)
@@ -356,7 +358,7 @@ export function createApp() {
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
     getDashboard, markAllMessagesRead,
-    listAdminProducts, createProduct, updateProduct, deleteProduct, togglePublish,
+    listAdminProducts, createProduct, updateProduct, deleteProduct, togglePublish, moveProductCategory,
     listCategoriesWithCount, createCategory, updateCategory, deleteCategory,
     getAdminProduct,
     listConversations, getConversation, replyToUser, markConversationRead,

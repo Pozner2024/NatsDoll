@@ -34,7 +34,21 @@
         {{ product.name }}
       </div>
       <div class="product-card__meta">
-        {{ product.category }} · ${{ product.price.toFixed(2) }}
+        <select
+          class="product-card__category-select"
+          :value="product.categoryId"
+          @click.stop
+          @change="onCategoryChange"
+        >
+          <option
+            v-for="cat in categories"
+            :key="cat.id"
+            :value="cat.id"
+          >
+            {{ cat.name }}
+          </option>
+        </select>
+        · ${{ product.price.toFixed(2) }}
       </div>
       <div
         class="product-card__stock"
@@ -81,17 +95,24 @@
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { AdminProductItem } from '../adminListingsApi'
+import type { AdminCategoryItem } from '../adminCategoriesApi'
 
-const props = defineProps<{ product: AdminProductItem }>()
+const props = defineProps<{ product: AdminProductItem; categories: AdminCategoryItem[] }>()
 const emit = defineEmits<{
   (e: 'toggle-publish', id: string): void
   (e: 'delete', id: string): void
+  (e: 'move-category', id: string, categoryId: string): void
 }>()
 
 const menuOpen = ref(false)
 
 function handleDelete() {
   if (window.confirm('Вы действительно хотите удалить этот товар?')) emit('delete', props.product.id)
+}
+
+function onCategoryChange(event: Event) {
+  const categoryId = (event.target as HTMLSelectElement).value
+  emit('move-category', props.product.id, categoryId)
 }
 </script>
 
@@ -154,6 +175,18 @@ function handleDelete() {
     font-size: 0.72rem;
     color: var(--color-text-muted);
     margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__category-select {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    max-width: 100px;
   }
 
   &__stock {
