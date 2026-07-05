@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import type { PaymentRepository, PaymentMode, OrderForPayment } from '../types'
+import type { PaymentRepository, PaymentMode, OrderForPayment, OrderForWooPayment } from '../types'
 import { AppError } from '../../../shared/errors'
 import { isPaidStatus, isTerminalStatus } from '../../../shared/lib'
 
@@ -17,6 +17,7 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
         clientId: isLive ? s.liveClientId : s.sandboxClientId,
         secret: isLive ? s.liveSecret : s.sandboxSecret,
         webhookId: isLive ? s.liveWebhookId : s.sandboxWebhookId,
+        externalPageEnabled: s.externalPageEnabled,
       }
     },
 
@@ -32,6 +33,7 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
         liveClientId: s.liveClientId,
         liveSecret: s.liveSecret,
         liveWebhookId: s.liveWebhookId,
+        externalPageEnabled: s.externalPageEnabled,
       }
     },
 
@@ -53,6 +55,7 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
           liveClientId: live.clientId,
           liveSecret: live.secret ?? null,
           liveWebhookId: live.webhookId ?? null,
+          externalPageEnabled: data.externalPageEnabled,
         },
         update: {
           enabled: data.enabled,
@@ -63,6 +66,7 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
           liveClientId: live.clientId,
           ...liveSecretUpdate,
           ...liveWebhookUpdate,
+          externalPageEnabled: data.externalPageEnabled,
         },
       })
     },
@@ -91,6 +95,54 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
 
     async claimPaypalOrder(orderId: string, paypalOrderId: string): Promise<void> {
       await prisma.order.update({ where: { id: orderId }, data: { paypalOrderId, paymentClaimed: true } })
+    },
+
+    async getOrderForWooPayment(orderId: string): Promise<OrderForWooPayment | null> {
+      const o = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          id: true, userId: true, orderNumber: true, status: true, totalAmount: true,
+          shippingCost: true, wooOrderId: true, wooOrderKey: true, shippingAddress: true,
+          user: { select: { email: true } },
+          items: { select: { quantity: true, price: true, product: { select: { name: true } } } },
+        },
+      })
+      if (!o) return null
+      const address = o.shippingAddress as { fullName?: string }
+      return {
+        id: o.id,
+        userId: o.userId,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        totalAmount: o.totalAmount.toNumber(),
+        shippingCost: o.shippingCost.toNumber(),
+        wooOrderId: o.wooOrderId,
+        wooOrderKey: o.wooOrderKey,
+        customerName: address.fullName ?? '',
+        customerEmail: o.user.email,
+        items: o.items.map((i) => ({
+          name: i.product.name,
+          quantity: i.quantity,
+          subtotalUsd: i.price.mul(i.quantity).toNumber(),
+        })),
+      }
+    },
+
+    async setWooOrder(orderId: string, wooOrderId: number, wooOrderKey: string): Promise<boolean> {
+      const { count } = await prisma.order.updateMany({
+        where: { id: orderId, wooOrderId: null },
+        data: { wooOrderId, wooOrderKey },
+      })
+      return count === 1
+    },
+
+    async getOrderByWooOrderId(wooOrderId: number): Promise<OrderForPayment | null> {
+      const o = await prisma.order.findUnique({
+        where: { wooOrderId },
+        select: { id: true, userId: true, orderNumber: true, status: true, totalAmount: true, paypalOrderId: true },
+      })
+      if (!o) return null
+      return { ...o, totalAmount: o.totalAmount.toNumber() }
     },
 
     async markOrderPaid(orderId: string, captureId: string | null): Promise<boolean> {

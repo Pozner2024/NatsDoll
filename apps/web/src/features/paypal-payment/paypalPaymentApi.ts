@@ -6,6 +6,7 @@ const configSchema = z.object({
   clientId: z.string().nullable(),
   mode: z.enum(['SANDBOX', 'LIVE']),
   serverFlow: z.boolean(),
+  external: z.boolean(),
 })
 
 export type PaymentConfig = z.infer<typeof configSchema>

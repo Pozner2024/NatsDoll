@@ -7,13 +7,14 @@ export function makeGetPaymentSettings(repo: PaymentRepository): GetPaymentSetti
     const s = await repo.getAdminSettings()
     if (!s) {
       const empty = { clientId: null, hasSecret: false, webhookId: null }
-      return { enabled: false, mode: 'SANDBOX', sandbox: { ...empty }, live: { ...empty } }
+      return { enabled: false, mode: 'SANDBOX', sandbox: { ...empty }, live: { ...empty }, externalPageEnabled: false }
     }
     return {
       enabled: s.enabled,
       mode: s.mode,
       sandbox: { clientId: s.sandboxClientId, hasSecret: s.sandboxSecret !== null, webhookId: s.sandboxWebhookId },
       live: { clientId: s.liveClientId, hasSecret: s.liveSecret !== null, webhookId: s.liveWebhookId },
+      externalPageEnabled: s.externalPageEnabled,
     }
   }
 }

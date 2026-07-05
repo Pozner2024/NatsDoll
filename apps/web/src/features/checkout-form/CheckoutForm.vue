@@ -126,8 +126,10 @@
 import { reactive, onMounted } from 'vue'
 import type { ShippingAddress } from '@/entities/order'
 import { useAddressStore } from '@/entities/address'
+import { useAuthStore } from '@/entities/user'
 
 const addressStore = useAddressStore()
+const authStore = useAuthStore()
 
 const form = reactive({
   fullName: '',
@@ -139,6 +141,7 @@ const form = reactive({
 })
 
 onMounted(async () => {
+  if (!authStore.isLoggedIn) return
   await addressStore.load()
   const def = addressStore.defaultAddress
   if (def) {

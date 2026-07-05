@@ -16,6 +16,9 @@ function repoStub(): PaymentRepository & { saved: UpsertPaymentSettingsData | nu
     async setPaypalOrderId() {},
     async claimPaypalOrder() {},
     async markOrderPaid() { return true },
+    async getOrderForWooPayment() { return null },
+    async setWooOrder() { return true },
+    async getOrderByWooOrderId() { return null },
   }
   return r
 }
@@ -31,6 +34,7 @@ describe('updatePaymentSettings', () => {
       mode: 'SANDBOX',
       sandbox: { clientId: 'sb-cid', secret: 'sandbox-secret', webhookId: undefined },
       live: { clientId: 'lv-cid', secret: 'live-secret', webhookId: undefined },
+      externalPageEnabled: false,
     })
     const saved = repo.saved!
     expect(saved.sandbox.secret).not.toBe('sandbox-secret')
@@ -46,6 +50,7 @@ describe('updatePaymentSettings', () => {
       mode: 'LIVE',
       sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
       live: { clientId: null, secret: undefined, webhookId: undefined },
+      externalPageEnabled: false,
     })).rejects.toThrow()
   })
 
@@ -57,6 +62,7 @@ describe('updatePaymentSettings', () => {
       mode: 'SANDBOX',
       sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
       live: { ...emptyCreds },
+      externalPageEnabled: false,
     })
     expect(repo.saved!.enabled).toBe(true)
   })
@@ -69,6 +75,7 @@ describe('updatePaymentSettings', () => {
       mode: 'SANDBOX',
       sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
       live: { ...emptyCreds },
+      externalPageEnabled: false,
     })
     expect(repo.saved!.sandbox.secret).toBeUndefined()
   })
@@ -81,7 +88,22 @@ describe('updatePaymentSettings', () => {
       mode: 'SANDBOX',
       sandbox: { clientId: 'sb-cid', secret: null, webhookId: undefined },
       live: { ...emptyCreds },
+      externalPageEnabled: false,
     })
     expect(repo.saved!.sandbox.secret).toBeNull()
+  })
+
+  it('allows enabling with externalPageEnabled when the active mode has no clientId', async () => {
+    const repo = repoStub()
+    const update = makeUpdatePaymentSettings(repo)
+    await update({
+      enabled: true,
+      mode: 'LIVE',
+      sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: undefined },
+      live: { clientId: null, secret: undefined, webhookId: undefined },
+      externalPageEnabled: true,
+    })
+    expect(repo.saved!.enabled).toBe(true)
+    expect(repo.saved!.externalPageEnabled).toBe(true)
   })
 })

@@ -17,6 +17,7 @@ const loaded = {
   mode: 'SANDBOX' as const,
   sandbox: { clientId: 'sb-cid', hasSecret: true, webhookId: 'WH-SB' },
   live: { clientId: 'lv-cid', hasSecret: false, webhookId: null },
+  externalPageEnabled: false,
 }
 
 function clone() {
@@ -52,7 +53,20 @@ describe('AdminPaymentSettings', () => {
       mode: 'SANDBOX',
       sandbox: { clientId: 'sb-cid', secret: undefined, webhookId: 'WH-SB' },
       live: { clientId: 'lv-cid', secret: undefined, webhookId: null },
+      externalPageEnabled: false,
     })
+  })
+
+  it('отметка чекбокса внешней страницы оплаты отправляется в savePaymentSettings', async () => {
+    const wrapper = await mountLoaded()
+    const rows = wrapper.findAll('.payment-settings__row')
+    await rows[1]!.find('input[type="checkbox"]').setValue(true)
+
+    await wrapper.find('.payment-settings__save').trigger('click')
+    await flushPromises()
+
+    const body = mockSave.mock.calls[0]![0]
+    expect(body.externalPageEnabled).toBe(true)
   })
 
   it('переключение активного режима не стирает ключи другой секции', async () => {

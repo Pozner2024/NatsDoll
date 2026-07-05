@@ -37,6 +37,11 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_NAME: ${ADMIN_NAME}
+      WOO_BASE_URL: ${WOO_BASE_URL}
+      WOO_CONSUMER_KEY: ${WOO_CONSUMER_KEY}
+      WOO_CONSUMER_SECRET: ${WOO_CONSUMER_SECRET}
+      WOO_WEBHOOK_SECRET: ${WOO_WEBHOOK_SECRET}
+      WOO_PLACEHOLDER_PRODUCT_ID: ${WOO_PLACEHOLDER_PRODUCT_ID}
     depends_on:
       db:
         condition: service_healthy
@@ -86,7 +91,73 @@ services:
         condition: service_healthy
     restart: "no"
 
+  umami_db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${UMAMI_DB_USER}
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+      POSTGRES_DB: ${UMAMI_DB_NAME}
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${UMAMI_DB_USER} -d ${UMAMI_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    environment:
+      DATABASE_URL: postgresql://${UMAMI_DB_USER}:${UMAMI_DB_PASSWORD}@umami_db:5432/${UMAMI_DB_NAME}
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    depends_on:
+      umami_db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  wp-db:
+    image: mariadb:11
+    # Тюнинг под VPS 2 ГБ: маленький buffer pool (БД WP крошечная), performance_schema
+    # выключен (экономит ~100 МБ), скромный лимит коннекций. mem_limit — верхний потолок
+    # против runaway, не жёсткая резервация (штатно MariaDB держится ~150–200 МБ).
+    command: --innodb-buffer-pool-size=64M --performance-schema=OFF --max-connections=50
+    mem_limit: 512m
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${WP_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD}
+    volumes:
+      - wp_db_data:/var/lib/mysql
+    restart: unless-stopped
+
+  wordpress:
+    image: wordpress:6
+    mem_limit: 512m
+    environment:
+      WORDPRESS_DB_HOST: wp-db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD}
+      WORDPRESS_CONFIG_EXTRA: |
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') { $$_SERVER['HTTPS'] = 'on'; }
+        define('WP_HOME', 'https://pay.natsdoll.com');
+        define('WP_SITEURL', 'https://pay.natsdoll.com');
+        define('DISALLOW_FILE_EDIT', true);
+        define('WP_MEMORY_LIMIT', '128M');
+        define('WP_MAX_MEMORY_LIMIT', '128M');
+    volumes:
+      - wp_data:/var/www/html
+      - ./infra/wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+    depends_on:
+      - wp-db
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  wp_data:
+  wp_db_data:
+  umami_db_data:

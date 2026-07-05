@@ -13,6 +13,7 @@ describe('getPaymentSettings', () => {
       mode: 'SANDBOX',
       sandbox: { clientId: null, hasSecret: false, webhookId: null },
       live: { clientId: null, hasSecret: false, webhookId: null },
+      externalPageEnabled: false,
     })
   })
 
@@ -22,6 +23,7 @@ describe('getPaymentSettings', () => {
       mode: 'LIVE',
       sandboxClientId: 'sb', sandboxSecret: 'sb-enc', sandboxWebhookId: 'WH-SB',
       liveClientId: 'lv', liveSecret: null, liveWebhookId: null,
+      externalPageEnabled: false,
     }) as never)
     const view = await uc()
     expect(view).toEqual({
@@ -29,6 +31,7 @@ describe('getPaymentSettings', () => {
       mode: 'LIVE',
       sandbox: { clientId: 'sb', hasSecret: true, webhookId: 'WH-SB' },
       live: { clientId: 'lv', hasSecret: false, webhookId: null },
+      externalPageEnabled: false,
     })
     expect(JSON.stringify(view)).not.toContain('sb-enc')
   })

@@ -8,7 +8,7 @@ export function makeClaimPaypalPayment(
 ): ClaimPaypalPayment {
   return async (userId, orderId, paypalOrderId) => {
     const settings = await repo.getSettings()
-    if (!settings?.enabled || settings.secret) {
+    if (!settings?.enabled || settings.secret || settings.externalPageEnabled) {
       throw new AppError(409, 'Claim is not available')
     }
     const order = await repo.getOrderForPayment(orderId)

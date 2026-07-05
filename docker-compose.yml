@@ -58,9 +58,36 @@ services:
     depends_on:
       - api
 
+  wp-db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: wordpress
+    volumes:
+      - wp_db_data:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:6
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: wp-db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    volumes:
+      - wp_data:/var/www/html
+      - ./infra/wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins
+    depends_on:
+      - wp-db
+
 volumes:
   postgres_data:
   api_node_modules:
   api_ws_node_modules:
   web_node_modules:
   web_ws_node_modules:
+  wp_data:
+  wp_db_data:

@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import AccountPurchaseDetail from './AccountPurchaseDetail.vue'
 
 const loadOrder = vi.fn()
+const fetchPaymentConfig = vi.fn()
 const state: { currentOrder: unknown; loading: boolean; error: string | null } = {
   currentOrder: null,
   loading: false,
@@ -20,6 +22,11 @@ vi.mock('@/entities/order', () => ({
 
 vi.mock('@/features/paypal-payment', () => ({
   PaypalPayment: { name: 'PaypalPayment', template: '<div class="paypal-stub" />' },
+  fetchPaymentConfig: () => fetchPaymentConfig(),
+}))
+
+vi.mock('@/features/woo-payment', () => ({
+  WooPayButton: { name: 'WooPayButton', template: '<div class="woo-stub" />' },
 }))
 
 vi.mock('@/shared', () => ({
@@ -51,6 +58,7 @@ beforeEach(() => {
   state.currentOrder = null
   state.loading = false
   state.error = null
+  fetchPaymentConfig.mockResolvedValue({ external: false })
 })
 
 describe('AccountPurchaseDetail — payment gate', () => {
@@ -73,5 +81,14 @@ describe('AccountPurchaseDetail — payment gate', () => {
     const wrapper = mount(AccountPurchaseDetail, { global: { stubs: { AppButton: true } } })
     expect(wrapper.find('.paypal-stub').exists()).toBe(false)
     expect(wrapper.find('.purchase-detail__payment-pending').text()).toContain('being verified')
+  })
+
+  it('PENDING + external-конфиг → рендерится WooPayButton, PaypalPayment — нет', async () => {
+    state.currentOrder = makeOrder('PENDING')
+    fetchPaymentConfig.mockResolvedValue({ external: true, clientId: null })
+    const wrapper = mount(AccountPurchaseDetail, { global: { stubs: { AppButton: true } } })
+    await flushPromises()
+    expect(wrapper.find('.woo-stub').exists()).toBe(true)
+    expect(wrapper.find('.paypal-stub').exists()).toBe(false)
   })
 })

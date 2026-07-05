@@ -55,4 +55,11 @@ describe('claimPaypalPayment', () => {
     await uc('u1', 'o1', 'PP')
     expect(repo.claimPaypalOrder).not.toHaveBeenCalled()
   })
+
+  it('rejects claim when external payment mode is enabled', async () => {
+    const repo = makeRepo({ getSettings: vi.fn().mockResolvedValue({ ...clientModeSettings, externalPageEnabled: true }) })
+    const uc = makeClaimPaypalPayment(repo as never)
+    await expect(uc('u1', 'o1', 'PP')).rejects.toThrow()
+    expect(repo.claimPaypalOrder).not.toHaveBeenCalled()
+  })
 })

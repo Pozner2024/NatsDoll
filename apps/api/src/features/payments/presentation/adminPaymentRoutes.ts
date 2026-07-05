@@ -16,6 +16,7 @@ const updateSchema = z.object({
   mode: z.enum(['SANDBOX', 'LIVE']),
   sandbox: modeCredsSchema,
   live: modeCredsSchema,
+  externalPageEnabled: z.boolean(),
 })
 
 export function makeAdminPaymentRouter(

@@ -1,9 +1,9 @@
-/*
-Архитектурный чертеж базы данных проекта.** Этот файл является единым источником истины для всей
-структуры данных **NatsDoll**. Он описывает не только таблицы в PostgreSQL (пользователи, товары, заказы), но и
-сложные связи между ними, правила безопасности (например, **Soft Delete** для сохранения истории заказов) и
-автоматическую генерацию типизированного клиента Prisma для безопасной разработки без ошибок в типах
-*/
+/**
+ * Архитектурный чертеж базы данных проекта.** Этот файл является единым источником истины для всей
+ * структуры данных **NatsDoll**. Он описывает не только таблицы в PostgreSQL (пользователи, товары, заказы), но и
+ * сложные связи между ними, правила безопасности (например, **Soft Delete** для сохранения истории заказов) и
+ * автоматическую генерацию типизированного клиента Prisma для безопасной разработки без ошибок в типах
+ */
 
 generator client {
   provider = "prisma-client-js"
@@ -45,7 +45,7 @@ model EmailVerification {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -57,7 +57,7 @@ model PasswordReset {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -69,13 +69,13 @@ enum Role {
 
 model RefreshToken {
   id        String    @id @default(cuid())
-  tokenHash String    @unique             // HMAC-SHA256 of the raw token
+  tokenHash String    @unique // HMAC-SHA256 of the raw token
   userId    String
   expiresAt DateTime
   revokedAt DateTime?
   createdAt DateTime  @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -83,36 +83,36 @@ model RefreshToken {
 // ─── Catalog ─────────────────────────────────────────
 
 model Category {
-  id         String    @id @default(cuid())
-  name       String
-  slug       String    @unique
-  position   Int       @default(0)
-  updatedAt  DateTime  @updatedAt
-  products   Product[]
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  position  Int       @default(0)
+  updatedAt DateTime  @updatedAt
+  products  Product[]
 
   @@index([position])
 }
 
 model Product {
-  id              String    @id @default(cuid())
-  name            String
-  slug            String    @unique
-  description     String
-  price           Decimal   @db.Decimal(10, 2)
-  images          String[]
-  messageOptions  String[]  @default([])
-  stock           Int       @default(0)
-  isPublished     Boolean   @default(false)
-  deletedAt       DateTime?
-  categoryId      String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  description    String
+  price          Decimal   @db.Decimal(10, 2)
+  images         String[]
+  messageOptions String[]  @default([])
+  stock          Int       @default(0)
+  isPublished    Boolean   @default(false)
+  deletedAt      DateTime?
+  categoryId     String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  category    Category    @relation(fields: [categoryId], references: [id])
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
-  reviews     Review[]
-  favorites   Favorite[]
+  category   Category    @relation(fields: [categoryId], references: [id])
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  reviews    Review[]
+  favorites  Favorite[]
 
   @@index([categoryId])
   @@index([isPublished, deletedAt])
@@ -121,12 +121,12 @@ model Product {
 // ─── Cart ─────────────────────────────────────────────
 
 model Cart {
-  id        String     @id @default(cuid())
-  userId    String     @unique
-  updatedAt DateTime   @updatedAt
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  updatedAt DateTime @updatedAt
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     CartItem[]
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
 }
 
 model CartItem {
@@ -136,8 +136,8 @@ model CartItem {
   quantity  Int
   message   String?
 
-  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@unique([cartId, productId, message])
   @@index([cartId])
@@ -152,19 +152,21 @@ model Order {
   status          OrderStatus @default(PENDING)
   totalAmount     Decimal     @db.Decimal(10, 2)
   paypalOrderId   String?     @unique
-  paypalCaptureId String?
+  paypalCaptureId String? // референс платежа провайдера: PayPal capture id ИЛИ Woo transaction_id (external-режим). Только запись; авто-рефанд обязан сверять источник оплаты.
   paymentClaimed  Boolean     @default(false)
+  wooOrderId      Int?        @unique
+  wooOrderKey     String?
   shippingAddress Json
-  shippingCost    Decimal     @db.Decimal(10, 2) @default(0)
+  shippingCost    Decimal     @default(0) @db.Decimal(10, 2)
   trackingNumber  String?
   adminNote       String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  user            User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  items           OrderItem[]
-  reviews         Review[]
-  messages        Message[]
+  user     User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items    OrderItem[]
+  reviews  Review[]
+  messages Message[]
 
   @@index([userId])
   @@index([status])
@@ -189,8 +191,8 @@ model OrderItem {
   originalPrice Decimal? @db.Decimal(10, 2)
   message       String?
 
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([productId])
@@ -203,8 +205,8 @@ model Favorite {
   productId String
   createdAt DateTime @default(now())
 
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@id([userId, productId])
   @@index([userId])
@@ -231,8 +233,8 @@ model Address {
 // ─── Gallery ──────────────────────────────────────────
 
 enum GallerySection {
-  HOME_PREVIEW   // главная страница — показывается сразу
-  HOME_POOL      // резерв для ротации с HOME_PREVIEW
+  HOME_PREVIEW // главная страница — показывается сразу
+  HOME_POOL // резерв для ротации с HOME_PREVIEW
   COLLECTION_1
   COLLECTION_2
   COLLECTION_3
@@ -264,9 +266,9 @@ model Review {
   comment   String?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@unique([userId, productId])
   @@index([productId])
@@ -334,16 +336,17 @@ model Sale {
 // ─── Payment Settings ─────────────────────────────────
 
 model PaymentSettings {
-  id               String      @id @default("default")
-  enabled          Boolean     @default(false)
-  mode             PaymentMode @default(SANDBOX)
-  sandboxClientId  String?
-  sandboxSecret    String?     // AES-256-GCM ciphertext; null = client-режим
-  sandboxWebhookId String?     // id подписки webhook из PayPal Dashboard; null = webhook выключен
-  liveClientId     String?
-  liveSecret       String?     // AES-256-GCM ciphertext; null = client-режим
-  liveWebhookId    String?     // id подписки webhook из PayPal Dashboard; null = webhook выключен
-  updatedAt        DateTime    @updatedAt
+  id                  String      @id @default("default")
+  enabled             Boolean     @default(false)
+  mode                PaymentMode @default(SANDBOX)
+  sandboxClientId     String?
+  sandboxSecret       String? // AES-256-GCM ciphertext; null = client-режим
+  sandboxWebhookId    String? // id подписки webhook из PayPal Dashboard; null = webhook выключен
+  liveClientId        String?
+  liveSecret          String? // AES-256-GCM ciphertext; null = client-режим
+  liveWebhookId       String? // id подписки webhook из PayPal Dashboard; null = webhook выключен
+  externalPageEnabled Boolean     @default(false)
+  updatedAt           DateTime    @updatedAt
 }
 
 enum PaymentMode {

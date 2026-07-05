@@ -12,6 +12,7 @@ const settingsSchema = z.object({
   mode: z.enum(['SANDBOX', 'LIVE']),
   sandbox: modeCredsSchema,
   live: modeCredsSchema,
+  externalPageEnabled: z.boolean(),
 })
 
 export type PaymentSettings = z.infer<typeof settingsSchema>
@@ -27,6 +28,7 @@ export interface UpdatePaymentSettingsBody {
   mode: 'SANDBOX' | 'LIVE'
   sandbox: UpdateModeCredsBody
   live: UpdateModeCredsBody
+  externalPageEnabled: boolean
 }
 
 export async function fetchPaymentSettings(): Promise<PaymentSettings> {

@@ -31,6 +31,17 @@
         </small>
       </label>
 
+      <label class="payment-settings__row">
+        <input
+          v-model="form.externalPageEnabled"
+          type="checkbox"
+        >
+        <span>Внешняя страница оплаты (WooCommerce)</span>
+      </label>
+      <small class="payment-settings__hint">
+        Покупатель платит на pay.natsdoll.com. PayPal-ключи ниже в этом режиме не используются.
+      </small>
+
       <fieldset
         v-for="m in modeSections"
         :key="m.key"
@@ -145,6 +156,7 @@ const form = reactive({
   mode: 'SANDBOX' as 'SANDBOX' | 'LIVE',
   sandbox: emptyModeForm(),
   live: emptyModeForm(),
+  externalPageEnabled: false,
 })
 const loading = ref(true)
 const saving = ref(false)
@@ -181,6 +193,7 @@ onMounted(async () => {
     const s = await fetchPaymentSettings()
     form.enabled = s.enabled
     form.mode = s.mode
+    form.externalPageEnabled = s.externalPageEnabled
     applySection(form.sandbox, s.sandbox)
     applySection(form.live, s.live)
   } catch (e) {
@@ -200,7 +213,9 @@ async function onSave() {
       mode: form.mode,
       sandbox: credsBody(form.sandbox),
       live: credsBody(form.live),
+      externalPageEnabled: form.externalPageEnabled,
     })
+    form.externalPageEnabled = s.externalPageEnabled
     applySection(form.sandbox, s.sandbox)
     applySection(form.live, s.live)
     saved.value = true

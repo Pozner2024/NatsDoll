@@ -41,4 +41,18 @@ describe('createPaypalOrder', () => {
     const uc = makeCreatePaypalOrder(d.repo as never, d.paypal as never, d.decrypt as never)
     await expect(uc('u1', 'o1')).rejects.toThrow()
   })
+
+  it('rejects when externalPageEnabled and does not call paypal', async () => {
+    const d = deps({
+      repo: {
+        getSettings: vi
+          .fn()
+          .mockResolvedValue({ enabled: true, mode: 'SANDBOX', clientId: 'cid', secret: 'enc', externalPageEnabled: true }),
+      },
+    })
+    const uc = makeCreatePaypalOrder(d.repo as never, d.paypal as never, d.decrypt as never)
+    await expect(uc('u1', 'o1')).rejects.toThrow()
+    expect(d.paypal.createOrder).not.toHaveBeenCalled()
+    expect(d.repo.setPaypalOrderId).not.toHaveBeenCalled()
+  })
 })

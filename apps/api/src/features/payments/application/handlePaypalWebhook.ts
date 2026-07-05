@@ -2,6 +2,7 @@ import { AppError } from '../../../shared/errors'
 import type { EmailService } from '../../auth/infrastructure/emailService'
 import type { PaymentRepository, PaypalClient, PaypalWebhookHeaders } from '../types'
 import { alertCaptureUnsettled, type CaptureOrderCore } from './capturePaypalPayment'
+import { matchesAmountUsd } from './matchesAmountUsd'
 
 export type HandlePaypalWebhook = (rawBody: string, headers: PaypalWebhookHeaders) => Promise<{ handled: boolean }>
 
@@ -72,7 +73,7 @@ export function makeHandlePaypalWebhook(
         // Та же сверка, что в синхронном capture: подтверждаем только если PayPal списал
         // ровно нашу сумму/валюту по нашей метке (defence-in-depth, хоть событие и подписано).
         const amount = event.resource?.amount
-        const amountMatches = amount?.value === order.totalAmount.toFixed(2)
+        const amountMatches = matchesAmountUsd(amount?.value, order.totalAmount)
         const currencyMatches = amount?.currency_code === 'USD'
         const invoiceMatches = event.resource?.invoice_id === `natsdoll-${order.orderNumber}`
         if (!amountMatches || !currencyMatches || !invoiceMatches) {

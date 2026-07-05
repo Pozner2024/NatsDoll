@@ -34,6 +34,17 @@
 	}
 }
 
+pay.natsdoll.com {
+	encode gzip zstd
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Robots-Tag "noindex, nofollow"
+	}
+	reverse_proxy wordpress:80
+}
+
 stats.natsdoll.com {
 	reverse_proxy umami:3000
 }

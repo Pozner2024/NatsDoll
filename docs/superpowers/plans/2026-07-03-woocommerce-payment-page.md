@@ -190,7 +190,9 @@ git commit -m "feat(payments): WordPress payment page scaffolding (mu-plugins, d
 - [ ] **Step 1: Поднять контейнеры**
 
 Run: `docker compose up -d wp-db wordpress`
-Открыть `http://localhost:8080` → мастер установки: язык English, Site Title «NatsDoll Payments», admin-логин/пароль сохранить у пользователя, Search engine visibility — галку «Discourage» ПОСТАВИТЬ.
+Открыть `http://localhost:8080` → мастер установки: язык English, Site Title «NatsDoll» (tagline «Secure checkout»), admin-логин/пароль сохранить у пользователя, Search engine visibility — галку «Discourage» ПОСТАВИТЬ.
+
+Брендинг страницы оплаты (шрифты/цвета/логотип NatsDoll, скрытие корзины, смягчение плашки) применяется автоматически мини-плагином `infra/wordpress/mu-plugins/natsdoll-branding.php` — отдельной настройки в админке не требует, едет вместе с деплоем.
 
 - [ ] **Step 2: Установить и настроить WooCommerce**
 
@@ -211,7 +213,11 @@ Products → Add New: название «NatsDoll item», Regular price `0`, Cat
 
 - [ ] **Step 5: Плагин PayPal с нашим sandbox**
 
-Plugins → Add New → «WooCommerce PayPal Payments» → Install/Activate. На Welcome-экране: «See advanced options» → Manually Connect → включить Sandbox, ввести НАШИ sandbox Client ID/Secret (те же, что в админке сайта для тестов) → Connect Account. В настройках включить методы: PayPal Buttons + Card (гостевая карта).
+Plugins → Add New → «WooCommerce PayPal Payments» → Install/Activate. На Welcome-экране: «See advanced options» → Manually Connect → включить Sandbox, ввести НАШИ sandbox Client ID/Secret (те же, что в админке сайта для тестов) → Connect Account.
+
+**Включить приём карт (ключевое — гостевая оплата картой без аккаунта PayPal):** настройки плагина → вкладка **Payment Methods** → отметить **«Credit and debit card payments»** («Accept all major credit and debit cards — even if your customer doesn't have a PayPal account») → Save. После этого на странице order-pay появляется выбор «Debit & Credit Cards» / «PayPal». Проверено локально: чекбокс переводит шлюз `ppcp-card-button-gateway` в `available:yes`, на странице оплаты рендерится опция карты. Прямое редактирование опции через wp-cli НЕ работает (новый React-UI 4.x перезатирает `enabled`) — только через UI.
+
+Примечание про eligibility: фактическая отрисовка карточной кнопки зависит от страны покупателя (PayPal режет гостевую карту в ряде стран, включая RU/PL — там показывается только PayPal) и от карточных возможностей аккаунта. Для sandbox из RU/PL-геолокации карта может не отрисоваться — это НЕ баг конфигурации.
 
 - [ ] **Step 6: Проверка предположений через curl**
 
@@ -1628,6 +1634,11 @@ git commit -m "feat(web): external payment page toggle in admin settings"
 ```yaml
   wp-db:
     image: mariadb:11
+    # Тюнинг под VPS 2 ГБ: маленький buffer pool (БД WP крошечная), performance_schema
+    # выключен (экономит ~100 МБ), скромный лимит коннектов. mem_limit — верхний потолок
+    # против runaway, не жёсткая резервация (штатно MariaDB держится ~150–200 МБ).
+    command: --innodb-buffer-pool-size=64M --performance-schema=OFF --max-connections=50
+    mem_limit: 512m
     environment:
       MARIADB_DATABASE: wordpress
       MARIADB_USER: wordpress
@@ -1639,6 +1650,7 @@ git commit -m "feat(web): external payment page toggle in admin settings"
 
   wordpress:
     image: wordpress:6
+    mem_limit: 512m
     environment:
       WORDPRESS_DB_HOST: wp-db
       WORDPRESS_DB_NAME: wordpress
@@ -1649,6 +1661,8 @@ git commit -m "feat(web): external payment page toggle in admin settings"
         define('WP_HOME', 'https://pay.natsdoll.com');
         define('WP_SITEURL', 'https://pay.natsdoll.com');
         define('DISALLOW_FILE_EDIT', true);
+        define('WP_MEMORY_LIMIT', '128M');
+        define('WP_MAX_MEMORY_LIMIT', '128M');
     volumes:
       - wp_data:/var/www/html
       - ./infra/wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
@@ -1686,8 +1700,27 @@ pay.natsdoll.com {
 
 - [ ] **Step 3: Подготовка сервера (ДО пуша)**
 
-- Пользователь: докупить место на VPS; добавить в Namecheap A-запись `pay` → `89.127.205.44`.
+- Пользователь: увеличить VPS до 2 ГБ ОЗУ / 20 ГБ диска; добавить в Namecheap A-запись `pay` → `89.127.205.44`.
 - Через diag/redeploy-workflow или вручную: дополнить `/home/natalia/natsdoll/.env`: `WP_DB_PASSWORD`, `WP_DB_ROOT_PASSWORD` (openssl rand -hex 16), `WOO_BASE_URL=https://pay.natsdoll.com`, остальные `WOO_*` — ПОКА пустыми (заполнятся после настройки Woo, api переживает пустые значения: create-payment отдаст 503, вебхук — handled:false).
+
+- [ ] **Step 3b: Swap-файл на сервере (подушка памяти для 2 ГБ ОЗУ)**
+
+На VPS (по SSH/workflow), один раз. Гасит редкие пики памяти (одновременные посетители, момент деплоя со старым+новым контейнером), чтобы WordPress/MariaDB/SSR не упали по OOM:
+
+```bash
+# создать 2 ГБ swap, если ещё нет
+if [ ! -f /swapfile ]; then
+  sudo fallocate -l 2G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+fi
+sudo sysctl vm.swappiness=10   # своп только под реальным давлением
+free -h                        # проверить, что Swap: 2.0Gi виден
+```
+
+Лимиты памяти WordPress/MariaDB уже заложены в `docker-compose.prod.yml` (Step 1: `mem_limit: 512m` + тюнинг MariaDB + `WP_MEMORY_LIMIT`).
 
 - [ ] **Step 4: Пуш и деплой**
 
@@ -1713,11 +1746,15 @@ pay.natsdoll.com {
 
 Создать в WP отдельного пользователя-администратора для посредника; после подключения — деактивировать. Посредник: Plugins → PayPal Payments → Connect to PayPal (Live) → логин → согласие.
 
-- [ ] **Step 3: Переключение в live**
+- [ ] **Step 3: Включить оплату картой на live-аккаунте**
 
-В Woo-плагине выключить sandbox-режим (Live-подключение посредника активно). В админке сайта: режим LIVE (для external-режима PayPal-ключи сайта не используются — переключатель лишь фиксирует боевой статус). Прогнать контрольный платёж на $2–3 реальной картой/PayPal: возврат, `PAID`, поступление видно в кабинете «Склад ЮСА». Оформить возврат этого платежа вручную в Woo/PayPal (проверить: наш заказ остаётся PAID — рефанды вне скоупа, отменить заказ руками в админке сайта).
+После Live-подключения посредника: настройки плагина → Payment Methods → отметить **«Credit and debit card payments»** → Save (см. Task 2 Step 5). Для американского бизнес-аккаунта PayPal стандартная гостевая оплата картой доступна по умолчанию, без отдельной заявки. Опционально (лучше вид/комиссии, но требует одобрения PayPal) — Advanced Card Processing с инлайн-полями: подать заявку в аккаунте посредника, дождаться одобрения. Для MVP достаточно стандартного варианта.
 
-- [ ] **Step 4: Память и документация**
+- [ ] **Step 4: Переключение в live**
+
+В Woo-плагине выключить sandbox-режим (Live-подключение посредника активно). В админке сайта: режим LIVE (для external-режима PayPal-ключи сайта не используются — переключатель лишь фиксирует боевой статус). Прогнать контрольный платёж на $2–3: проверить, что на странице оплаты **виден выбор «Debit & Credit Cards» / «PayPal»**, оплатить **картой** (гостевой сценарий, без входа в PayPal) → возврат, `PAID`, поступление видно в кабинете «Склад ЮСА». Затем повторить оплату через сам PayPal. Оформить возврат этих платежей вручную в Woo/PayPal (проверить: наш заказ остаётся PAID — рефанды вне скоупа, отменить заказ руками в админке сайта).
+
+- [ ] **Step 5: Память и документация**
 
 Обновить memory (`project_payments_skladusa`): схема запущена, дата, грабли. Проверить `docs/architecture.md` — дополнить раздел платежей внешней страницей.
 

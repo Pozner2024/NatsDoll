@@ -25,6 +25,10 @@ vi.mock('@/features/paypal-payment', () => ({
   fetchPaymentConfig,
 }))
 
+vi.mock('@/features/woo-payment', () => ({
+  WooPayButton: { name: 'WooPayButton', template: '<div class="woo-pay-stub" />' },
+}))
+
 vi.mock('@/entities/cart', () => ({
   useCartStore: () => ({
     items: [{ id: '1', quantity: 1, productName: 'Clay ring', unitPrice: 25, subtotal: 25 }],
@@ -91,23 +95,32 @@ beforeEach(() => {
 
 describe('CartPageWidget — выбор кнопки оплаты по конфигу', () => {
   it('показывает PayPal, когда оплата включена и есть clientId', async () => {
-    fetchPaymentConfig.mockResolvedValue({ enabled: true, clientId: 'abc', mode: 'SANDBOX', serverFlow: true })
+    fetchPaymentConfig.mockResolvedValue({ enabled: true, clientId: 'abc', mode: 'SANDBOX', serverFlow: true, external: false })
     const wrapper = mountWidget()
     await flushPromises()
     expect(wrapper.find('.paypal-stub').exists()).toBe(true)
+    expect(wrapper.find('.woo-pay-stub').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Place order')
   })
 
   it('показывает «Place order» как fallback, когда оплата выключена', async () => {
-    fetchPaymentConfig.mockResolvedValue({ enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false })
+    fetchPaymentConfig.mockResolvedValue({ enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false, external: false })
     const wrapper = mountWidget()
     await flushPromises()
     expect(wrapper.find('.paypal-stub').exists()).toBe(false)
     expect(wrapper.text()).toContain('Place order')
   })
 
+  it('в external-режиме показывает WooPayButton вместо PayPal-кнопок', async () => {
+    fetchPaymentConfig.mockResolvedValue({ enabled: true, clientId: null, mode: 'LIVE', serverFlow: false, external: true })
+    const wrapper = mountWidget()
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'WooPayButton' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'PaypalPayment' }).exists()).toBe(false)
+  })
+
   it('включена, но без clientId → fallback «Place order»', async () => {
-    fetchPaymentConfig.mockResolvedValue({ enabled: true, clientId: null, mode: 'SANDBOX', serverFlow: false })
+    fetchPaymentConfig.mockResolvedValue({ enabled: true, clientId: null, mode: 'SANDBOX', serverFlow: false, external: false })
     const wrapper = mountWidget()
     await flushPromises()
     expect(wrapper.find('.paypal-stub').exists()).toBe(false)
@@ -126,7 +139,7 @@ describe('CartPageWidget — выбор кнопки оплаты по конф�
 describe('CartPageWidget — guest checkout (email field)', () => {
   beforeEach(() => {
     mockAuthState.isLoggedIn = false
-    fetchPaymentConfig.mockResolvedValue({ enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false })
+    fetchPaymentConfig.mockResolvedValue({ enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false, external: false })
   })
 
   it('гость видит поле Email', async () => {
