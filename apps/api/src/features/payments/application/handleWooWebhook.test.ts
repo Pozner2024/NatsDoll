@@ -19,7 +19,7 @@ function makeDeps(overrides: Record<string, unknown> = {}) {
   return { repo, emailService, uc: makeHandleWooWebhook(repo as never, emailService as never, SECRET) }
 }
 
-const paidEvent = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', transaction_id: 'TX1' })
+const paidEvent = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', transaction_id: 'TX1', payment_method: 'ppcp-gateway' })
 
 describe('handleWooWebhook', () => {
   it('валидная подпись + processing + сумма сошлась → PAID', async () => {
@@ -30,17 +30,17 @@ describe('handleWooWebhook', () => {
     expect(result).toEqual({ handled: true })
   })
 
-  it('статус completed тоже подтверждает оплату', async () => {
+  it('статус completed тоже подтверждает оплату (карточный шлюз ppcp-credit-card-gateway)', async () => {
     const { repo, uc } = makeDeps()
-    const body = JSON.stringify({ id: 7, status: 'completed', total: '29.00', currency: 'USD' })
+    const body = JSON.stringify({ id: 7, status: 'completed', total: '29.00', currency: 'USD', transaction_id: 'TX2', payment_method: 'ppcp-credit-card-gateway' })
     const result = await uc(body, sign(body))
-    expect(repo.markOrderPaid).toHaveBeenCalledWith('o1', null)
+    expect(repo.markOrderPaid).toHaveBeenCalledWith('o1', 'TX2')
     expect(result).toEqual({ handled: true })
   })
 
   it('нестандартный формат суммы («29.0») всё равно подтверждает оплату', async () => {
     const { repo, uc } = makeDeps()
-    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.0', currency: 'USD', transaction_id: 'TX1' })
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.0', currency: 'USD', transaction_id: 'TX1', payment_method: 'ppcp-gateway' })
     const result = await uc(body, sign(body))
     expect(repo.markOrderPaid).toHaveBeenCalledWith('o1', 'TX1')
     expect(result).toEqual({ handled: true })
@@ -73,7 +73,7 @@ describe('handleWooWebhook', () => {
 
   it('сумма не сошлась → handled false, алерт, PAID не ставится', async () => {
     const { repo, emailService, uc } = makeDeps()
-    const body = JSON.stringify({ id: 7, status: 'processing', total: '0.01', currency: 'USD' })
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '0.01', currency: 'USD', transaction_id: 'TX1', payment_method: 'ppcp-gateway' })
     expect(await uc(body, sign(body))).toEqual({ handled: false })
     expect(repo.markOrderPaid).not.toHaveBeenCalled()
     expect(emailService.sendPaymentCaptureAlert).toHaveBeenCalled()
@@ -81,9 +81,33 @@ describe('handleWooWebhook', () => {
 
   it('валюта не USD → handled false', async () => {
     const { repo, uc } = makeDeps()
-    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'EUR' })
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'EUR', transaction_id: 'TX1', payment_method: 'ppcp-gateway' })
     expect(await uc(body, sign(body))).toEqual({ handled: false })
     expect(repo.markOrderPaid).not.toHaveBeenCalled()
+  })
+
+  it('не-PayPal шлюз (COD): status processing без transaction_id → handled false + алерт, PAID не ставится', async () => {
+    const { repo, emailService, uc } = makeDeps()
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', payment_method: 'cod' })
+    expect(await uc(body, sign(body))).toEqual({ handled: false })
+    expect(repo.markOrderPaid).not.toHaveBeenCalled()
+    expect(emailService.sendPaymentCaptureAlert).toHaveBeenCalled()
+  })
+
+  it('чужой шлюз даже с transaction_id → handled false + алерт', async () => {
+    const { repo, emailService, uc } = makeDeps()
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', transaction_id: 'TX9', payment_method: 'stripe' })
+    expect(await uc(body, sign(body))).toEqual({ handled: false })
+    expect(repo.markOrderPaid).not.toHaveBeenCalled()
+    expect(emailService.sendPaymentCaptureAlert).toHaveBeenCalled()
+  })
+
+  it('PayPal-шлюз без transaction_id → handled false + алерт (capture ещё не подтверждён)', async () => {
+    const { repo, emailService, uc } = makeDeps()
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', payment_method: 'ppcp-gateway' })
+    expect(await uc(body, sign(body))).toEqual({ handled: false })
+    expect(repo.markOrderPaid).not.toHaveBeenCalled()
+    expect(emailService.sendPaymentCaptureAlert).toHaveBeenCalled()
   })
 
   it('markOrderPaid=false (терминальный статус) → handled false + алерт', async () => {

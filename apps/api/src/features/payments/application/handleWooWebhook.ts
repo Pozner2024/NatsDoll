@@ -8,6 +8,7 @@ import type { PaymentRepository } from '../types'
 export type HandleWooWebhook = (rawBody: string, signature: string) => Promise<{ handled: boolean }>
 
 const PAID_WOO_STATUSES = ['processing', 'completed']
+const PAYPAL_GATEWAY_PREFIX = 'ppcp-'
 
 function verifyWooSignature(rawBody: string, signature: string, secret: string): boolean {
   const expected = createHmac('sha256', secret).update(rawBody, 'utf8').digest()
@@ -21,6 +22,7 @@ interface WooWebhookEvent {
   total?: unknown
   currency?: unknown
   transaction_id?: unknown
+  payment_method?: unknown
 }
 
 export function makeHandleWooWebhook(
@@ -51,11 +53,14 @@ export function makeHandleWooWebhook(
     const transactionId = typeof event.transaction_id === 'string' && event.transaction_id !== '' ? event.transaction_id : null
     const amountMatches = matchesAmountUsd(event.total, order.totalAmount)
     const currencyMatches = event.currency === 'USD'
-    if (!amountMatches || !currencyMatches) {
-      console.error('[handleWooWebhook] amount verification mismatch', {
+    const gatewayMatches = typeof event.payment_method === 'string' && event.payment_method.startsWith(PAYPAL_GATEWAY_PREFIX)
+    if (!amountMatches || !currencyMatches || !gatewayMatches || transactionId === null) {
+      console.error('[handleWooWebhook] payment verification mismatch', {
         orderNumber: order.orderNumber,
         amount: { expected: order.totalAmount.toFixed(2), actual: event.total ?? null, ok: amountMatches },
         currency: { expected: 'USD', actual: event.currency ?? null, ok: currencyMatches },
+        gateway: { actual: event.payment_method ?? null, ok: gatewayMatches },
+        transactionId: { present: transactionId !== null },
       })
       await alertCaptureUnsettled(emailService, order.orderNumber, transactionId, new AppError(409, 'Payment verification failed'))
       return { handled: false }

@@ -80,6 +80,7 @@ services:
     volumes:
       - wp_data:/var/www/html
       - ./infra/wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins
+      - ./infra/wordpress/mu-plugins-dev/natsdoll-dev-http-auth.php:/var/www/html/wp-content/mu-plugins/natsdoll-dev-http-auth.php
     depends_on:
       - wp-db
 
