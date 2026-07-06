@@ -48,6 +48,7 @@ export function makeHandleWooWebhook(
     }
     const order = await repo.getOrderByWooOrderId(event.id)
     if (!order) {
+      console.error('[handleWooWebhook] no matching order for woo order id', { wooOrderId: event.id, status: event.status })
       return { handled: false }
     }
     const transactionId = typeof event.transaction_id === 'string' && event.transaction_id !== '' ? event.transaction_id : null
