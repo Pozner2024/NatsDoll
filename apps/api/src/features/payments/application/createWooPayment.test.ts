@@ -5,6 +5,7 @@ const settings = { enabled: true, mode: 'SANDBOX', clientId: null, secret: null,
 const order = {
   id: 'o1', userId: 'u1', orderNumber: 1042, status: 'PENDING', totalAmount: 29, shippingCost: 5,
   wooOrderId: null, wooOrderKey: null, customerName: 'Jane Doe', customerEmail: 'jane@example.com',
+  billingAddress: { line1: '123 Main St', city: 'New York', country: 'US', postalCode: '10001' },
   items: [{ name: 'Fox', quantity: 2, subtotalUsd: 24 }],
 }
 
@@ -33,6 +34,7 @@ describe('createWooPayment', () => {
       shippingUsd: 5,
       customerName: 'Jane Doe',
       customerEmail: 'jane@example.com',
+      billingAddress: { line1: '123 Main St', city: 'New York', country: 'US', postalCode: '10001' },
       returnUrl: 'https://natsdoll.com/orders/o1',
     })
     expect(repo.setWooOrder).toHaveBeenCalledWith('o1', 7, 'wc_key')

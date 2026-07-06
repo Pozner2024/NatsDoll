@@ -39,7 +39,16 @@ export function makeWooClient(): WooClient {
           status: 'pending',
           currency: 'USD',
           customer_id: 0,
-          billing: { first_name: firstName, last_name: lastName, email: input.customerEmail },
+          billing: {
+            first_name: firstName,
+            last_name: lastName,
+            email: input.customerEmail,
+            address_1: input.billingAddress.line1,
+            address_2: input.billingAddress.line2 ?? '',
+            city: input.billingAddress.city,
+            postcode: input.billingAddress.postalCode,
+            country: input.billingAddress.country,
+          },
           line_items: input.lineItems.map((li) => ({
             product_id: env.placeholderProductId,
             name: li.name,

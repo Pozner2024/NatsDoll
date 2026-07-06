@@ -29,6 +29,7 @@ export function makeCreateWooPayment(
       shippingUsd: order.shippingCost,
       customerName: order.customerName,
       customerEmail: order.customerEmail,
+      billingAddress: order.billingAddress,
       returnUrl: `${frontendUrl}/orders/${order.id}`,
     })
     const bound = await repo.setWooOrder(orderId, created.wooOrderId, created.wooOrderKey)

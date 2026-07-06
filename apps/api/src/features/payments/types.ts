@@ -112,12 +112,21 @@ export interface WooLineItem {
   subtotalUsd: number
 }
 
+export interface WooBillingAddress {
+  line1: string
+  line2?: string
+  city: string
+  country: string
+  postalCode: string
+}
+
 export interface WooCreateOrderInput {
   orderNumber: number
   lineItems: WooLineItem[]
   shippingUsd: number
   customerName: string
   customerEmail: string
+  billingAddress: WooBillingAddress
   returnUrl: string
 }
 
@@ -142,6 +151,7 @@ export interface OrderForWooPayment {
   wooOrderKey: string | null
   customerName: string
   customerEmail: string
+  billingAddress: WooBillingAddress
   items: WooLineItem[]
 }
 

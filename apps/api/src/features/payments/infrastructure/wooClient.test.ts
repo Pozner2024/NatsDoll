@@ -8,6 +8,7 @@ const input = {
   shippingUsd: 5,
   customerName: 'Jane Ann Doe',
   customerEmail: 'jane@example.com',
+  billingAddress: { line1: '123 Main St', city: 'New York', country: 'US', postalCode: '10001' },
   returnUrl: 'https://natsdoll.com/orders/o1',
 }
 
@@ -33,7 +34,16 @@ describe('wooClient', () => {
     const body = JSON.parse(String(init.body)) as Record<string, unknown>
     expect(body.line_items).toEqual([{ product_id: 17, name: 'Polymer clay fox', quantity: 2, subtotal: '24.00', total: '24.00' }])
     expect(body.shipping_lines).toEqual([{ method_id: 'flat_rate', method_title: 'Shipping', total: '5.00' }])
-    expect(body.billing).toEqual({ first_name: 'Jane', last_name: 'Ann Doe', email: 'jane@example.com' })
+    expect(body.billing).toEqual({
+      first_name: 'Jane',
+      last_name: 'Ann Doe',
+      email: 'jane@example.com',
+      address_1: '123 Main St',
+      address_2: '',
+      city: 'New York',
+      postcode: '10001',
+      country: 'US',
+    })
     expect(body.meta_data).toEqual([
       { key: 'natsdoll_order_number', value: 'natsdoll-1042' },
       { key: 'natsdoll_return_url', value: 'https://natsdoll.com/orders/o1' },

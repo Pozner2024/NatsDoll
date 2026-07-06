@@ -108,7 +108,14 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
         },
       })
       if (!o) return null
-      const address = o.shippingAddress as { fullName?: string }
+      const address = o.shippingAddress as {
+        fullName?: string
+        line1?: string
+        line2?: string
+        city?: string
+        country?: string
+        postalCode?: string
+      }
       return {
         id: o.id,
         userId: o.userId,
@@ -120,6 +127,13 @@ export function makePaymentRepository(prisma: PrismaClient): PaymentRepository {
         wooOrderKey: o.wooOrderKey,
         customerName: address.fullName ?? '',
         customerEmail: o.user.email,
+        billingAddress: {
+          line1: address.line1 ?? '',
+          line2: address.line2,
+          city: address.city ?? '',
+          country: address.country ?? '',
+          postalCode: address.postalCode ?? '',
+        },
         items: o.items.map((i) => ({
           name: i.product.name,
           quantity: i.quantity,
