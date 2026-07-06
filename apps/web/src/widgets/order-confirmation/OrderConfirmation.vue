@@ -127,9 +127,16 @@
           v-else-if="returnedFromPayment"
           class="order-confirmation__payment-pending"
         >
-          {{ pollExhausted
-            ? "Payment received — confirmation is taking longer than usual. We'll update your order shortly, check My orders later."
-            : 'Payment is being processed…' }}
+          <template v-if="pollExhausted">
+            Payment received — confirmation is taking longer than usual. We'll update your order shortly, check My orders later.
+          </template>
+          <template v-else>
+            <span
+              class="order-confirmation__spinner"
+              aria-hidden="true"
+            />
+            Confirming your payment…
+          </template>
         </p>
         <WooPayButton
           v-else-if="externalMode"
@@ -433,8 +440,21 @@ function onClaimed() {
   }
 
   &__payment-pending {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--color-text-muted);
     margin: 0;
+  }
+
+  &__spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-text-muted);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: order-confirmation-spin 0.8s linear infinite;
   }
 
   &__actions {
@@ -446,6 +466,12 @@ function onClaimed() {
 
   &__action {
     --btn-font-size: var(--fs-sm);
+  }
+}
+
+@keyframes order-confirmation-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

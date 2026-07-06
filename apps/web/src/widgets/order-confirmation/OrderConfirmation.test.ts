@@ -124,11 +124,12 @@ describe('OrderConfirmation', () => {
     expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('being verified')
   })
 
-  it('PENDING + ?paid=1 → «Payment is being processed…», без PaypalPayment/WooPayButton', async () => {
+  it('PENDING + ?paid=1 → спиннер «Confirming your payment…», без PaypalPayment/WooPayButton', async () => {
     state.currentOrder = makeOrder('PENDING')
     routeQuery.value = { paid: '1' }
     const wrapper = await mountIt()
-    expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('Payment is being processed')
+    expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('Confirming your payment')
+    expect(wrapper.find('.order-confirmation__spinner').exists()).toBe(true)
     expect(wrapper.find('.paypal-stub').exists()).toBe(false)
     expect(wrapper.find('.woo-stub').exists()).toBe(false)
   })
@@ -203,6 +204,7 @@ describe('OrderConfirmation', () => {
       expect(wrapper.find('.paypal-stub').exists()).toBe(false)
       expect(wrapper.find('.woo-stub').exists()).toBe(false)
       expect(wrapper.find('.order-confirmation__payment-pending').text()).toContain('taking longer')
+      expect(wrapper.find('.order-confirmation__spinner').exists()).toBe(false)
     })
   })
 })
