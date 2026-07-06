@@ -42,7 +42,12 @@ pay.natsdoll.com {
 		Referrer-Policy "strict-origin-when-cross-origin"
 		X-Robots-Tag "noindex, nofollow"
 	}
-	reverse_proxy wordpress:80
+	reverse_proxy wordpress:80 {
+		# Перезаписываем X-Real-IP реальным адресом TCP-пира (Caddy — edge-прокси).
+		# Иначе клиент мог бы прислать произвольный X-Real-IP, и WooCommerce записал бы
+		# поддельный IP плательщика в payIp (fraud-сигнал шлюза Authorize.Net).
+		header_up X-Real-IP {remote_host}
+	}
 }
 
 stats.natsdoll.com {
