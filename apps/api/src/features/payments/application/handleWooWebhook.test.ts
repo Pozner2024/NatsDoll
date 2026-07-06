@@ -102,6 +102,22 @@ describe('handleWooWebhook', () => {
     expect(emailService.sendPaymentCaptureAlert).toHaveBeenCalled()
   })
 
+  it('шлюз посредника sklad_usa_paypal с transaction_id → PAID', async () => {
+    const { repo, uc } = makeDeps()
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', transaction_id: 'TX-SKLAD', payment_method: 'sklad_usa_paypal' })
+    const result = await uc(body, sign(body))
+    expect(repo.markOrderPaid).toHaveBeenCalledWith('o1', 'TX-SKLAD')
+    expect(result).toEqual({ handled: true })
+  })
+
+  it('шлюз посредника sklad_usa_paypal без transaction_id → handled false + алерт', async () => {
+    const { repo, emailService, uc } = makeDeps()
+    const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', payment_method: 'sklad_usa_paypal' })
+    expect(await uc(body, sign(body))).toEqual({ handled: false })
+    expect(repo.markOrderPaid).not.toHaveBeenCalled()
+    expect(emailService.sendPaymentCaptureAlert).toHaveBeenCalled()
+  })
+
   it('PayPal-шлюз без transaction_id → handled false + алерт (capture ещё не подтверждён)', async () => {
     const { repo, emailService, uc } = makeDeps()
     const body = JSON.stringify({ id: 7, status: 'processing', total: '29.00', currency: 'USD', payment_method: 'ppcp-gateway' })

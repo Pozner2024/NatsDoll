@@ -8,7 +8,7 @@ import type { PaymentRepository } from '../types'
 export type HandleWooWebhook = (rawBody: string, signature: string) => Promise<{ handled: boolean }>
 
 const PAID_WOO_STATUSES = ['processing', 'completed']
-const PAYPAL_GATEWAY_PREFIX = 'ppcp-'
+const TRUSTED_GATEWAY_PREFIXES = ['ppcp-', 'sklad_usa_']
 
 function verifyWooSignature(rawBody: string, signature: string, secret: string): boolean {
   const expected = createHmac('sha256', secret).update(rawBody, 'utf8').digest()
@@ -53,7 +53,8 @@ export function makeHandleWooWebhook(
     const transactionId = typeof event.transaction_id === 'string' && event.transaction_id !== '' ? event.transaction_id : null
     const amountMatches = matchesAmountUsd(event.total, order.totalAmount)
     const currencyMatches = event.currency === 'USD'
-    const gatewayMatches = typeof event.payment_method === 'string' && event.payment_method.startsWith(PAYPAL_GATEWAY_PREFIX)
+    const paymentMethod = event.payment_method
+    const gatewayMatches = typeof paymentMethod === 'string' && TRUSTED_GATEWAY_PREFIXES.some((prefix) => paymentMethod.startsWith(prefix))
     if (!amountMatches || !currencyMatches || !gatewayMatches || transactionId === null) {
       console.error('[handleWooWebhook] payment verification mismatch', {
         orderNumber: order.orderNumber,
