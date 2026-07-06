@@ -99,8 +99,8 @@ describe('createOrder', () => {
     })
     const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
     await createOrder('u1', address)
-    // totalItemCount = 3, shipping = 12 + 2 = 14 (total пересчитывается в репозитории внутри транзакции)
-    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 14, address, null)
+    // shipping временно 0 (SHIPPING_BASE=0 на время тестов оплаты); total пересчитывается в репозитории
+    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 0, address, null)
   })
 
   it('calculates shipping correctly for 1 item', async () => {
@@ -116,8 +116,8 @@ describe('createOrder', () => {
     })
     const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
     await createOrder('u1', address)
-    // shipping = 12 (total пересчитывается в репозитории внутри транзакции)
-    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 12, address, null)
+    // shipping временно 0 (SHIPPING_BASE=0 на время тестов оплаты); total пересчитывается в репозитории
+    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 0, address, null)
   })
 
   it('отправляет письмо-подтверждение покупателю', async () => {
