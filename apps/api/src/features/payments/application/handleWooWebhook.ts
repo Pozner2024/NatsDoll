@@ -43,15 +43,6 @@ export function makeHandleWooWebhook(
     } catch {
       return { handled: false }
     }
-    // TEMP diagnostic: log decision fields of every incoming webhook (no PII). Remove after debug.
-    console.error('[handleWooWebhook] received', {
-      id: event.id,
-      status: event.status,
-      payment_method: event.payment_method,
-      transaction_id: event.transaction_id,
-      total: event.total,
-      currency: event.currency,
-    })
     if (typeof event.id !== 'number' || typeof event.status !== 'string' || !PAID_WOO_STATUSES.includes(event.status)) {
       return { handled: false }
     }
