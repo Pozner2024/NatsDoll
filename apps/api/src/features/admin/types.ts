@@ -93,6 +93,7 @@ export type AdminRepository = {
   listAdminOrders(params: AdminOrderListParams): Promise<{ items: AdminOrderSummary[]; total: number }>
   getAdminOrder(orderId: string): Promise<AdminOrderDetail | null>
   updateAdminOrder(orderId: string, input: UpdateOrderInput): Promise<{ userEmail: string; userName: string; orderNumber: number; trackingNumber: string } | null>
+  listAdminContactMessages(params: AdminContactMessageListParams): Promise<{ items: AdminContactMessageSummary[]; total: number }>
   getAnalyticsData(period: AnalyticsPeriod): Promise<AnalyticsResponse>
   // products
   listProducts(params: AdminProductListParams): Promise<{ items: AdminProductListItem[]; total: number }>
@@ -236,6 +237,30 @@ export type UpdateOrderInput = {
 export type ListAdminOrders = (params: AdminOrderListParams) => Promise<AdminOrderListResponse>
 export type GetAdminOrder = (orderId: string) => Promise<AdminOrderDetail | null>
 export type UpdateAdminOrder = (orderId: string, input: UpdateOrderInput) => Promise<void>
+
+// ── Admin Contact Messages ─────────────────────────────────────
+
+export type AdminContactMessageSummary = {
+  id: number
+  name: string
+  email: string
+  message: string
+  createdAt: string
+}
+
+export type AdminContactMessageListParams = {
+  page: number
+  limit: number
+}
+
+export type AdminContactMessageListResponse = {
+  items: AdminContactMessageSummary[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+export type ListAdminContactMessages = (params: AdminContactMessageListParams) => Promise<AdminContactMessageListResponse>
 
 // ── Admin Analytics ───────────────────────────────────────────
 

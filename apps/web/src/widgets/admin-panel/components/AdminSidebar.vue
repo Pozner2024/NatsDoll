@@ -44,6 +44,7 @@ import IconOrders from './icons/IconOrders.vue'
 import IconAnalytics from './icons/IconAnalytics.vue'
 import IconSales from './icons/IconSales.vue'
 import IconPayment from './icons/IconPayment.vue'
+import IconContact from './icons/IconContact.vue'
 
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
@@ -60,6 +61,7 @@ const navItems: NavItem[] = [
   { to: '/admin',           label: 'Dashboard',        icon: IconDashboard,  exact: true  },
   { to: '/admin/listings',  label: 'Listings',          icon: IconListings,   exact: false },
   { to: '/admin/messages',  label: 'Messages',          icon: IconMessages,   exact: false },
+  { to: '/admin/contact-messages', label: 'Contact Form', icon: IconContact,  exact: false },
   { to: '/admin/orders',    label: 'Orders',            icon: IconOrders,     exact: false },
   { to: '/admin/analytics', label: 'Analytics',         icon: IconAnalytics,  exact: false },
   { to: '/admin/sales',     label: 'Sales & Discounts', icon: IconSales,      exact: false },

@@ -126,6 +126,7 @@ import {
   makeReplyToUser,
   makeMarkConversationRead,
   makeListAdminOrders,
+  makeListAdminContactMessages,
   makeGetAdminOrder,
   makeUpdateAdminOrder,
   makeGetAnalytics,
@@ -355,6 +356,7 @@ export function createApp() {
   const listSales = makeListSales(adminRepo)
   const countProductsInSale = makeCountProductsInSale(adminRepo)
   const uploadProductImage = makeUploadProductImage(uploadToS3)
+  const listAdminContactMessages = makeListAdminContactMessages(adminRepo)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
     getDashboard, markAllMessagesRead,
@@ -366,6 +368,7 @@ export function createApp() {
     getAnalytics,
     createSale, updateSale, deleteSale, listSales, getActiveSale, countProductsInSale,
     uploadProductImage,
+    listAdminContactMessages,
   ))
 
   return app

@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput, AnalyticsPeriod, AnalyticsResponse, SaleInput, SaleRecord, ActiveSale, SaleScope } from '../types'
+import type { AdminRepository, DashboardResponse, AdminProductListParams, AdminProductInput, ReplyInput, AdminOrderListParams, AdminOrderSummary, AdminOrderDetail, UpdateOrderInput, AnalyticsPeriod, AnalyticsResponse, SaleInput, SaleRecord, ActiveSale, SaleScope, AdminContactMessageListParams, AdminContactMessageSummary } from '../types'
 import type { ShippingAddress } from '../../orders/types'
 import { AppError } from '../../../shared/errors'
 import { PAID_STATUSES, isTerminalStatus } from '../../../shared/lib'
@@ -305,6 +305,26 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
         userEmail: o.user.email,
         itemCount: o._count.items,
         createdAt: o.createdAt.toISOString(),
+      }))
+      return { items, total }
+    },
+
+    async listAdminContactMessages(params: AdminContactMessageListParams) {
+      const { page, limit } = params
+      const [rows, total] = await Promise.all([
+        prisma.contactMessage.findMany({
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.contactMessage.count(),
+      ])
+      const items: AdminContactMessageSummary[] = rows.map((m) => ({
+        id: m.id,
+        name: m.name,
+        email: m.email,
+        message: m.message,
+        createdAt: m.createdAt.toISOString(),
       }))
       return { items, total }
     },

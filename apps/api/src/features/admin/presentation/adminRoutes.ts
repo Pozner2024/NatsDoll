@@ -13,6 +13,7 @@ import type {
   GetAnalytics,
   CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale,
   UploadProductImage,
+  ListAdminContactMessages,
 } from '../types'
 
 const productListQuerySchema = z.object({
@@ -87,6 +88,11 @@ const saleBodySchema = z.object({
   path: ['endsAt'],
 })
 
+const contactMessageListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+})
+
 const previewCountQuerySchema = z.object({
   scope: z.enum(['ALL', 'CATEGORIES', 'PRODUCTS']),
   categoryIds: z.string().optional(),
@@ -126,6 +132,7 @@ export function makeAdminRouter(
   getActiveSale: GetActiveSale,
   countProductsInSale: CountProductsInSale,
   uploadProductImage: UploadProductImage,
+  listAdminContactMessages: ListAdminContactMessages,
 ) {
   const router = new Hono()
 
@@ -321,6 +328,12 @@ export function makeAdminRouter(
     const id = c.req.param('id')
     await deleteSale(id)
     return c.json({ ok: true })
+  })
+
+  router.get('/contact-messages', zValidator('query', contactMessageListQuerySchema), async (c) => {
+    const params = c.req.valid('query')
+    const result = await listAdminContactMessages(params)
+    return c.json(result)
   })
 
   return router

@@ -14,6 +14,7 @@ import type {
   GetAnalytics,
   CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale,
   UploadProductImage,
+  ListAdminContactMessages,
 } from '../types'
 
 const mockDashboard: DashboardResponse = {
@@ -58,6 +59,7 @@ function makeApp(overrides: {
   getActiveSale?: GetActiveSale
   countProductsInSale?: CountProductsInSale
   uploadProductImage?: UploadProductImage
+  listAdminContactMessages?: ListAdminContactMessages
 } = {}) {
   const app = new Hono()
   app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'ADMIN' }); await next() })
@@ -90,6 +92,7 @@ function makeApp(overrides: {
     overrides.getActiveSale ?? vi.fn().mockResolvedValue(null),
     overrides.countProductsInSale ?? vi.fn().mockResolvedValue(0),
     overrides.uploadProductImage ?? vi.fn().mockResolvedValue({ url: 'https://s3/items/new/x.jpg' }),
+    overrides.listAdminContactMessages ?? vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, totalPages: 0 }),
   ))
   return app
 }
@@ -107,7 +110,7 @@ describe('GET /admin/dashboard', () => {
     const app = new Hono()
     app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'CUSTOMER' }); await next() })
     app.route('/admin', makeAdminRouter(
-      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
+      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
     ))
     const res = await app.request('/admin/dashboard')
     expect(res.status).toBe(403)
