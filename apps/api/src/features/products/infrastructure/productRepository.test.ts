@@ -76,6 +76,45 @@ describe('productRepository.findMany', () => {
     })
   })
 
+  it('returns empty result when onSale requested but no active sale', async () => {
+    const prisma = makePrismaMock()
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findMany({ onSale: true, sort: 'newest', page: 1, limit: 12 }, null)
+
+    expect(result).toEqual({ items: [], total: 0 })
+    expect(prisma.product.findMany).not.toHaveBeenCalled()
+  })
+
+  it('filters by sale categoryIds when onSale requested with CATEGORIES scope', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.product.count).mockResolvedValue(0)
+
+    const repo = makeProductRepository(prisma)
+    await repo.findMany(
+      { onSale: true, sort: 'newest', page: 1, limit: 12 },
+      { scope: 'CATEGORIES', categoryIds: ['cat1'], productIds: [] },
+    )
+
+    const calledWith = vi.mocked(prisma.product.findMany).mock.calls[0]![0]!
+    expect(calledWith.where).toMatchObject({ categoryId: { in: ['cat1'] } })
+  })
+
+  it('does not add extra filter when onSale requested with ALL scope', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.product.count).mockResolvedValue(0)
+
+    const repo = makeProductRepository(prisma)
+    await repo.findMany(
+      { onSale: true, sort: 'newest', page: 1, limit: 12 },
+      { scope: 'ALL', categoryIds: [], productIds: [] },
+    )
+
+    const calledWith = vi.mocked(prisma.product.findMany).mock.calls[0]![0]!
+    expect(calledWith.where).toMatchObject({ isPublished: true, deletedAt: null })
+  })
+
   it('orders by price asc when sort=price-asc', async () => {
     const prisma = makePrismaMock()
     vi.mocked(prisma.product.findMany).mockResolvedValue([])

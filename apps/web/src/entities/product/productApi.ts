@@ -47,6 +47,7 @@ export async function fetchProduct(slug: string, signal?: AbortSignal): Promise<
 export async function fetchProducts(params: ProductListParams, signal?: AbortSignal): Promise<ProductListResponse> {
   const search = new URLSearchParams()
   if (params.category) search.set('category', params.category)
+  if (params.onSale) search.set('onSale', 'true')
   search.set('sort', params.sort)
   search.set('page', String(params.page))
   search.set('limit', String(params.limit))

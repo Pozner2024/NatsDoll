@@ -1,5 +1,11 @@
 export type ProductSortOrder = 'newest' | 'price-asc' | 'price-desc'
 
+export type ActiveSaleFilter = {
+  scope: 'ALL' | 'CATEGORIES' | 'PRODUCTS'
+  categoryIds: string[]
+  productIds: string[]
+}
+
 export type ProductListItem = {
   id: string
   slug: string
@@ -22,6 +28,7 @@ export type ProductListResponse = {
 
 export type ProductListParams = {
   category?: string
+  onSale?: boolean
   sort: ProductSortOrder
   page: number
   limit: number
@@ -57,7 +64,7 @@ export type SitemapProductItem = {
 }
 
 export interface ProductRepository {
-  findMany(params: ProductListParams): Promise<{ items: ProductListItem[]; total: number }>
+  findMany(params: ProductListParams, activeSale?: ActiveSaleFilter | null): Promise<{ items: ProductListItem[]; total: number }>
   listCategories(): Promise<CategoryListItem[]>
   findBySlug(slug: string): Promise<ProductDetail | null>
   findAllForSitemap(): Promise<SitemapProductItem[]>

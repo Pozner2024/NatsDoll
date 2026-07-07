@@ -116,6 +116,19 @@ describe('useShopCatalog', () => {
     expect(api.products.value).toEqual([])
   })
 
+  it('requests onSale=true and no category for /shop/on-sale', async () => {
+    const { api } = await mountComposable('/shop/on-sale')
+
+    expect(mockFetch).toHaveBeenCalledWith({
+      category: undefined,
+      onSale: true,
+      sort: 'newest',
+      page: 1,
+      limit: 12,
+    })
+    expect(api.activeCategoryName.value).toBe('On Sale')
+  })
+
   it('refetches when category changes', async () => {
     const { router } = await mountComposable('/shop')
     expect(mockFetch).toHaveBeenCalledTimes(1)

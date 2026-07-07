@@ -21,6 +21,7 @@ export type ProductListResponse = {
 
 export type ProductListParams = {
   category?: string
+  onSale?: boolean
   sort: ProductSortOrder
   page: number
   limit: number

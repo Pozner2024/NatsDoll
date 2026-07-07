@@ -26,7 +26,7 @@ describe('listProducts', () => {
     const listProducts = makeListProducts(repo, noSale)
     const result = await listProducts({ sort: 'newest', page: 2, limit: 12 })
 
-    expect(repo.findMany).toHaveBeenCalledWith({ sort: 'newest', page: 2, limit: 12 })
+    expect(repo.findMany).toHaveBeenCalledWith({ sort: 'newest', page: 2, limit: 12 }, null)
     expect(result.items).toHaveLength(1)
     expect(result.total).toBe(25)
     expect(result.page).toBe(2)
@@ -51,7 +51,7 @@ describe('listProducts', () => {
     const listProducts = makeListProducts(repo, noSale)
     await listProducts({ category: 'animals', sort: 'price-asc', page: 1, limit: 12 })
 
-    expect(repo.findMany).toHaveBeenCalledWith({ category: 'animals', sort: 'price-asc', page: 1, limit: 12 })
+    expect(repo.findMany).toHaveBeenCalledWith({ category: 'animals', sort: 'price-asc', page: 1, limit: 12 }, null)
   })
 
   it('enriches items with salePrice and salePercent when ALL sale is active', async () => {

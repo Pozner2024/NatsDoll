@@ -1,5 +1,11 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder, ProductDetail, SitemapProductItem } from '../types'
+import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder, ProductDetail, SitemapProductItem, ActiveSaleFilter } from '../types'
+
+function saleWhere(activeSale: ActiveSaleFilter): Prisma.ProductWhereInput | null {
+  if (activeSale.scope === 'ALL') return null
+  if (activeSale.scope === 'CATEGORIES') return { categoryId: { in: activeSale.categoryIds } }
+  return { id: { in: activeSale.productIds } }
+}
 
 const PRODUCT_SELECT = {
   id: true,
@@ -20,12 +26,15 @@ function orderByForSort(sort: ProductSortOrder): Prisma.ProductOrderByWithRelati
 
 export function makeProductRepository(prisma: PrismaClient): ProductRepository {
   return {
-    async findMany(params: ProductListParams) {
+    async findMany(params: ProductListParams, activeSale: ActiveSaleFilter | null = null) {
+      if (params.onSale && !activeSale) return { items: [], total: 0 }
+
       const where: Prisma.ProductWhereInput = {
         isPublished: true,
         deletedAt: null,
         stock: { gt: 0 },
         ...(params.category ? { category: { slug: params.category } } : {}),
+        ...(params.onSale && activeSale ? (saleWhere(activeSale) ?? {}) : {}),
       }
 
       const [rows, total] = await Promise.all([

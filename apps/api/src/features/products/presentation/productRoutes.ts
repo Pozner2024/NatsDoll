@@ -9,6 +9,7 @@ type ListProductsForSitemap = () => Promise<SitemapProductItem[]>
 
 const productListQuerySchema = z.object({
   category: z.string().optional().transform((v) => (v && v.length > 0 ? v : undefined)),
+  onSale: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
   sort: z.enum(['newest', 'price-asc', 'price-desc']).default('newest'),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(48).default(12),

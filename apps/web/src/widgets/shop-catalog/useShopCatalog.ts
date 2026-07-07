@@ -5,6 +5,7 @@ import { fetchProducts, type ProductSortOrder } from '@/entities/product'
 import { useCategoryStore } from '@/entities/category'
 
 export const PAGE_SIZE = 12
+export const ON_SALE_SLUG = 'on-sale'
 const VALID_SORTS: ProductSortOrder[] = ['newest', 'price-asc', 'price-desc']
 
 function parseSort(raw: unknown): ProductSortOrder {
@@ -20,17 +21,20 @@ export function useShopCatalog() {
   const route = useRoute()
   const categoryStore = useCategoryStore()
 
-  const category = computed(() => {
+  const routeParam = computed(() => {
     const c = route.params.category
     return typeof c === 'string' && c.length > 0 ? c : undefined
   })
+  const onSale = computed(() => routeParam.value === ON_SALE_SLUG)
+  const category = computed(() => (onSale.value ? undefined : routeParam.value))
   const sort = computed(() => parseSort(route.query.sort))
   const page = computed(() => parsePage(route.query.page))
 
   const { data, status, error: fetchError, refresh } = useAsyncData(
-    computed(() => `shop-products:${category.value ?? 'all'}:${sort.value}:${page.value}`),
+    computed(() => `shop-products:${routeParam.value ?? 'all'}:${sort.value}:${page.value}`),
     () => fetchProducts({
       category: category.value,
+      onSale: onSale.value || undefined,
       sort: sort.value,
       page: page.value,
       limit: PAGE_SIZE,
@@ -54,12 +58,13 @@ export function useShopCatalog() {
   }
 
   const activeCategoryName = computed(() => {
+    if (onSale.value) return 'On Sale'
     if (!category.value) return null
     return categoryStore.categories.find((c) => c.slug === category.value)?.name ?? null
   })
 
   return {
-    category,
+    category: computed(() => routeParam.value),
     sort,
     page,
     products,
