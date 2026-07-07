@@ -1,0 +1,44 @@
+name: Server security check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect host security settings via SSH
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 5m
+          script: |
+            echo "=== os / uptime ==="
+            cat /etc/os-release | head -2; uptime
+            echo "=== sshd effective config ==="
+            sudo sshd -T 2>/dev/null | grep -Ei '^(passwordauthentication|permitrootlogin|pubkeyauthentication|kbdinteractiveauthentication|port|maxauthtries) ' || true
+            echo "=== fail2ban ==="
+            systemctl is-active fail2ban 2>/dev/null || echo "fail2ban: not active/not installed"
+            sudo fail2ban-client status sshd 2>/dev/null || true
+            echo "=== unattended-upgrades ==="
+            systemctl is-active unattended-upgrades 2>/dev/null || echo "unattended-upgrades: not active/not installed"
+            apt-config dump APT::Periodic::Unattended-Upgrade 2>/dev/null || true
+            echo "=== pending updates ==="
+            sudo apt-get -s upgrade 2>/dev/null | grep -E '^\d+ upgraded' || apt list --upgradable 2>/dev/null | head -20
+            echo "=== listening ports (host) ==="
+            sudo ss -tlnp | awk 'NR==1 || $4 !~ /127\.0\.0\.1|\[::1\]/'
+            echo "=== authorized_keys (natalia) ==="
+            ssh-keygen -lf ~/.ssh/authorized_keys 2>/dev/null || echo "none"
+            echo "=== authorized_keys (root) ==="
+            sudo ssh-keygen -lf /root/.ssh/authorized_keys 2>/dev/null || echo "none"
+            echo "=== crontabs ==="
+            crontab -l 2>/dev/null || echo "no user crontab"
+            sudo crontab -l 2>/dev/null || echo "no root crontab"
+            echo "=== last logins ==="
+            last -n 10 --fullnames 2>/dev/null | head -12
+            echo "=== recent failed logins (count) ==="
+            sudo lastb 2>/dev/null | wc -l
+            echo "=== docker containers ==="
+            docker ps --format '{{.Names}}  {{.Image}}  {{.Status}}  {{.Ports}}'
