@@ -208,7 +208,8 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { AppButton, formatPrice, calcShipping, useAuthModal, validateEmail } from '@/shared'
+import { AppButton, formatPrice, calcShipping, fetchShippingSettings, useAuthModal, validateEmail } from '@/shared'
+import type { ShippingRates } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import { useAuthStore } from '@/entities/user'
 import { useOrderStore } from '@/entities/order'
@@ -258,7 +259,10 @@ const items = computed(() => cartStore.items)
 const itemCount = computed(() => cartStore.itemCount)
 const subtotal = computed(() => cartStore.totalAmount)
 const totalItemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
-const shippingCost = computed(() => calcShipping(totalItemCount.value))
+const shippingRates = ref<ShippingRates | null>(null)
+const shippingCost = computed(() =>
+  calcShipping(totalItemCount.value, shippingRates.value?.baseCost, shippingRates.value?.perExtraItemCost),
+)
 const grandTotal = computed(() => subtotal.value + shippingCost.value)
 const loading = computed(() => cartStore.loading)
 const error = computed(() => cartStore.error)
@@ -370,6 +374,7 @@ onMounted(async () => {
   } catch {
     paymentConfig.value = { enabled: false, clientId: null, mode: 'SANDBOX', serverFlow: false, external: false }
   }
+  shippingRates.value = await fetchShippingSettings()
 })
 
 async function onUpdate(itemId: string, quantity: number): Promise<void> {

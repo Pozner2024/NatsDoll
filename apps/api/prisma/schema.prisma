@@ -353,3 +353,12 @@ enum PaymentMode {
   SANDBOX
   LIVE
 }
+
+// ─── Shipping Settings ────────────────────────────────
+
+model ShippingSettings {
+  id               String   @id @default("default")
+  baseCost         Decimal  @db.Decimal(10, 2)
+  perExtraItemCost Decimal  @db.Decimal(10, 2)
+  updatedAt        DateTime @updatedAt
+}

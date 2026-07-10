@@ -2,6 +2,7 @@ import { AppError } from '../../../shared/errors'
 import { calcShipping } from '../../../shared/lib'
 import type { OrderRepository, CreateOrder, ShippingAddress } from '../types'
 import type { GetActiveSale } from '../../admin/types'
+import type { GetShippingSettings } from '../../shipping'
 import type { AuthRepository } from '../../auth/infrastructure/authRepository'
 import type { EmailService } from '../../auth/infrastructure/emailService'
 
@@ -10,6 +11,7 @@ export function makeCreateOrder(
   getActiveSale: GetActiveSale,
   authRepo: Pick<AuthRepository, 'findById'>,
   emailService: EmailService,
+  getShippingRates: GetShippingSettings,
 ): CreateOrder {
   return async function createOrder(userId: string, shippingAddress: ShippingAddress) {
     const items = await repo.getCartItemsForCheckout(userId)
@@ -28,7 +30,8 @@ export function makeCreateOrder(
     }
 
     const totalItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
-    const shippingCost = calcShipping(totalItemCount)
+    const rates = await getShippingRates()
+    const shippingCost = calcShipping(totalItemCount, rates.baseCost, rates.perExtraItemCost)
     const sale = await getActiveSale()
 
     const order = await repo.createOrderFromCart(userId, items, shippingCost, shippingAddress, sale)

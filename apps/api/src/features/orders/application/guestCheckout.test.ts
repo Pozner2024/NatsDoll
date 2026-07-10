@@ -17,10 +17,11 @@ function deps() {
     },
     issueTokens: vi.fn().mockResolvedValue({ accessToken: 'AT', refreshToken: 'RT', user: { id: 'u1', name: 'Anna', email: 'a@b.com', role: 'CUSTOMER' } }),
     emailService: { sendOrderConfirmation: vi.fn(), sendNewOrderAlert: vi.fn() },
+    getShippingRates: vi.fn().mockResolvedValue({ baseCost: 12, perExtraItemCost: 1 }),
   }
 }
 function make(d: ReturnType<typeof deps>) {
-  return makeGuestCheckout(d.orderRepo as never, d.getActiveSale as never, d.getProductsForCheckout as never, d.authRepo as never, d.issueTokens as never, d.emailService as never)
+  return makeGuestCheckout(d.orderRepo as never, d.getActiveSale as never, d.getProductsForCheckout as never, d.authRepo as never, d.issueTokens as never, d.emailService as never, d.getShippingRates as never)
 }
 
 describe('guestCheckout', () => {

@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { makeCreateOrder } from './createOrder'
 import type { OrderRepository, ShippingAddress } from '../types'
 import type { GetActiveSale } from '../../admin/types'
+import type { GetShippingSettings } from '../../shipping'
 import type { AuthRepository } from '../../auth/infrastructure/authRepository'
 import type { EmailService } from '../../auth/infrastructure/emailService'
 
 const noActiveSale: GetActiveSale = vi.fn().mockResolvedValue(null)
+const getShippingRates: GetShippingSettings = vi.fn().mockResolvedValue({ baseCost: 12, perExtraItemCost: 1 })
 
 const address: ShippingAddress = {
   fullName: 'Natasha',
@@ -62,7 +64,7 @@ describe('createOrder', () => {
 
   it('throws 400 when cart is empty', async () => {
     vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue([])
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await expect(createOrder('u1', address)).rejects.toMatchObject({ statusCode: 400 })
   })
 
@@ -71,7 +73,7 @@ describe('createOrder', () => {
       { id: 'ci-1', productId: 'p1', productName: 'Doll', productImage: null,
         productPrice: 10, productStock: 5, productIsAvailable: false, quantity: 1, message: null, categoryId: 'cat1' },
     ])
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await expect(createOrder('u1', address)).rejects.toMatchObject({ statusCode: 409 })
   })
 
@@ -80,7 +82,7 @@ describe('createOrder', () => {
       { id: 'ci-1', productId: 'p1', productName: 'Doll', productImage: null,
         productPrice: 10, productStock: 2, productIsAvailable: true, quantity: 5, message: null, categoryId: 'cat1' },
     ])
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await expect(createOrder('u1', address)).rejects.toMatchObject({ statusCode: 409 })
   })
 
@@ -97,7 +99,7 @@ describe('createOrder', () => {
       totalAmount: 64, shippingCost: 14, trackingNumber: null,
       shippingAddress: address, createdAt: new Date().toISOString(), paymentClaimed: false, isGuestAccount: false, items: [],
     })
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await createOrder('u1', address)
     // totalItemCount = 3, shipping = 12 + 2 = 14 (total пересчитывается в репозитории внутри транзакции)
     expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 14, address, null)
@@ -114,10 +116,28 @@ describe('createOrder', () => {
       totalAmount: 22, shippingCost: 12, trackingNumber: null,
       shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
     })
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await createOrder('u1', address)
     // shipping = 12 (total пересчитывается в репозитории внутри транзакции)
     expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 12, address, null)
+  })
+
+  it('использует ставки доставки из настроек', async () => {
+    const items = [
+      { id: 'ci-1', productId: 'p1', productName: 'A', productImage: null,
+        productPrice: 15, productStock: 10, productIsAvailable: true, quantity: 3, message: null, categoryId: 'cat1' },
+    ]
+    vi.mocked(repo.getCartItemsForCheckout).mockResolvedValue(items)
+    vi.mocked(repo.createOrderFromCart).mockResolvedValue({
+      id: 'order-1', orderNumber: 1, userId: 'u1', status: 'PENDING',
+      totalAmount: 65, shippingCost: 25, trackingNumber: null,
+      shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
+    })
+    const customRates: GetShippingSettings = vi.fn().mockResolvedValue({ baseCost: 15, perExtraItemCost: 5 })
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, customRates)
+    await createOrder('u1', address)
+    // totalItemCount = 3, shipping = 15 + 2*5 = 25
+    expect(repo.createOrderFromCart).toHaveBeenCalledWith('u1', items, 25, address, null)
   })
 
   it('отправляет письмо-подтверждение покупателю', async () => {
@@ -131,7 +151,7 @@ describe('createOrder', () => {
       shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false,
       items: [{ id: 'i1', productId: 'p1', productSlug: 's', productName: 'Doll', productImage: null, quantity: 1, price: 10, originalPrice: null, subtotal: 10, message: null }],
     })
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await createOrder('u1', address)
     expect(emailService.sendOrderConfirmation).toHaveBeenCalledWith(
       'natasha@example.com', 'Natasha', 5, [{ id: 'i1', productId: 'p1', productSlug: 's', productName: 'Doll', productImage: null, quantity: 1, price: 10, originalPrice: null, subtotal: 10, message: null }], 22,
@@ -149,7 +169,7 @@ describe('createOrder', () => {
       totalAmount: 22, shippingCost: 12, trackingNumber: null,
       shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
     })
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await createOrder('u1', address)
     expect(emailService.sendNewOrderAlert).toHaveBeenCalledWith('admin@natsdoll.com', 5, 'natasha@example.com', 22)
   })
@@ -164,7 +184,7 @@ describe('createOrder', () => {
       totalAmount: 22, shippingCost: 12, trackingNumber: null,
       shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
     })
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await createOrder('u1', address)
     expect(emailService.sendNewOrderAlert).not.toHaveBeenCalled()
   })
@@ -180,7 +200,7 @@ describe('createOrder', () => {
       shippingAddress: address, createdAt: '2026-05-31T00:00:00.000Z', paymentClaimed: false, isGuestAccount: false, items: [],
     })
     vi.mocked(emailService.sendOrderConfirmation).mockRejectedValue(new Error('resend down'))
-    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService)
+    const createOrder = makeCreateOrder(repo, noActiveSale, authRepo, emailService, getShippingRates)
     await expect(createOrder('u1', address)).resolves.toMatchObject({ id: 'order-1' })
   })
 })

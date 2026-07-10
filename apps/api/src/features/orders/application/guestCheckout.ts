@@ -2,6 +2,7 @@ import { AppError } from '../../../shared/errors'
 import { calcShipping } from '../../../shared/lib'
 import type { OrderRepository, GuestCheckoutInput, GuestOrderItem, OrderDetail, GetProductsForCheckout } from '../types'
 import type { GetActiveSale } from '../../admin/types'
+import type { GetShippingSettings } from '../../shipping'
 import type { AuthRepository } from '../../auth/infrastructure/authRepository'
 import type { EmailService } from '../../auth/infrastructure/emailService'
 import type { issueTokensForUser, AuthTokensResult } from '../../auth/application/issueTokens'
@@ -15,6 +16,7 @@ export function makeGuestCheckout(
   authRepo: Pick<AuthRepository, 'findByEmail' | 'createGuestUser' | 'saveRefreshToken' | 'pruneUserSessions'>,
   issueTokens: typeof issueTokensForUser,
   emailService: EmailService,
+  getShippingRates: GetShippingSettings,
 ): GuestCheckout {
   return async (input) => {
     if (input.items.length === 0) {
@@ -52,7 +54,8 @@ export function makeGuestCheckout(
     const user = await authRepo.createGuestUser({ name: input.shippingAddress.fullName, email: input.email })
 
     const totalItemCount = orderItems.reduce((sum, i) => sum + i.quantity, 0)
-    const shippingCost = calcShipping(totalItemCount)
+    const rates = await getShippingRates()
+    const shippingCost = calcShipping(totalItemCount, rates.baseCost, rates.perExtraItemCost)
     const sale = await getActiveSale()
 
     const order = await orderRepo.createOrderFromItems(user.id, orderItems, shippingCost, input.shippingAddress, sale)

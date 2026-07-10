@@ -107,6 +107,13 @@ import {
   makeHandleWooWebhook,
 } from './features/payments'
 import {
+  makeShippingRepository,
+  makeGetShippingSettings,
+  makeUpdateShippingSettings,
+  makeShippingRouter,
+  makeAdminShippingRouter,
+} from './features/shipping'
+import {
   makeAdminRepository,
   makeGetDashboard,
   makeMarkAllMessagesRead,
@@ -259,12 +266,18 @@ export function createApp() {
   app.use('/cart/*', requireAuth)
   app.route('/cart', makeCartRouter(addToCart, getCart, updateQuantity, removeFromCart))
 
+  // Shipping — created before Orders so checkout can read current rates
+  const shippingRepo = makeShippingRepository(prisma)
+  const getShippingSettings = makeGetShippingSettings(shippingRepo)
+  const updateShippingSettings = makeUpdateShippingSettings(shippingRepo)
+  app.route('/shipping-settings', makeShippingRouter(getShippingSettings))
+
   // Orders
   const orderRepo = makeOrderRepository(prisma)
-  const createOrder = makeCreateOrder(orderRepo, getActiveSale, authRepo, emailService)
+  const createOrder = makeCreateOrder(orderRepo, getActiveSale, authRepo, emailService, getShippingSettings)
   const getMyOrders = makeGetMyOrders(orderRepo)
   const getOrder = makeGetOrder(orderRepo)
-  const guestCheckout = makeGuestCheckout(orderRepo, getActiveSale, orderRepo.getProductsForCheckout, authRepo, issueTokensForUser, emailService)
+  const guestCheckout = makeGuestCheckout(orderRepo, getActiveSale, orderRepo.getProductsForCheckout, authRepo, issueTokensForUser, emailService, getShippingSettings)
   const cancelOwnOrder = makeCancelOwnOrder(orderRepo)
   app.use('/orders', requireAuth)
   app.use('/orders/*', async (c, next) => {
@@ -290,6 +303,7 @@ export function createApp() {
   const handleWooWebhook = makeHandleWooWebhook(paymentRepo, emailService, process.env.WOO_WEBHOOK_SECRET)
   app.route('/payments', makePaymentRouter(getPaymentConfig, createPaypalOrder, capturePaypalPayment, claimPaypalPayment, handlePaypalWebhook, createWooPayment, handleWooWebhook))
   app.route('/admin/payment-settings', makeAdminPaymentRouter(getPaymentSettings, updatePaymentSettings))
+  app.route('/admin/shipping-settings', makeAdminShippingRouter(getShippingSettings, updateShippingSettings))
 
   // Favorites
   const favoritesRepo = makeFavoritesRepository(prisma)

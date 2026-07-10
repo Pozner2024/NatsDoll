@@ -13,4 +13,9 @@ describe('calcShipping', () => {
   it('returns 21 for 10 items', () => {
     expect(calcShipping(10)).toBe(21)
   })
+
+  it('uses provided rates instead of defaults', () => {
+    expect(calcShipping(1, 15, 5)).toBe(15)
+    expect(calcShipping(3, 15, 5)).toBe(25)
+  })
 })

@@ -122,7 +122,7 @@
             r="1.5"
           />
         </svg>
-        Delivery cost {{ formatPrice(SHIPPING_BASE) }}
+        Delivery cost {{ formatPrice(shippingBaseCost) }}
       </li>
     </ul>
 
@@ -136,14 +136,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import DOMPurify from 'isomorphic-dompurify'
-import { AppButton, formatPrice, plainTextToHtml, SHIPPING_BASE } from '@/shared'
+import { AppButton, formatPrice, plainTextToHtml, SHIPPING_BASE, fetchShippingSettings } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
 import MessageSelector from './MessageSelector.vue'
 
 const props = defineProps<{ product: ProductDetail }>()
 const emit = defineEmits<{ 'add-to-cart': [payload: { quantity: number; message: string | null }] }>()
+
+const shippingBaseCost = ref(SHIPPING_BASE)
+onMounted(async () => {
+  shippingBaseCost.value = (await fetchShippingSettings()).baseCost
+})
 
 const qty = ref(1)
 const message = ref<string | null>(null)
