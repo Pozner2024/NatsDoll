@@ -160,13 +160,15 @@ export function makeEmailService(): EmailService {
       await send({
         from: 'noreply@natsdoll.com',
         to,
-        subject: `Order confirmed — #${orderNumber} — NatsDoll`,
+        subject: `Order received — #${orderNumber} — NatsDoll`,
         html: `
           <p>Hi ${escapeHtml(name)},</p>
           <p>Thanks for your order! We've received <strong>order #${orderNumber}</strong>:</p>
           <ul>${itemsHtml}</ul>
           <p>Total: <strong>$${totalAmount.toFixed(2)}</strong></p>
-          <p>You can track your order in your <a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/account/purchases">account cabinet</a>.</p>
+          <p>Please note: this email confirms that your order was placed, not that it was paid.</p>
+          <p>If you haven't completed the payment yet, you can pay anytime from your <a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/account/purchases">account cabinet</a> — open the order and click the payment button.</p>
+          <p>Once your payment is confirmed, we'll start preparing your order and email you a tracking number when it ships.</p>
         `,
       })
     },
