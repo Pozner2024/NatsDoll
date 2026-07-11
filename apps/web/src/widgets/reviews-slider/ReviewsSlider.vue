@@ -20,6 +20,7 @@
           class="reviews-slider__slide"
         >
           <ReviewCard
+            v-if="isInWindow(i)"
             :text="review.text"
             :name="review.name"
             :country="review.country"
@@ -41,6 +42,7 @@ import { REVIEWS } from './reviews'
 const AUTOPLAY_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD_PX = 40
 const RESIZE_DEBOUNCE_MS = 150
+const RENDER_WINDOW_BUFFER = 3
 
 const visibleCount = ref(1)
 
@@ -73,6 +75,13 @@ const slideWidth = computed(() => 100 / visibleCount.value)
 const trackStyle = computed(() => ({
   transform: `translateX(-${currentIndex.value * slideWidth.value}%)`,
 }))
+
+function isInWindow(i: number): boolean {
+  return (
+    i >= currentIndex.value - RENDER_WINDOW_BUFFER &&
+    i <= currentIndex.value + visibleCount.value - 1 + RENDER_WINDOW_BUFFER
+  )
+}
 
 const touchStartX = ref(0)
 

@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAsyncData } from 'nuxt/app'
+import { useAsyncData, createError } from 'nuxt/app'
 import { fetchProducts, type ProductSortOrder } from '@/entities/product'
 import { useCategoryStore } from '@/entities/category'
 
@@ -17,7 +17,7 @@ function parsePage(raw: unknown): number {
   return Number.isFinite(n) && n >= 1 ? n : 1
 }
 
-export function useShopCatalog() {
+export async function useShopCatalog() {
   const route = useRoute()
   const categoryStore = useCategoryStore()
 
@@ -41,7 +41,15 @@ export function useShopCatalog() {
     }),
   )
 
-  void categoryStore.load()
+  await categoryStore.load()
+  const isUnknownCategory =
+    category.value !== undefined &&
+    !categoryStore.error &&
+    categoryStore.categories.length > 0 &&
+    !categoryStore.categories.some((c) => c.slug === category.value)
+  if (isUnknownCategory) {
+    throw createError({ statusCode: 404, statusMessage: 'Category not found' })
+  }
 
   const products = computed(() => data.value?.items ?? [])
   const total = computed(() => data.value?.total ?? 0)

@@ -34,4 +34,20 @@ describe('ReviewsSlider', () => {
     const counter = wrapper.find('.review-card__counter')
     expect(counter.text()).toMatch(/^1 \/ \d+$/)
   })
+
+  it('рендерит карточки только в окне вокруг текущего слайда, остальные слайды пустые', () => {
+    const wrapper = mountSlider()
+    expect(wrapper.findAll('.reviews-slider__slide').length).toBeGreaterThan(100)
+    expect(wrapper.findAll('.review-card').length).toBeLessThanOrEqual(12)
+  })
+
+  it('при переключении слайда карточки рендерятся в новом окне', async () => {
+    const wrapper = mountSlider()
+    vi.advanceTimersByTime(5000)
+    await wrapper.vm.$nextTick()
+
+    const slides = wrapper.findAll('.reviews-slider__slide')
+    expect(slides[1]!.find('.review-card').exists()).toBe(true)
+    expect(wrapper.findAll('.review-card').length).toBeLessThanOrEqual(12)
+  })
 })

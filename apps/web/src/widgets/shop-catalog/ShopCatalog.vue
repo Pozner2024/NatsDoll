@@ -88,7 +88,7 @@ const {
   categories, categoriesError,
   activeCategoryName,
   retry,
-} = useShopCatalog()
+} = await useShopCatalog()
 
 const isFirstLoad = computed(() => isLoading.value && products.value.length === 0 && !error.value)
 

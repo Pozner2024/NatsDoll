@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { defineComponent, h, Suspense } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
@@ -25,6 +26,10 @@ const sample = {
   totalPages: 1,
 }
 
+const ShopCatalogSuspended = defineComponent({
+  setup: () => () => h(Suspense, null, { default: () => h(ShopCatalog) }),
+})
+
 async function mountShop(initialPath = '/shop') {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -34,7 +39,7 @@ async function mountShop(initialPath = '/shop') {
     ],
   })
   await router.push(initialPath)
-  const wrapper = mount(ShopCatalog, {
+  const wrapper = mount(ShopCatalogSuspended, {
     global: { plugins: [createPinia(), router] },
   })
   await flushPromises()
@@ -60,7 +65,8 @@ describe('ShopCatalog', () => {
       ],
     })
     await router.push('/shop')
-    const wrapper = mount(ShopCatalog, { global: { plugins: [createPinia(), router] } })
+    const wrapper = mount(ShopCatalogSuspended, { global: { plugins: [createPinia(), router] } })
+    await flushPromises()
 
     expect(wrapper.find('.shop-skeleton').exists()).toBe(true)
 

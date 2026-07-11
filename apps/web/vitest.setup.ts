@@ -57,9 +57,8 @@ vi.mock('nuxt/app', () => {
       refresh: execute,
       execute,
       clear: () => {},
-      then: (onFulfilled: (value: unknown) => unknown) => initial.then(() => onFulfilled(result)),
     }
-    return result
+    return Object.assign(initial.then(() => result), result)
   }
 
   return {
