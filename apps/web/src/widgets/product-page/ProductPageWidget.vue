@@ -65,7 +65,7 @@ import { useRoute, RouterLink } from 'vue-router'
 import { useAsyncData, createError, useSeoMeta, useHead, useRuntimeConfig } from 'nuxt/app'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import { useCartStore } from '@/entities/cart'
-import { useCartPrompt, metaDescription, productSeoTitle, DEFAULT_OG_IMAGE } from '@/shared'
+import { useCartPrompt, useToast, metaDescription, productSeoTitle, DEFAULT_OG_IMAGE } from '@/shared'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -176,6 +176,7 @@ const productForFavorite = computed<Product | undefined>(() => {
 
 const cartStore = useCartStore()
 const cartPrompt = useCartPrompt()
+const toast = useToast()
 const productInfoRef = ref<{ resetAdding: () => void } | null>(null)
 
 async function onAddToCart(payload: { quantity: number; message: string | null }): Promise<void> {
@@ -192,7 +193,7 @@ async function onAddToCart(payload: { quantity: number; message: string | null }
     })
     cartPrompt.open()
   } catch (e) {
-    console.error('Failed to add to cart', e)
+    toast.error(e instanceof Error ? e.message : 'Could not add to cart')
   } finally {
     productInfoRef.value?.resetAdding()
   }
