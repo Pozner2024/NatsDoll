@@ -104,10 +104,10 @@ shared/
 node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit -p apps/api
 # typecheck web (Nuxt)
 cd apps/web && NODE_OPTIONS=--max-old-space-size=4096 npx nuxt typecheck
-# tests web (--root обязателен, иначе ложное падение всех .vue)
-node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=basic
+# tests web (--root обязателен, иначе ложное падение всех .vue; vitest 4 — репортера basic больше нет)
+node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/web --reporter=dot
 # tests api (--root обязателен, иначе не грузится vitest.setup.ts с секретами)
-node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/api --reporter=basic
+node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --root apps/api --reporter=dot
 # lint (api + web; из корня — там eslint.config.js. Гейтит деплой в deploy.yml)
 npx eslint apps/api/src apps/web/app apps/web/src --max-warnings=0
 ```
