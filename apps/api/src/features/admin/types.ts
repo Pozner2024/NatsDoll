@@ -88,7 +88,7 @@ export type AdminRepository = {
   markAllMessagesRead(): Promise<void>
   listConversations(): Promise<ConversationPreview[]>
   getConversation(userId: string): Promise<ConversationDetail | null>
-  replyToUser(input: ReplyInput): Promise<void>
+  replyToUser(input: ReplyInput): Promise<{ userEmail: string; userName: string }>
   markConversationRead(userId: string): Promise<void>
   listAdminOrders(params: AdminOrderListParams): Promise<{ items: AdminOrderSummary[]; total: number }>
   getAdminOrder(orderId: string): Promise<AdminOrderDetail | null>

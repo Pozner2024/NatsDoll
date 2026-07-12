@@ -5,6 +5,7 @@ import { Resend } from 'resend'
 import type { CreateEmailOptions } from 'resend'
 
 const EMAIL_TIMEOUT_MS = 8000
+const REPLY_SNIPPET_MAX_LENGTH = 200
 
 export type EmailService = {
   sendVerificationEmail(to: string, verificationUrl: string): Promise<void>
@@ -12,6 +13,7 @@ export type EmailService = {
   sendPasswordResetEmail(to: string, resetUrl: string): Promise<void>
   sendMessageNotification(adminEmail: string, fromName: string, fromEmail: string, text: string, orderNumber?: number): Promise<void>
   sendTrackingNotification(to: string, name: string, orderNumber: number, trackingNumber: string): Promise<void>
+  sendReplyNotification(to: string, name: string, text: string): Promise<void>
   sendContactNotification(adminEmail: string, fromName: string, fromEmail: string, message: string): Promise<void>
   sendPaymentCaptureAlert(adminEmail: string, orderNumber: number, captureId: string | null, reason: string): Promise<void>
   sendOrderConfirmation(
@@ -153,6 +155,22 @@ export function makeEmailService(): EmailService {
           <p>Tracking number: <strong>${escapeHtml(trackingNumber)}</strong></p>
           <p>You can track your order using this number with your shipping carrier.</p>
           <p>You can also view your order details in your <a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/account/purchases">account cabinet</a>.</p>
+        `,
+      })
+    },
+    async sendReplyNotification(to, name, text) {
+      const snippet = text.length > REPLY_SNIPPET_MAX_LENGTH
+        ? `${text.slice(0, REPLY_SNIPPET_MAX_LENGTH)}…`
+        : text
+      await send({
+        from: 'noreply@natsdoll.com',
+        to,
+        subject: 'You have a new message — NatsDoll',
+        html: `
+          <p>Hi ${escapeHtml(name)},</p>
+          <p>NatsDoll replied to your message:</p>
+          <blockquote>${escapeHtml(snippet)}</blockquote>
+          <p>View the conversation and reply in your <a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/account/messages">account cabinet</a>.</p>
         `,
       })
     },

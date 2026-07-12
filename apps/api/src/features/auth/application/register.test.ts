@@ -16,6 +16,7 @@ function makeEmail(): EmailService {
     sendPaymentCaptureAlert: vi.fn().mockResolvedValue(undefined),
     sendOrderConfirmation: vi.fn().mockResolvedValue(undefined),
     sendNewOrderAlert: vi.fn().mockResolvedValue(undefined),
+    sendReplyNotification: vi.fn().mockResolvedValue(undefined),
   }
 }
 

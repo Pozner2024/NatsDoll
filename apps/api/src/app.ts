@@ -367,7 +367,7 @@ export function createApp() {
   const getAdminProduct = makeGetAdminProduct(adminRepo)
   const listConversations = makeListConversations(adminRepo)
   const getConversation = makeGetConversation(adminRepo)
-  const replyToUser = makeReplyToUser(adminRepo)
+  const replyToUser = makeReplyToUser(adminRepo, emailService)
   const markConversationRead = makeMarkConversationRead(adminRepo)
   const listAdminOrders = makeListAdminOrders(adminRepo)
   const getAdminOrder = makeGetAdminOrder(adminRepo)
