@@ -1,10 +1,10 @@
 <template>
   <section
     class="reviews-slider"
-    @mouseenter="pause('hover')"
-    @mouseleave="resume('hover')"
-    @focusin="pause('focus')"
-    @focusout="resume('focus')"
+    @pointerenter="pointerPause"
+    @pointerleave="pointerResume"
+    @focusin="focusPause"
+    @focusout="focusResume"
   >
     <h2 class="reviews-slider__title">
       <span class="reviews-slider__title-sub">the reviews</span>
@@ -96,7 +96,7 @@ onUnmounted(() => {
 })
 
 const slideCount = computed(() => Math.max(1, REVIEWS.length - visibleCount.value + 1))
-const { currentIndex, next, prev, pause, resume } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)
+const { currentIndex, next, prev, pointerPause, pointerResume, focusPause, focusResume } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)
 
 const slideWidth = computed(() => 100 / visibleCount.value)
 const noTransition = ref(false)

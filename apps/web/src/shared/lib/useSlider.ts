@@ -57,6 +57,31 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
     if (pauseReasons.size === 0) resetTimer()
   }
 
+  function pointerPause(e: PointerEvent) {
+    if (e.pointerType === 'mouse') pause('hover')
+  }
+
+  function pointerResume(e: PointerEvent) {
+    if (e.pointerType === 'mouse') resume('hover')
+  }
+
+  function isFocusVisible(el: EventTarget | null): boolean {
+    if (!(el instanceof Element)) return false
+    try {
+      return el.matches(':focus-visible')
+    } catch {
+      return true
+    }
+  }
+
+  function focusPause(e: FocusEvent) {
+    if (isFocusVisible(e.target)) pause('focus')
+  }
+
+  function focusResume() {
+    resume('focus')
+  }
+
   function next() {
     currentIndex.value = (currentIndex.value + 1) % total.value
     resetTimer()
@@ -82,5 +107,5 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
   onMounted(startTimer)
   onUnmounted(stopTimer)
 
-  return { currentIndex, next, prev, goTo, pause, resume }
+  return { currentIndex, next, prev, goTo, pause, resume, pointerPause, pointerResume, focusPause, focusResume }
 }

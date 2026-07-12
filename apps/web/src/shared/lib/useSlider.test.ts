@@ -98,6 +98,28 @@ describe('useSlider', () => {
     app.unmount()
   })
 
+  it('pointerPause игнорирует тач (синтетический mouseenter не глушит автоплей)', async () => {
+    const [{ currentIndex, pointerPause }, app] = withSetup(() => useSlider(4, 3000))
+    pointerPause({ pointerType: 'touch' } as PointerEvent)
+    vi.advanceTimersByTime(3000)
+    await nextTick()
+    expect(currentIndex.value).toBe(1)
+    app.unmount()
+  })
+
+  it('pointerPause от мыши ставит автоплей на паузу, pointerResume снимает', async () => {
+    const [{ currentIndex, pointerPause, pointerResume }, app] = withSetup(() => useSlider(4, 3000))
+    pointerPause({ pointerType: 'mouse' } as PointerEvent)
+    vi.advanceTimersByTime(9000)
+    await nextTick()
+    expect(currentIndex.value).toBe(0)
+    pointerResume({ pointerType: 'mouse' } as PointerEvent)
+    vi.advanceTimersByTime(3000)
+    await nextTick()
+    expect(currentIndex.value).toBe(1)
+    app.unmount()
+  })
+
   it('автоплей не стартует при prefers-reduced-motion', async () => {
     const original = window.matchMedia
     window.matchMedia = ((query: string) => ({

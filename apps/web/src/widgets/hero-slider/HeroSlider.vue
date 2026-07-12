@@ -2,10 +2,10 @@
   <section
     class="hero-slider"
     aria-label="Hero banner"
-    @mouseenter="pause('hover')"
-    @mouseleave="resume('hover')"
-    @focusin="pause('focus')"
-    @focusout="resume('focus')"
+    @pointerenter="pointerPause"
+    @pointerleave="pointerResume"
+    @focusin="focusPause"
+    @focusout="focusResume"
   >
     <div class="hero-slider__track">
       <img
@@ -81,7 +81,7 @@ const slides = [
   { id: 4, image: slide4 },
 ]
 
-const { currentIndex, next, prev, goTo, pause, resume } = useSlider(slides.length, AUTOPLAY_INTERVAL_MS)
+const { currentIndex, next, prev, goTo, pointerPause, pointerResume, focusPause, focusResume } = useSlider(slides.length, AUTOPLAY_INTERVAL_MS)
 </script>
 
 <style scoped lang="scss">
