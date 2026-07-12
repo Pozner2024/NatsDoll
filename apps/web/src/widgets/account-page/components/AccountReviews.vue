@@ -83,7 +83,9 @@
               :class="{ 'account-reviews__star--active': n <= rating }"
               :aria-label="`${n} star${n > 1 ? 's' : ''}`"
               :aria-checked="n === rating"
+              :tabindex="n === (rating || 1) ? 0 : -1"
               @click="rating = n"
+              @keydown="onStarKeydown($event, n)"
             >
               ★
             </button>
@@ -217,6 +219,17 @@ const rating = ref(0)
 const comment = ref('')
 const formSaving = ref(false)
 const formError = ref('')
+
+function onStarKeydown(e: KeyboardEvent, n: number) {
+  let next: number | null = null
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = n < 5 ? n + 1 : 1
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = n > 1 ? n - 1 : 5
+  if (next === null) return
+  e.preventDefault()
+  rating.value = next
+  const star = (e.currentTarget as HTMLElement).parentElement?.children[next - 1]
+  if (star instanceof HTMLElement) star.focus()
+}
 
 function closeForm() {
   showForm.value = false

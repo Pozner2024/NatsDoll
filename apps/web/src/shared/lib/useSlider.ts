@@ -23,13 +23,13 @@ const MIN_INTERVAL_MS = 100
 export function useSlider(count: Ref<number> | number, intervalMs: number) {
   const currentIndex = ref(0)
   let timer: ReturnType<typeof setInterval> | null = null
-  let paused = false
+  const pauseReasons = new Set<string>()
 
   const total = computed(() => isRef(count) ? count.value : count)
 
   function startTimer() {
     if (intervalMs < MIN_INTERVAL_MS) return
-    if (paused || prefersReducedMotion()) return
+    if (pauseReasons.size > 0 || prefersReducedMotion()) return
     timer = setInterval(() => {
       currentIndex.value = (currentIndex.value + 1) % total.value
     }, intervalMs)
@@ -47,14 +47,14 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
     startTimer()
   }
 
-  function pause() {
-    paused = true
+  function pause(reason = 'default') {
+    pauseReasons.add(reason)
     stopTimer()
   }
 
-  function resume() {
-    paused = false
-    resetTimer()
+  function resume(reason = 'default') {
+    pauseReasons.delete(reason)
+    if (pauseReasons.size === 0) resetTimer()
   }
 
   function next() {

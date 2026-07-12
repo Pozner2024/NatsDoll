@@ -1,10 +1,10 @@
 <template>
   <section
     class="reviews-slider"
-    @mouseenter="pause"
-    @mouseleave="resume"
-    @focusin="pause"
-    @focusout="resume"
+    @mouseenter="pause('hover')"
+    @mouseleave="resume('hover')"
+    @focusin="pause('focus')"
+    @focusout="resume('focus')"
   >
     <h2 class="reviews-slider__title">
       <span class="reviews-slider__title-sub">the reviews</span>
@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useSlider, MEDIA } from '@/shared'
 import ReviewCard from './ReviewCard.vue'
 import { REVIEWS } from './reviews'
@@ -99,8 +99,21 @@ const slideCount = computed(() => Math.max(1, REVIEWS.length - visibleCount.valu
 const { currentIndex, next, prev, pause, resume } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)
 
 const slideWidth = computed(() => 100 / visibleCount.value)
+const noTransition = ref(false)
+
+watch(currentIndex, (cur, old) => {
+  if (Math.abs(cur - old) <= 1) return
+  noTransition.value = true
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      noTransition.value = false
+    })
+  })
+})
+
 const trackStyle = computed(() => ({
   transform: `translateX(-${currentIndex.value * slideWidth.value}%)`,
+  ...(noTransition.value ? { transition: 'none' } : {}),
 }))
 
 function isInWindow(i: number): boolean {

@@ -2,10 +2,10 @@
   <section
     class="hero-slider"
     aria-label="Hero banner"
-    @mouseenter="pause"
-    @mouseleave="resume"
-    @focusin="pause"
-    @focusout="resume"
+    @mouseenter="pause('hover')"
+    @mouseleave="resume('hover')"
+    @focusin="pause('focus')"
+    @focusout="resume('focus')"
   >
     <div class="hero-slider__track">
       <img

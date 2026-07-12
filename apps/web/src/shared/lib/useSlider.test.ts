@@ -83,6 +83,21 @@ describe('useSlider', () => {
     app.unmount()
   })
 
+  it('снятие одной причины паузы не возобновляет автоплей, пока активна другая', async () => {
+    const [{ currentIndex, pause, resume }, app] = withSetup(() => useSlider(4, 3000))
+    pause('focus')
+    pause('hover')
+    resume('hover')
+    vi.advanceTimersByTime(9000)
+    await nextTick()
+    expect(currentIndex.value).toBe(0)
+    resume('focus')
+    vi.advanceTimersByTime(3000)
+    await nextTick()
+    expect(currentIndex.value).toBe(1)
+    app.unmount()
+  })
+
   it('автоплей не стартует при prefers-reduced-motion', async () => {
     const original = window.matchMedia
     window.matchMedia = ((query: string) => ({
