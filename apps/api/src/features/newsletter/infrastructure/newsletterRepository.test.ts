@@ -3,7 +3,7 @@ import { makeNewsletterRepository } from './newsletterRepository'
 
 function makePrisma() {
   return {
-    newsletterSubscriber: { upsert: vi.fn(), findMany: vi.fn(), delete: vi.fn() },
+    newsletterSubscriber: { upsert: vi.fn(), findMany: vi.fn(), deleteMany: vi.fn() },
   } as unknown as Parameters<typeof makeNewsletterRepository>[0]
 }
 
@@ -31,10 +31,17 @@ describe('newsletterRepository', () => {
     expect(result).toBe(subs)
   })
 
-  it('deleteById удаляет по id', async () => {
-    vi.mocked(prisma.newsletterSubscriber.delete).mockResolvedValue({} as never)
+  it('deleteById удаляет по id (идемпотентно)', async () => {
+    vi.mocked(prisma.newsletterSubscriber.deleteMany).mockResolvedValue({} as never)
     const repo = makeNewsletterRepository(prisma)
     await repo.deleteById('s1')
-    expect(prisma.newsletterSubscriber.delete).toHaveBeenCalledWith({ where: { id: 's1' } })
+    expect(prisma.newsletterSubscriber.deleteMany).toHaveBeenCalledWith({ where: { id: 's1' } })
+  })
+
+  it('deleteByEmail удаляет по email (идемпотентно)', async () => {
+    vi.mocked(prisma.newsletterSubscriber.deleteMany).mockResolvedValue({} as never)
+    const repo = makeNewsletterRepository(prisma)
+    await repo.deleteByEmail('a@b.co')
+    expect(prisma.newsletterSubscriber.deleteMany).toHaveBeenCalledWith({ where: { email: 'a@b.co' } })
   })
 })

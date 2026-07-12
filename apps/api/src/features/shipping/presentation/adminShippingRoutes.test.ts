@@ -59,12 +59,12 @@ describe('admin shipping routes — auth/admin гейт и валидация', 
     expect(app.updateSettings).not.toHaveBeenCalled()
   })
 
-  it('PUT / нулевая ставка → 400, updateSettings не вызван', async () => {
+  it('PUT / нулевая ставка (бесплатная доставка) → 200, updateSettings вызван', async () => {
     const token = await signAccessToken({ sub: 'admin', role: 'ADMIN' })
     const res = await app.app.request('/admin/shipping', {
       method: 'PUT', headers: bearer(token), body: JSON.stringify({ baseCost: 12, perExtraItemCost: 0 }),
     })
-    expect(res.status).toBe(400)
-    expect(app.updateSettings).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(app.updateSettings).toHaveBeenCalledWith({ baseCost: 12, perExtraItemCost: 0 })
   })
 })

@@ -69,4 +69,31 @@ describe('useSlider', () => {
     expect(currentIndex.value).toBe(1)
     app.unmount()
   })
+
+  it('pause останавливает автоплей, resume возобновляет', async () => {
+    const [{ currentIndex, pause, resume }, app] = withSetup(() => useSlider(4, 3000))
+    pause()
+    vi.advanceTimersByTime(9000)
+    await nextTick()
+    expect(currentIndex.value).toBe(0)
+    resume()
+    vi.advanceTimersByTime(3000)
+    await nextTick()
+    expect(currentIndex.value).toBe(1)
+    app.unmount()
+  })
+
+  it('автоплей не стартует при prefers-reduced-motion', async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      ...original(query),
+      matches: query.includes('prefers-reduced-motion'),
+    })) as typeof window.matchMedia
+    const [{ currentIndex }, app] = withSetup(() => useSlider(4, 3000))
+    vi.advanceTimersByTime(9000)
+    await nextTick()
+    expect(currentIndex.value).toBe(0)
+    app.unmount()
+    window.matchMedia = original
+  })
 })

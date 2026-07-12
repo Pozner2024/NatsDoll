@@ -38,7 +38,7 @@
           <div
             :id="`faq-answer-${item.id}`"
             class="faq-section__answer"
-            role="region"
+            :aria-hidden="openId !== item.id || undefined"
           >
             <p class="faq-section__answer-text">
               {{ item.answer }}

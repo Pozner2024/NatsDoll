@@ -14,7 +14,7 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://storage.yandexcloud.net https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://stats.natsdoll.com https://*.paypal.com; script-src 'self' 'sha256-50W4WRXjQgOG7w1qTb51qD4r+v8PqffINSqRVdWnqPQ=' https://stats.natsdoll.com https://*.paypal.com https://*.paypalobjects.com; frame-src https://*.paypal.com; frame-ancestors 'none';"
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://storage.yandexcloud.net https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://stats.natsdoll.com https://*.paypal.com; script-src 'self' 'sha256-50W4WRXjQgOG7w1qTb51qD4r+v8PqffINSqRVdWnqPQ=' https://stats.natsdoll.com https://*.paypal.com https://*.paypalobjects.com; frame-src https://*.paypal.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://*.paypal.com; object-src 'none';"
 	}
 
 	handle_path /api/* {
@@ -40,6 +40,7 @@ pay.natsdoll.com {
 		X-Frame-Options "SAMEORIGIN"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=63072000"
 		X-Robots-Tag "noindex, nofollow"
 	}
 	@blocked path /wp-config.php* /xmlrpc.php
@@ -53,5 +54,11 @@ pay.natsdoll.com {
 }
 
 stats.natsdoll.com {
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=63072000"
+	}
 	reverse_proxy umami:3000
 }

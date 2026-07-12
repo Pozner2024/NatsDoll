@@ -8,8 +8,8 @@ import type { UpdateShippingSettings } from '../application/updateShippingSettin
 const MAX_COST = 1000
 
 const updateSchema = z.object({
-  baseCost: z.number().positive().max(MAX_COST),
-  perExtraItemCost: z.number().positive().max(MAX_COST),
+  baseCost: z.number().min(0).max(MAX_COST),
+  perExtraItemCost: z.number().min(0).max(MAX_COST),
 })
 
 export function makeAdminShippingRouter(

@@ -46,10 +46,21 @@ describe('AdminShippingSettings', () => {
     expect(wrapper.find('.shipping-settings__ok').exists()).toBe(true)
   })
 
-  it('отклоняет нулевую ставку до отправки на сервер', async () => {
+  it('принимает нулевую ставку (бесплатная доставка)', async () => {
     const wrapper = await mountLoaded()
     const inputs = wrapper.findAll('input[type="number"]')
     await inputs[0]!.setValue('0')
+
+    await wrapper.find('.shipping-settings__save').trigger('click')
+    await flushPromises()
+
+    expect(mockSave).toHaveBeenCalledWith({ baseCost: 0, perExtraItemCost: 1 })
+  })
+
+  it('отклоняет отрицательную ставку до отправки на сервер', async () => {
+    const wrapper = await mountLoaded()
+    const inputs = wrapper.findAll('input[type="number"]')
+    await inputs[0]!.setValue('-1')
 
     await wrapper.find('.shipping-settings__save').trigger('click')
     await flushPromises()

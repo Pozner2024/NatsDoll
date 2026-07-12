@@ -12,6 +12,8 @@
       class="app-header__burger"
       :class="{ 'app-header__burger--open': isOpen }"
       :aria-label="isOpen ? 'Close menu' : 'Open menu'"
+      :aria-expanded="isOpen"
+      aria-controls="burger-menu"
       @click="toggleMenu"
     >
       <span class="app-header__burger-line" />

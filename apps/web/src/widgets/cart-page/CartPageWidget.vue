@@ -162,13 +162,13 @@
         </p>
         <p class="cart-page__summary-row">
           <span>Shipping</span>
-          <span>{{ formatPrice(shippingCost) }}</span>
+          <span>{{ shippingCost === null ? '—' : formatPrice(shippingCost) }}</span>
         </p>
         <p class="cart-page__summary-row cart-page__summary-row--total">
           <span>Total</span>
-          <span>{{ formatPrice(grandTotal) }}</span>
+          <span>{{ grandTotal === null ? '—' : formatPrice(grandTotal) }}</span>
         </p>
-        <template v-if="paymentsReady">
+        <template v-if="paymentsReady && grandTotal !== null">
           <WooPayButton
             v-if="paymentsEnabled && paymentConfig?.external"
             class="cart-page__pay"
@@ -260,10 +260,11 @@ const itemCount = computed(() => cartStore.itemCount)
 const subtotal = computed(() => cartStore.totalAmount)
 const totalItemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
 const shippingRates = ref<ShippingRates | null>(null)
-const shippingCost = computed(() =>
-  calcShipping(totalItemCount.value, shippingRates.value?.baseCost, shippingRates.value?.perExtraItemCost),
-)
-const grandTotal = computed(() => subtotal.value + shippingCost.value)
+const shippingCost = computed(() => {
+  if (!shippingRates.value) return null
+  return calcShipping(totalItemCount.value, shippingRates.value.baseCost, shippingRates.value.perExtraItemCost)
+})
+const grandTotal = computed(() => (shippingCost.value === null ? null : subtotal.value + shippingCost.value))
 const loading = computed(() => cartStore.loading)
 const error = computed(() => cartStore.error)
 const actionError = ref<string | null>(null)
@@ -303,6 +304,8 @@ function validateAddress(): boolean {
 }
 
 async function prepareOrder() {
+  const amountUsd = grandTotal.value
+  if (amountUsd === null) return null
   const address = checkoutFormRef.value?.getValidatedAddress?.()
   if (!address) return null
 
@@ -319,7 +322,7 @@ async function prepareOrder() {
       return await prepare(address, {
         email: guestEmail.value.trim(),
         items: cartStore.guestItems,
-        amountUsd: grandTotal.value,
+        amountUsd,
       })
     } catch (e) {
       if (e instanceof GuestEmailTakenError) {

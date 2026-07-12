@@ -66,8 +66,11 @@
           <span
             v-if="product.salePrice"
             class="product-card__price-original"
-          >{{ formatPrice(product.price) }}</span>
-          <span class="product-card__price">{{ formatPrice(product.salePrice ?? product.price) }}</span>
+          ><span class="visually-hidden">Original price:</span>{{ formatPrice(product.price) }}</span>
+          <span class="product-card__price"><span
+            v-if="product.salePrice"
+            class="visually-hidden"
+          >Sale price:</span>{{ formatPrice(product.salePrice ?? product.price) }}</span>
         </div>
       </div>
 

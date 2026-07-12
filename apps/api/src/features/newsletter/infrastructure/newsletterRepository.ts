@@ -10,6 +10,7 @@ export type NewsletterRepository = {
   upsertSubscriber(email: string): Promise<void>
   getAll(): Promise<NewsletterSubscriber[]>
   deleteById(id: string): Promise<void>
+  deleteByEmail(email: string): Promise<void>
 }
 
 export function makeNewsletterRepository(prisma: PrismaClient): NewsletterRepository {
@@ -27,7 +28,11 @@ export function makeNewsletterRepository(prisma: PrismaClient): NewsletterReposi
     }),
 
     async deleteById(id) {
-      await prisma.newsletterSubscriber.delete({ where: { id } })
+      await prisma.newsletterSubscriber.deleteMany({ where: { id } })
+    },
+
+    async deleteByEmail(email) {
+      await prisma.newsletterSubscriber.deleteMany({ where: { email } })
     },
   }
 }

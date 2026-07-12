@@ -1,6 +1,7 @@
 export { makeNewsletterRepository } from './infrastructure/newsletterRepository'
 export { makeSubscribe } from './application/subscribe'
+export { makeUnsubscribe, unsubscribeToken } from './application/unsubscribe'
+export { makeGetSubscribers } from './application/getSubscribers'
+export { makeDeleteSubscriber } from './application/deleteSubscriber'
 export { makeNewsletterRouter } from './presentation/newsletterRouter'
-
-// makeGetSubscribers и deleteById остаются внутри фичи — будут подключены
-// к роутеру, как только появится auth middleware с проверкой роли ADMIN.
+export { makeAdminNewsletterRouter } from './presentation/adminNewsletterRoutes'

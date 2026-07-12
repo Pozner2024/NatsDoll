@@ -6,7 +6,7 @@ import type { GetMyMessages, CreateMessage } from '../types'
 
 const createMessageSchema = z.object({
   text: z.string().min(1).max(2000),
-  orderId: z.string().optional(),
+  orderId: z.string().min(1).max(50).optional(),
 })
 
 const ONE_HOUR_MS = 60 * 60_000

@@ -21,7 +21,7 @@
         <input
           v-model.number="form.baseCost"
           type="number"
-          min="0.01"
+          min="0"
           step="0.01"
           inputmode="decimal"
         >
@@ -32,7 +32,7 @@
         <input
           v-model.number="form.perExtraItemCost"
           type="number"
-          min="0.01"
+          min="0"
           step="0.01"
           inputmode="decimal"
         >
@@ -81,7 +81,7 @@ const saved = ref(false)
 function validate(): string | null {
   for (const value of [form.baseCost, form.perExtraItemCost]) {
     if (typeof value !== 'number' || Number.isNaN(value)) return 'Введите числовые значения'
-    if (value <= 0) return 'Стоимость должна быть больше нуля'
+    if (value < 0) return 'Стоимость не может быть отрицательной'
     if (value > MAX_COST) return `Стоимость не может превышать ${MAX_COST}`
   }
   return null

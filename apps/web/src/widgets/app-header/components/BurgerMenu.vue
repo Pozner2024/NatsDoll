@@ -2,6 +2,7 @@
   <Transition name="slide-fade">
     <nav
       v-if="isOpen"
+      id="burger-menu"
       ref="navRef"
       class="burger-menu"
       aria-label="Navigation menu"
@@ -21,7 +22,6 @@
         <button
           class="burger-menu__item burger-menu__item--toggle"
           :class="{ 'burger-menu__item--active': isShopActive }"
-          aria-haspopup="true"
           :aria-expanded="shopOpen"
           aria-controls="shop-submenu"
           @click="toggleShop"
@@ -44,14 +44,12 @@
           <div
             v-if="shopOpen"
             id="shop-submenu"
-            role="menu"
             class="burger-menu__submenu"
           >
             <RouterLink
               v-for="cat in shopItems"
               :key="cat.to"
               :to="cat.to"
-              role="menuitem"
               class="burger-menu__subitem"
               exact-active-class="burger-menu__subitem--active"
               @click="closeMenu"

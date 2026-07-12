@@ -7,6 +7,7 @@
 
 import { ref, computed, watch, onMounted, onUnmounted, isRef } from 'vue'
 import type { Ref } from 'vue'
+import { prefersReducedMotion } from './reducedMotion'
 
 const MIN_INTERVAL_MS = 100
 
@@ -22,19 +23,38 @@ const MIN_INTERVAL_MS = 100
 export function useSlider(count: Ref<number> | number, intervalMs: number) {
   const currentIndex = ref(0)
   let timer: ReturnType<typeof setInterval> | null = null
+  let paused = false
 
   const total = computed(() => isRef(count) ? count.value : count)
 
   function startTimer() {
     if (intervalMs < MIN_INTERVAL_MS) return
+    if (paused || prefersReducedMotion()) return
     timer = setInterval(() => {
       currentIndex.value = (currentIndex.value + 1) % total.value
     }, intervalMs)
   }
 
+  function stopTimer() {
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+  }
+
   function resetTimer() {
-    if (timer) clearInterval(timer)
+    stopTimer()
     startTimer()
+  }
+
+  function pause() {
+    paused = true
+    stopTimer()
+  }
+
+  function resume() {
+    paused = false
+    resetTimer()
   }
 
   function next() {
@@ -60,9 +80,7 @@ export function useSlider(count: Ref<number> | number, intervalMs: number) {
   })
 
   onMounted(startTimer)
-  onUnmounted(() => {
-    if (timer) clearInterval(timer)
-  })
+  onUnmounted(stopTimer)
 
-  return { currentIndex, next, prev, goTo }
+  return { currentIndex, next, prev, goTo, pause, resume }
 }

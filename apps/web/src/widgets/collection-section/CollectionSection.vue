@@ -72,7 +72,12 @@
   <Teleport to="body">
     <div
       v-if="selected"
+      ref="lightboxRef"
       class="collection-lightbox"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="`${collection.name} — enlarged image`"
+      tabindex="-1"
       @click="closeLightbox"
     >
       <button
@@ -165,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { lockScroll, unlockScroll } from '@/shared'
 import type { Collection } from './collectionsApi'
 
@@ -174,6 +179,8 @@ const props = defineProps<{
 }>()
 
 const selected = ref<{ url: string, position: number } | null>(null)
+const lightboxRef = ref<HTMLElement | null>(null)
+let previousFocus: HTMLElement | null = null
 
 const currentIndex = computed(() =>
   selected.value
@@ -192,31 +199,71 @@ function closeLightbox() {
   selected.value = null
 }
 
+function refocusIfLost() {
+  void nextTick(() => {
+    if (!lightboxRef.value) return
+    if (!lightboxRef.value.contains(document.activeElement)) lightboxRef.value.focus()
+  })
+}
+
 function prev() {
   if (!hasPrev.value) return
   const item = props.collection.items[currentIndex.value - 1]
   selected.value = { url: item.imageUrl, position: item.position }
+  refocusIfLost()
 }
 
 function next() {
   if (!hasNext.value) return
   const item = props.collection.items[currentIndex.value + 1]
   selected.value = { url: item.imageUrl, position: item.position }
+  refocusIfLost()
+}
+
+function getFocusable(): HTMLElement[] {
+  if (!lightboxRef.value) return []
+  return Array.from(lightboxRef.value.querySelectorAll<HTMLElement>('button'))
+}
+
+function trapTab(e: KeyboardEvent) {
+  const items = getFocusable()
+  if (items.length === 0) {
+    e.preventDefault()
+    lightboxRef.value?.focus()
+    return
+  }
+  const first = items[0]
+  const last = items[items.length - 1]
+  const active = document.activeElement as HTMLElement | null
+  if (e.shiftKey && (active === first || active === lightboxRef.value)) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault()
+    first.focus()
+  }
 }
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') closeLightbox()
   if (e.key === 'ArrowLeft') prev()
   if (e.key === 'ArrowRight') next()
+  if (e.key === 'Tab') trapTab(e)
 }
 
 watch(selected, (cur, old) => {
   if (cur && !old) {
+    previousFocus = document.activeElement as HTMLElement | null
     lockScroll()
     window.addEventListener('keydown', onKeydown)
+    void nextTick(() => {
+      (getFocusable()[0] ?? lightboxRef.value)?.focus()
+    })
   } else if (!cur && old) {
     unlockScroll()
     window.removeEventListener('keydown', onKeydown)
+    previousFocus?.focus?.()
+    previousFocus = null
   }
 })
 

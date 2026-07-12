@@ -633,6 +633,11 @@ export function makeAdminRepository(prisma: PrismaClient): AdminRepository {
       })
     },
 
+    async getAllProductImageUrls() {
+      const products = await prisma.product.findMany({ select: { images: true } })
+      return products.flatMap((p) => p.images)
+    },
+
     async togglePublish(id: string) {
       const product = await prisma.product.findUniqueOrThrow({ where: { id }, select: { isPublished: true } })
       await prisma.product.update({ where: { id }, data: { isPublished: !product.isPublished } })

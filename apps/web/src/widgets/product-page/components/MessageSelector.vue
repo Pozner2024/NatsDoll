@@ -44,6 +44,7 @@
       v-model="customText"
       class="message-selector__textarea"
       :maxlength="MAX_LENGTH"
+      aria-label="Your own message"
       placeholder="Type your message…"
       rows="3"
       @input="emitChange"
@@ -59,6 +60,7 @@
     <p
       v-if="error"
       class="message-selector__error"
+      role="alert"
     >
       {{ error }}
     </p>

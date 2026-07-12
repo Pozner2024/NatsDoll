@@ -33,15 +33,20 @@
           <button
             type="button"
             class="cart-line__qty-btn"
+            aria-label="Decrease quantity"
             :disabled="disabled || item.quantity <= 1"
             @click="onDecrement"
           >
             −
           </button>
-          <span class="cart-line__qty-val">{{ item.quantity }}</span>
+          <span
+            class="cart-line__qty-val"
+            aria-live="polite"
+          >{{ item.quantity }}</span>
           <button
             type="button"
             class="cart-line__qty-btn"
+            aria-label="Increase quantity"
             :disabled="disabled"
             @click="onIncrement"
           >

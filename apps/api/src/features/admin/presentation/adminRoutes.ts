@@ -13,6 +13,7 @@ import type {
   GetAnalytics,
   CreateSale, UpdateSale, DeleteSale, ListSales, GetActiveSale, CountProductsInSale,
   UploadProductImage,
+  CleanupOrphanImages,
   ListAdminContactMessages,
 } from '../types'
 
@@ -27,24 +28,24 @@ const productListQuerySchema = z.object({
 const imageUrlSchema = z
   .string()
   .url()
-  .refine((u) => u.startsWith('http://') || u.startsWith('https://'), 'Image must be an http(s) URL')
+  .refine((u) => u.startsWith('https://'), 'Image must be an https URL')
 
 const slugSchema = z.string().min(1).max(120).regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, digits and hyphens')
 
 const productBodySchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(200),
   slug: slugSchema,
   description: z.string().max(20000),
   price: z.number().positive(),
   stock: z.number().int().min(0),
   categoryId: z.string().min(1),
   images: z.array(imageUrlSchema).max(10),
-  messageOptions: z.array(z.string()).max(10),
+  messageOptions: z.array(z.string().max(200)).max(10),
   isPublished: z.boolean(),
 })
 
 const categoryBodySchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(200),
   slug: slugSchema,
 })
 
@@ -133,6 +134,7 @@ export function makeAdminRouter(
   countProductsInSale: CountProductsInSale,
   uploadProductImage: UploadProductImage,
   listAdminContactMessages: ListAdminContactMessages,
+  cleanupOrphanImages: CleanupOrphanImages,
 ) {
   const router = new Hono()
 
@@ -198,6 +200,11 @@ export function makeAdminRouter(
     const bytes = new Uint8Array(await file.arrayBuffer())
     const result = await uploadProductImage({ bytes, contentType: file.type })
     return c.json(result, 201)
+  })
+
+  router.post('/products/images/cleanup', async (c) => {
+    const result = await cleanupOrphanImages()
+    return c.json(result)
   })
 
   router.put('/products/:id', zValidator('json', productBodySchema), async (c) => {

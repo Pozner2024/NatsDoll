@@ -20,7 +20,8 @@
         <img
           v-if="previewCells[i]"
           :src="previewCells[i]!.imageUrl"
-          :alt="`Gallery image ${i + 1}`"
+          alt=""
+          aria-hidden="true"
           class="gallery-grid__img"
           :class="{ 'gallery-grid__img--hidden': flipped[i] }"
           loading="lazy"
@@ -51,7 +52,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch, onMounted, onUnmounted } from 'vue'
-import { AppButton } from '@/shared'
+import { AppButton, prefersReducedMotion } from '@/shared'
 import { useGalleryGrid } from './useGalleryGrid'
 import GalleryGridSkeleton from './GalleryGridSkeleton.vue'
 import { GALLERY_GRID_SIZE } from './galleryApi'
@@ -91,7 +92,7 @@ function scheduleFlip(i: number) {
 // Таймеры стартуют один раз — как только в pool появятся данные,
 // чтобы не было src="undefined" на первом кадре.
 function startTimers(items: readonly unknown[]) {
-  if (timersStarted || items.length === 0) return
+  if (timersStarted || items.length === 0 || prefersReducedMotion()) return
   timersStarted = true
   for (let i = 0; i < GALLERY_GRID_SIZE; i++) scheduleFlip(i)
 }

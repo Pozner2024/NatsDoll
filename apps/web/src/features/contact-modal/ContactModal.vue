@@ -39,9 +39,12 @@
             :class="{ 'contact-modal__input--error': errors.name }"
             type="text"
             autocomplete="name"
+            :aria-invalid="!!errors.name || undefined"
+            :aria-describedby="errors.name ? 'contact-name-error' : undefined"
           >
           <span
             v-if="errors.name"
+            id="contact-name-error"
             class="contact-modal__error"
           >{{ errors.name }}</span>
         </div>
@@ -58,9 +61,12 @@
             :class="{ 'contact-modal__input--error': errors.email }"
             type="email"
             autocomplete="email"
+            :aria-invalid="!!errors.email || undefined"
+            :aria-describedby="errors.email ? 'contact-email-error' : undefined"
           >
           <span
             v-if="errors.email"
+            id="contact-email-error"
             class="contact-modal__error"
           >{{ errors.email }}</span>
         </div>
@@ -76,9 +82,12 @@
             class="contact-modal__textarea"
             :class="{ 'contact-modal__input--error': errors.message }"
             rows="4"
+            :aria-invalid="!!errors.message || undefined"
+            :aria-describedby="errors.message ? 'contact-message-error' : undefined"
           />
           <span
             v-if="errors.message"
+            id="contact-message-error"
             class="contact-modal__error"
           >{{ errors.message }}</span>
         </div>
@@ -104,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useContactModal } from './useContactModal'
 import { BaseModal, validateEmail } from '@/shared'
@@ -132,8 +141,13 @@ function validate(): boolean {
   return !errors.name && !errors.email && !errors.message
 }
 
+async function focusFirstInvalid() {
+  await nextTick()
+  document.querySelector<HTMLElement>('.contact-modal [aria-invalid="true"]')?.focus()
+}
+
 async function handleSubmit() {
-  if (!validate()) return
+  if (!validate()) return focusFirstInvalid()
   await submit({ name: form.name.trim(), email: form.email.trim(), message: form.message.trim() })
 }
 </script>

@@ -13,7 +13,11 @@ import { makeGalleryRepository, makeGetHomeGallery, makeGetCollections, makeGall
 import {
   makeNewsletterRepository,
   makeSubscribe,
+  makeUnsubscribe,
+  makeGetSubscribers,
+  makeDeleteSubscriber,
   makeNewsletterRouter,
+  makeAdminNewsletterRouter,
 } from './features/newsletter'
 import { makeContactRepository, makeSubmit, makeContactRouter } from './features/contact'
 import {
@@ -144,10 +148,11 @@ import {
   makeGetActiveSale,
   makeCountProductsInSale,
   makeUploadProductImage,
+  makeCleanupOrphanImages,
   makeAdminRouter,
 } from './features/admin'
 import { requireAuth } from './shared/middleware'
-import { uploadToS3 } from './shared/lib'
+import { uploadToS3, listS3Objects, deleteFromS3 } from './shared/lib'
 
 const GLOBAL_BODY_LIMIT_BYTES = 100 * 1024
 const IMAGE_UPLOAD_PATH = '/admin/products/images'
@@ -164,7 +169,7 @@ export function createApp() {
   app.use('*', cors({
     origin: frontendOrigin,
     credentials: true,
-    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   }))
 
@@ -223,7 +228,11 @@ export function createApp() {
   // Newsletter
   const newsletterRepo = makeNewsletterRepository(prisma)
   const subscribe = makeSubscribe(newsletterRepo)
-  app.route('/newsletter', makeNewsletterRouter(subscribe))
+  const unsubscribe = makeUnsubscribe(newsletterRepo)
+  const getSubscribers = makeGetSubscribers(newsletterRepo)
+  const deleteSubscriber = makeDeleteSubscriber(newsletterRepo)
+  app.route('/newsletter', makeNewsletterRouter(subscribe, unsubscribe))
+  app.route('/admin/newsletter', makeAdminNewsletterRouter(getSubscribers, deleteSubscriber))
 
   // Contact
   const contactRepo = makeContactRepository(prisma)
@@ -370,6 +379,7 @@ export function createApp() {
   const listSales = makeListSales(adminRepo)
   const countProductsInSale = makeCountProductsInSale(adminRepo)
   const uploadProductImage = makeUploadProductImage(uploadToS3)
+  const cleanupOrphanImages = makeCleanupOrphanImages(listS3Objects, deleteFromS3, () => adminRepo.getAllProductImageUrls())
   const listAdminContactMessages = makeListAdminContactMessages(adminRepo)
   app.use('/admin/*', requireAuth)
   app.route('/admin', makeAdminRouter(
@@ -383,6 +393,7 @@ export function createApp() {
     createSale, updateSale, deleteSale, listSales, getActiveSale, countProductsInSale,
     uploadProductImage,
     listAdminContactMessages,
+    cleanupOrphanImages,
   ))
 
   return app

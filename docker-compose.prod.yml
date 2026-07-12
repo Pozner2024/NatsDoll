@@ -107,7 +107,7 @@ services:
     restart: unless-stopped
 
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    image: ghcr.io/umami-software/umami:postgresql-v2.20.2
     environment:
       DATABASE_URL: postgresql://${UMAMI_DB_USER}:${UMAMI_DB_PASSWORD}@umami_db:5432/${UMAMI_DB_NAME}
       APP_SECRET: ${UMAMI_APP_SECRET}
@@ -130,6 +130,12 @@ services:
       MARIADB_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD}
     volumes:
       - wp_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   wordpress:
@@ -151,7 +157,8 @@ services:
       - wp_data:/var/www/html
       - ./infra/wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
     depends_on:
-      - wp-db
+      wp-db:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

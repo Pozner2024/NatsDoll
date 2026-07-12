@@ -2,6 +2,10 @@
   <section
     class="hero-slider"
     aria-label="Hero banner"
+    @mouseenter="pause"
+    @mouseleave="resume"
+    @focusin="pause"
+    @focusout="resume"
   >
     <div class="hero-slider__track">
       <img
@@ -54,6 +58,7 @@
         class="hero-slider__dot"
         :class="{ 'hero-slider__dot--active': i === currentIndex }"
         :aria-label="`Go to slide ${i + 1}`"
+        :aria-current="i === currentIndex || undefined"
         @click="goTo(i)"
       />
     </div>
@@ -76,7 +81,7 @@ const slides = [
   { id: 4, image: slide4 },
 ]
 
-const { currentIndex, next, prev, goTo } = useSlider(slides.length, AUTOPLAY_INTERVAL_MS)
+const { currentIndex, next, prev, goTo, pause, resume } = useSlider(slides.length, AUTOPLAY_INTERVAL_MS)
 </script>
 
 <style scoped lang="scss">

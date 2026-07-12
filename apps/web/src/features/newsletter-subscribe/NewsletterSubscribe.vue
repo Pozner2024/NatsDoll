@@ -17,6 +17,8 @@
         class="newsletter-subscribe__input"
         data-testid="newsletter-email"
         type="email"
+        aria-label="Your email"
+        autocomplete="email"
         placeholder="Your email"
         :disabled="state === 'loading'"
       >
@@ -35,6 +37,7 @@
       v-if="state === 'success'"
       class="newsletter-subscribe__success"
       data-testid="newsletter-success"
+      role="status"
     >
       You're in!
     </p>
@@ -42,6 +45,7 @@
       v-if="state === 'error'"
       class="newsletter-subscribe__error"
       data-testid="newsletter-error"
+      role="alert"
     >
       {{ errorMessage }}
     </p>

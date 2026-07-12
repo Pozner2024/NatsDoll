@@ -6,6 +6,7 @@ const mockRepo: NewsletterRepository = {
   upsertSubscriber: vi.fn(),
   getAll: vi.fn(),
   deleteById: vi.fn(),
+  deleteByEmail: vi.fn(),
 }
 
 describe('getSubscribers', () => {

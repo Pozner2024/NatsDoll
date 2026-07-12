@@ -40,6 +40,10 @@ export function makeEmailService(): EmailService {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 
+  function sanitizeSubjectPart(str: string): string {
+    return str.replace(/[\r\n]+/g, ' ')
+  }
+
   async function send(payload: CreateEmailOptions): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined
     const timeout = new Promise<never>((_, reject) => {
@@ -100,7 +104,7 @@ export function makeEmailService(): EmailService {
     async sendMessageNotification(adminEmail, fromName, fromEmail, text, orderNumber) {
       const subject = orderNumber
         ? `New message re: Order #${orderNumber} — NatsDoll`
-        : `New message from ${fromName} — NatsDoll`
+        : `New message from ${sanitizeSubjectPart(fromName)} — NatsDoll`
       await send({
         from: 'noreply@natsdoll.com',
         to: adminEmail,
@@ -116,7 +120,7 @@ export function makeEmailService(): EmailService {
       await send({
         from: 'noreply@natsdoll.com',
         to: adminEmail,
-        subject: `New contact form submission from ${fromName} — NatsDoll`,
+        subject: `New contact form submission from ${sanitizeSubjectPart(fromName)} — NatsDoll`,
         html: `
           <p><strong>${escapeHtml(fromName)}</strong> (${escapeHtml(fromEmail)}) submitted the contact form:</p>
           <p>${escapeHtml(message)}</p>

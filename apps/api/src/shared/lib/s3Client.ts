@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { AppError } from '../errors'
 
@@ -10,6 +10,9 @@ const KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9/_.-]*$/
 const S3_CONNECTION_TIMEOUT_MS = 3000
 const S3_REQUEST_TIMEOUT_MS = 10000
 const S3_MAX_ATTEMPTS = 3
+const S3_DELETE_BATCH_SIZE = 1000
+
+export type S3ObjectInfo = { key: string; url: string; lastModified: Date | null }
 
 let cached: S3Bundle | null = null
 
@@ -81,4 +84,45 @@ export async function uploadToS3(
     throw new AppError(503, 'Image storage is temporarily unavailable. Please try again later.')
   }
   return `${endpoint}/${bucket}/${key}`
+}
+
+export async function listS3Objects(prefix: string): Promise<S3ObjectInfo[]> {
+  const { client, bucket, endpoint } = getS3()
+  const objects: S3ObjectInfo[] = []
+  let continuationToken: string | undefined
+  try {
+    do {
+      const page = await client.send(
+        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: continuationToken }),
+      )
+      for (const obj of page.Contents ?? []) {
+        if (!obj.Key) continue
+        objects.push({ key: obj.Key, url: `${endpoint}/${bucket}/${obj.Key}`, lastModified: obj.LastModified ?? null })
+      }
+      continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined
+    } while (continuationToken)
+  } catch (err) {
+    console.error('[s3] list failed:', err)
+    throw new AppError(503, 'Image storage is temporarily unavailable. Please try again later.')
+  }
+  return objects
+}
+
+export async function deleteFromS3(keys: string[]): Promise<void> {
+  if (keys.length === 0) return
+  const { client, bucket } = getS3()
+  try {
+    for (let i = 0; i < keys.length; i += S3_DELETE_BATCH_SIZE) {
+      const batch = keys.slice(i, i + S3_DELETE_BATCH_SIZE)
+      await client.send(
+        new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true },
+        }),
+      )
+    }
+  } catch (err) {
+    console.error('[s3] delete failed:', err)
+    throw new AppError(503, 'Image storage is temporarily unavailable. Please try again later.')
+  }
 }

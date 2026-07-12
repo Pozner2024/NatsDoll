@@ -32,6 +32,7 @@ function makeRepo(): AdminRepository {
     getActiveSale: vi.fn().mockResolvedValue(null),
     countProductsInSale: vi.fn().mockResolvedValue(0),
     listAdminContactMessages: vi.fn(),
+    getAllProductImageUrls: vi.fn().mockResolvedValue([]),
   }
 }
 

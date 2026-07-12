@@ -26,6 +26,15 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
   return { firstName: parts[0] ?? '', lastName: parts.slice(1).join(' ') }
 }
 
+function extractWooError(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { code?: unknown; message?: unknown }
+    return `code=${String(parsed.code ?? '')} message=${String(parsed.message ?? '')}`
+  } catch {
+    return body.slice(0, 200)
+  }
+}
+
 export function makeWooClient(): WooClient {
   return {
     async createOrder(input: WooCreateOrderInput): Promise<WooCreatedOrder> {
@@ -64,7 +73,8 @@ export function makeWooClient(): WooClient {
         }),
       })
       if (!res.ok) {
-        console.error('[wooClient] createOrder failed', res.status, await res.text().catch(() => ''))
+        const body = await res.text().catch(() => '')
+        console.error('[wooClient] createOrder failed', res.status, extractWooError(body))
         throw new AppError(502, 'Payment page is temporarily unavailable')
       }
       const data = (await res.json()) as { id?: unknown; order_key?: unknown }

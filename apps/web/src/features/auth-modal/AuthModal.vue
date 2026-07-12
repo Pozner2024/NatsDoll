@@ -53,9 +53,12 @@
             :class="{ 'auth-modal__input--error': loginErrors.email }"
             type="email"
             autocomplete="email"
+            :aria-invalid="!!loginErrors.email || undefined"
+            :aria-describedby="loginErrors.email ? 'auth-email-error' : undefined"
           >
           <span
             v-if="loginErrors.email"
+            id="auth-email-error"
             class="auth-modal__error"
           >{{ loginErrors.email }}</span>
         </div>
@@ -73,6 +76,8 @@
               :class="{ 'auth-modal__input--error': loginErrors.password }"
               :type="showLoginPassword ? 'text' : 'password'"
               autocomplete="current-password"
+              :aria-invalid="!!loginErrors.password || undefined"
+              :aria-describedby="loginErrors.password ? 'auth-password-error' : undefined"
             >
             <button
               type="button"
@@ -88,6 +93,7 @@
           </div>
           <span
             v-if="loginErrors.password"
+            id="auth-password-error"
             class="auth-modal__error"
           >{{ loginErrors.password }}</span>
         </div>
@@ -153,9 +159,12 @@
             :class="{ 'auth-modal__input--error': registerErrors.name }"
             type="text"
             autocomplete="name"
+            :aria-invalid="!!registerErrors.name || undefined"
+            :aria-describedby="registerErrors.name ? 'auth-name-error' : undefined"
           >
           <span
             v-if="registerErrors.name"
+            id="auth-name-error"
             class="auth-modal__error"
           >{{ registerErrors.name }}</span>
         </div>
@@ -172,9 +181,12 @@
             :class="{ 'auth-modal__input--error': registerErrors.email }"
             type="email"
             autocomplete="email"
+            :aria-invalid="!!registerErrors.email || undefined"
+            :aria-describedby="registerErrors.email ? 'auth-reg-email-error' : undefined"
           >
           <span
             v-if="registerErrors.email"
+            id="auth-reg-email-error"
             class="auth-modal__error"
           >{{ registerErrors.email }}</span>
         </div>
@@ -192,6 +204,8 @@
               :class="{ 'auth-modal__input--error': registerErrors.password }"
               :type="showRegisterPassword ? 'text' : 'password'"
               autocomplete="new-password"
+              :aria-invalid="!!registerErrors.password || undefined"
+              :aria-describedby="registerErrors.password ? 'auth-reg-password-error' : undefined"
             >
             <button
               type="button"
@@ -207,6 +221,7 @@
           </div>
           <span
             v-if="registerErrors.password"
+            id="auth-reg-password-error"
             class="auth-modal__error"
           >{{ registerErrors.password }}</span>
         </div>
@@ -267,9 +282,12 @@
             :class="{ 'auth-modal__input--error': forgotErrors.email }"
             type="email"
             autocomplete="email"
+            :aria-invalid="!!forgotErrors.email || undefined"
+            :aria-describedby="forgotErrors.email ? 'auth-forgot-email-error' : undefined"
           >
           <span
             v-if="forgotErrors.email"
+            id="auth-forgot-email-error"
             class="auth-modal__error"
           >{{ forgotErrors.email }}</span>
         </div>
@@ -365,7 +383,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthModal } from '@/shared'
@@ -424,6 +442,11 @@ function resetForms() {
   showRegisterPassword.value = false
 }
 
+async function focusFirstInvalid() {
+  await nextTick()
+  document.querySelector<HTMLElement>('.auth-modal [aria-invalid="true"]')?.focus()
+}
+
 function validateLogin(): boolean {
   loginErrors.email = validateEmail(loginForm.email)
   loginErrors.password = loginForm.password ? '' : 'Please enter your password'
@@ -442,7 +465,7 @@ function validateRegister(): boolean {
 }
 
 async function handleLogin() {
-  if (!validateLogin()) return
+  if (!validateLogin()) return focusFirstInvalid()
   isLoading.value = true
   submitError.value = ''
   try {
@@ -459,7 +482,7 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
-  if (!validateRegister()) return
+  if (!validateRegister()) return focusFirstInvalid()
   isLoading.value = true
   submitError.value = ''
   try {
@@ -482,7 +505,7 @@ function validateForgot(): boolean {
 }
 
 async function handleForgot() {
-  if (!validateForgot()) return
+  if (!validateForgot()) return focusFirstInvalid()
   isLoading.value = true
   submitError.value = ''
   try {

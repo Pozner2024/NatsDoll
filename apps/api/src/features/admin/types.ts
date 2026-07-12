@@ -108,6 +108,7 @@ export type AdminRepository = {
   updateCategory(id: string, name: string, slug: string): Promise<void>
   deleteCategory(id: string): Promise<void>
   getProduct(id: string): Promise<AdminProductDetail | null>
+  getAllProductImageUrls(): Promise<string[]>
   // sales
   createSale(input: SaleInput): Promise<{ id: string }>
   updateSale(id: string, input: SaleInput): Promise<void>
@@ -144,6 +145,8 @@ export type AdminProductDetail = {
 export type GetAdminProduct = (id: string) => Promise<AdminProductDetail | null>
 
 export type UploadProductImage = (input: { bytes: Uint8Array; contentType: string }) => Promise<{ url: string }>
+
+export type CleanupOrphanImages = () => Promise<{ deleted: number }>
 
 // ── Admin Conversations ───────────────────────────────────────
 

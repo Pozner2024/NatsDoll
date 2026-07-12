@@ -123,9 +123,6 @@ jobs:
             docker image prune -af || true
             docker builder prune -af || true
             docker network prune -f || true
-            sudo sh -c 'truncate -s 0 /var/lib/docker/containers/*/*-json.log' 2>/dev/null || true
-            sudo journalctl --vacuum-size=100M 2>/dev/null || true
-            sudo apt-get clean 2>/dev/null || true
             echo "=== disk after cleanup ===" && df -h /
             git pull
             echo $GHCR_TOKEN | docker login ghcr.io -u pozner2024 --password-stdin

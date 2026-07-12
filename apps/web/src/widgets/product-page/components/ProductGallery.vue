@@ -14,6 +14,7 @@
           :class="{ 'product-gallery__slide--active': i === currentIndex }"
           :src="img"
           :alt="`${name} ${i + 1}`"
+          :aria-hidden="i !== currentIndex || undefined"
           :loading="i === 0 ? 'eager' : 'lazy'"
           :fetchpriority="i === 0 ? 'high' : 'auto'"
           decoding="async"
@@ -82,6 +83,7 @@
           class="product-gallery__dot"
           :class="{ 'product-gallery__dot--active': i === currentIndex }"
           :aria-label="`Photo ${i + 1}`"
+          :aria-current="i === currentIndex || undefined"
           @click="goTo(i)"
         />
       </div>
@@ -96,6 +98,7 @@
           type="button"
           class="product-gallery__thumb"
           :class="{ 'product-gallery__thumb--active': i === activeIndex }"
+          :aria-current="i === activeIndex || undefined"
           @click="activeIndex = i"
         >
           <img

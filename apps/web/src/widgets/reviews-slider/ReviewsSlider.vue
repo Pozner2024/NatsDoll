@@ -1,5 +1,11 @@
 <template>
-  <section class="reviews-slider">
+  <section
+    class="reviews-slider"
+    @mouseenter="pause"
+    @mouseleave="resume"
+    @focusin="pause"
+    @focusout="resume"
+  >
     <h2 class="reviews-slider__title">
       <span class="reviews-slider__title-sub">the reviews</span>
       <span class="reviews-slider__title-brand">Watch Collectors Say</span>
@@ -18,6 +24,8 @@
           v-for="(review, i) in REVIEWS"
           :key="review.id"
           class="reviews-slider__slide"
+          :aria-hidden="!isVisible(i) || undefined"
+          :inert="!isVisible(i)"
         >
           <ReviewCard
             v-if="isInWindow(i)"
@@ -29,6 +37,25 @@
           />
         </div>
       </div>
+    </div>
+
+    <div class="reviews-slider__controls">
+      <button
+        type="button"
+        class="reviews-slider__arrow"
+        aria-label="Previous review"
+        @click="prev"
+      >
+        &#8249;
+      </button>
+      <button
+        type="button"
+        class="reviews-slider__arrow"
+        aria-label="Next review"
+        @click="next"
+      >
+        &#8250;
+      </button>
     </div>
   </section>
 </template>
@@ -69,7 +96,7 @@ onUnmounted(() => {
 })
 
 const slideCount = computed(() => Math.max(1, REVIEWS.length - visibleCount.value + 1))
-const { currentIndex, next, prev } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)
+const { currentIndex, next, prev, pause, resume } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)
 
 const slideWidth = computed(() => 100 / visibleCount.value)
 const trackStyle = computed(() => ({
@@ -81,6 +108,10 @@ function isInWindow(i: number): boolean {
     i >= currentIndex.value - RENDER_WINDOW_BUFFER &&
     i <= currentIndex.value + visibleCount.value - 1 + RENDER_WINDOW_BUFFER
   )
+}
+
+function isVisible(i: number): boolean {
+  return i >= currentIndex.value && i <= currentIndex.value + visibleCount.value - 1
 }
 
 const touchStartX = ref(0)
@@ -162,6 +193,28 @@ function onTouchEnd(e: TouchEvent) {
     @include desktop {
       min-width: 33.333%;
       padding: 0 0.75rem;
+    }
+  }
+
+  &__controls {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  &__arrow {
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    font-size: 2rem;
+    line-height: 1;
+    padding: 0.25rem 1rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 1;
     }
   }
 }

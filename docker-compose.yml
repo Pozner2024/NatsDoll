@@ -24,7 +24,7 @@ services:
       - api_node_modules:/app/node_modules
       - api_ws_node_modules:/app/apps/api/node_modules
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/natsdoll
       NODE_ENV: development
@@ -50,7 +50,7 @@ services:
       - web_node_modules:/app/node_modules
       - web_ws_node_modules:/app/apps/web/node_modules
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     environment:
       NUXT_DEV_PROXY_TARGET: http://api:3000
       NUXT_API_INTERNAL_URL: http://api:3000
@@ -71,7 +71,7 @@ services:
   wordpress:
     image: wordpress:6
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     environment:
       WORDPRESS_DB_HOST: wp-db
       WORDPRESS_DB_NAME: wordpress

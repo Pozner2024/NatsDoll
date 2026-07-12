@@ -21,9 +21,12 @@
         :class="{ 'checkout-form__input--error': errors.fullName }"
         type="text"
         autocomplete="name"
+        :aria-invalid="!!errors.fullName || undefined"
+        :aria-describedby="errors.fullName ? 'cf-name-error' : undefined"
       >
       <span
         v-if="errors.fullName"
+        id="cf-name-error"
         class="checkout-form__error"
       >{{ errors.fullName }}</span>
     </div>
@@ -40,9 +43,12 @@
         :class="{ 'checkout-form__input--error': errors.line1 }"
         type="text"
         autocomplete="address-line1"
+        :aria-invalid="!!errors.line1 || undefined"
+        :aria-describedby="errors.line1 ? 'cf-line1-error' : undefined"
       >
       <span
         v-if="errors.line1"
+        id="cf-line1-error"
         class="checkout-form__error"
       >{{ errors.line1 }}</span>
     </div>
@@ -74,9 +80,12 @@
           :class="{ 'checkout-form__input--error': errors.city }"
           type="text"
           autocomplete="address-level2"
+          :aria-invalid="!!errors.city || undefined"
+          :aria-describedby="errors.city ? 'cf-city-error' : undefined"
         >
         <span
           v-if="errors.city"
+          id="cf-city-error"
           class="checkout-form__error"
         >{{ errors.city }}</span>
       </div>
@@ -93,9 +102,12 @@
           :class="{ 'checkout-form__input--error': errors.postalCode }"
           type="text"
           autocomplete="postal-code"
+          :aria-invalid="!!errors.postalCode || undefined"
+          :aria-describedby="errors.postalCode ? 'cf-postal-error' : undefined"
         >
         <span
           v-if="errors.postalCode"
+          id="cf-postal-error"
           class="checkout-form__error"
         >{{ errors.postalCode }}</span>
       </div>
@@ -113,9 +125,12 @@
         :class="{ 'checkout-form__input--error': errors.country }"
         type="text"
         autocomplete="country-name"
+        :aria-invalid="!!errors.country || undefined"
+        :aria-describedby="errors.country ? 'cf-country-error' : undefined"
       >
       <span
         v-if="errors.country"
+        id="cf-country-error"
         class="checkout-form__error"
       >{{ errors.country }}</span>
     </div>
@@ -123,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, onMounted } from 'vue'
+import { reactive, onMounted, nextTick } from 'vue'
 import type { ShippingAddress } from '@/entities/order'
 import { useAddressStore } from '@/entities/address'
 import { useAuthStore } from '@/entities/user'
@@ -171,8 +186,16 @@ function validate(): boolean {
   return !errors.fullName && !errors.line1 && !errors.city && !errors.country && !errors.postalCode
 }
 
+async function focusFirstInvalid() {
+  await nextTick()
+  document.querySelector<HTMLElement>('.checkout-form [aria-invalid="true"]')?.focus()
+}
+
 function getValidatedAddress(): ShippingAddress | null {
-  if (!validate()) return null
+  if (!validate()) {
+    void focusFirstInvalid()
+    return null
+  }
   const address: ShippingAddress = {
     fullName: form.fullName,
     line1: form.line1,

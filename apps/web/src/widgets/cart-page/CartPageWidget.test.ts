@@ -46,6 +46,14 @@ vi.mock('@/features/woo-payment', () => ({
   WooPayButton: { name: 'WooPayButton', template: '<div class="woo-pay-stub" />' },
 }))
 
+vi.mock('@/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared')>()
+  return {
+    ...actual,
+    fetchShippingSettings: vi.fn().mockResolvedValue({ baseCost: 12, perExtraItemCost: 1 }),
+  }
+})
+
 vi.mock('@/entities/cart', () => ({
   useCartStore: () => ({
     items: [{ id: '1', quantity: 1, productName: 'Clay ring', unitPrice: 25, subtotal: 25 }],

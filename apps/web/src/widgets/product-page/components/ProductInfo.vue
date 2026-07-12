@@ -32,15 +32,20 @@
         <button
           type="button"
           class="product-info__qty-btn"
+          aria-label="Decrease quantity"
           :disabled="qty <= 1"
           @click="qty--"
         >
           −
         </button>
-        <span class="product-info__qty-val">{{ qty }}</span>
+        <span
+          class="product-info__qty-val"
+          aria-live="polite"
+        >{{ qty }}</span>
         <button
           type="button"
           class="product-info__qty-btn"
+          aria-label="Increase quantity"
           :disabled="qty >= product.stock"
           @click="qty++"
         >
@@ -93,7 +98,10 @@
         </svg>
         Returns &amp; exchanges accepted
       </li>
-      <li class="product-info__meta-item">
+      <li
+        v-if="shippingBaseCost !== null"
+        class="product-info__meta-item"
+      >
         <svg
           width="12"
           height="12"
@@ -138,16 +146,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import DOMPurify from 'isomorphic-dompurify'
-import { AppButton, formatPrice, plainTextToHtml, SHIPPING_BASE, fetchShippingSettings } from '@/shared'
+import { AppButton, formatPrice, plainTextToHtml, fetchShippingSettings } from '@/shared'
 import type { ProductDetail } from '@/entities/product'
 import MessageSelector from './MessageSelector.vue'
 
 const props = defineProps<{ product: ProductDetail }>()
 const emit = defineEmits<{ 'add-to-cart': [payload: { quantity: number; message: string | null }] }>()
 
-const shippingBaseCost = ref(SHIPPING_BASE)
+const shippingBaseCost = ref<number | null>(null)
 onMounted(async () => {
-  shippingBaseCost.value = (await fetchShippingSettings()).baseCost
+  const rates = await fetchShippingSettings()
+  if (rates) shippingBaseCost.value = rates.baseCost
 })
 
 const qty = ref(1)

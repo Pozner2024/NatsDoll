@@ -65,14 +65,24 @@
         </div>
 
         <div class="account-reviews__field">
-          <label class="account-reviews__label">Rating</label>
-          <div class="account-reviews__stars">
+          <label
+            id="review-rating-label"
+            class="account-reviews__label"
+          >Rating</label>
+          <div
+            class="account-reviews__stars"
+            role="radiogroup"
+            aria-labelledby="review-rating-label"
+          >
             <button
               v-for="n in 5"
               :key="n"
               type="button"
+              role="radio"
               class="account-reviews__star"
               :class="{ 'account-reviews__star--active': n <= rating }"
+              :aria-label="`${n} star${n > 1 ? 's' : ''}`"
+              :aria-checked="n === rating"
               @click="rating = n"
             >
               ★
@@ -97,6 +107,7 @@
         <p
           v-if="formError"
           class="account-reviews__hint account-reviews__hint--error"
+          role="alert"
         >
           {{ formError }}
         </p>
@@ -142,12 +153,17 @@
             <p class="account-reviews__card-name">
               {{ review.productName }}
             </p>
-            <div class="account-reviews__card-stars">
+            <div
+              class="account-reviews__card-stars"
+              role="img"
+              :aria-label="`${review.rating} out of 5 stars`"
+            >
               <span
                 v-for="n in 5"
                 :key="n"
                 class="account-reviews__card-star"
                 :class="{ 'account-reviews__card-star--active': n <= review.rating }"
+                aria-hidden="true"
               >★</span>
             </div>
             <p
