@@ -6,7 +6,7 @@ test('shop catalog golden path', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'The shop' })).toBeVisible()
   await expect(page.locator('.category-pills__pill').first()).toBeVisible()
-  await expect(page.locator('.product-card').first()).toBeVisible()
+  await expect(page.locator('.product-card').first()).toBeVisible({ timeout: 15000 })
 
   await page.getByRole('link', { name: 'Art Dolls' }).click()
   await expect(page).toHaveURL(/\/shop\/art-dolls/)
@@ -20,8 +20,12 @@ test('shop catalog golden path', async ({ page }) => {
   const productHref = await firstCard.locator('a.product-card__image-link').getAttribute('href')
   expect(productHref).toMatch(/^\/product\/.+/)
 
-  await firstCard.locator('a.product-card__image-link').click()
-  await expect(page).toHaveURL(new RegExp(productHref!.replace(/[/]/g, '\\/')))
+  // Клик может опередить навешивание vue-router обработчика (гонка гидратации
+  // dev-сервера, усиленная пересозданием списка после сортировки) — ретраим.
+  await expect(async () => {
+    await firstCard.locator('a.product-card__image-link').click()
+    await expect(page).toHaveURL(new RegExp(productHref!.replace(/[/]/g, '\\/')), { timeout: 2000 })
+  }).toPass()
 
   await page.goBack()
   await expect(page).toHaveURL(/\/shop\/art-dolls\?sort=price-asc/)
