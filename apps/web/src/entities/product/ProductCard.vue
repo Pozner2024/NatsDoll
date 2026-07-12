@@ -267,6 +267,7 @@ async function onAdd() {
   }
 
   &__price-original {
+    position: relative;
     font-size: var(--fs-xs);
     color: var(--color-text-muted);
     text-decoration: line-through;
@@ -274,6 +275,7 @@ async function onAdd() {
   }
 
   &__price {
+    position: relative;
     font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--color-accent);
