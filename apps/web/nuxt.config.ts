@@ -36,15 +36,6 @@ export default defineNuxtConfig({
     '@': fileURLToPath(new URL('./src', import.meta.url)),
   },
   css: ['@/assets/styles/global.scss'],
-  vite: {
-    css: {
-      preprocessorOptions: {
-        scss: {
-          api: 'modern-compiler',
-        },
-      },
-    },
-  },
   devServer: {
     port: 5173,
     host: '0.0.0.0',
