@@ -72,7 +72,7 @@ export default defineNuxtConfig({
         {
           src: 'https://stats.natsdoll.com/script.js',
           defer: true,
-          'data-website-id': '44c24cf0-dd61-486c-aa77-db4577345ea8',
+          'data-website-id': '281c6d6a-3b0d-46a6-a21c-d9a1829100ea',
           tagPosition: 'bodyClose',
         },
       ],
