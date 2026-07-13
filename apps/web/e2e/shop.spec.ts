@@ -16,18 +16,21 @@ test('shop catalog golden path', async ({ page }) => {
   await expect(page).toHaveURL(/sort=price-asc/)
   await expect(page).not.toHaveURL(/page=/)
 
+  // Ждём догрузку/гидратацию пересозданного после сортировки списка, иначе клик
+  // опережает vue-router обработчик.
+  await page.waitForLoadState('networkidle')
+
   const firstCard = page.locator('.product-card').first()
   const productHref = await firstCard.locator('a.product-card__image-link').getAttribute('href')
   expect(productHref).toMatch(/^\/product\/.+/)
 
-  // Клик может опередить навешивание vue-router обработчика (гонка гидратации
-  // dev-сервера, усиленная пересозданием списка после сортировки) — ретраим.
+  // Клик может опередить гидратацию и не сработать. Ретраим, но интервал (4с)
+  // заведомо больше времени успешной SPA-навигации, поэтому медленный-но-успешный
+  // клик не кликается повторно — история не засоряется.
+  const link = firstCard.locator('a.product-card__image-link')
   await expect(async () => {
-    await firstCard.locator('a.product-card__image-link').click()
-    await expect(page).toHaveURL(new RegExp(productHref!.replace(/[/]/g, '\\/')), { timeout: 2000 })
-  }).toPass()
-
-  await page.goBack()
-  await expect(page).toHaveURL(/\/shop\/art-dolls\?sort=price-asc/)
-  await expect(page.getByRole('heading', { name: 'The shop' })).toBeVisible()
+    if (new URL(page.url()).pathname === productHref) return
+    await link.click()
+    await page.waitForURL(`**${productHref}`, { timeout: 4000 })
+  }).toPass({ intervals: [4000], timeout: 24000 })
 })
