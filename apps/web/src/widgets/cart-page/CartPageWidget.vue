@@ -11,36 +11,7 @@
       {{ actionError }}
     </p>
 
-    <div
-      v-if="pendingOrder"
-      class="cart-page__pending-order"
-    >
-      <p class="cart-page__pending-order-text">
-        You have an unpaid order #{{ pendingOrder.orderNumber }} for {{ formatPrice(pendingOrder.totalAmount) }}.
-      </p>
-      <div class="cart-page__pending-order-actions">
-        <AppButton
-          class="cart-page__pending-order-btn"
-          @click="goToPendingOrder"
-        >
-          Pay
-        </AppButton>
-        <button
-          type="button"
-          class="cart-page__pending-order-cancel"
-          :disabled="cancellingOrder"
-          @click="onCancelPendingOrder"
-        >
-          {{ cancellingOrder ? 'Cancelling…' : 'Cancel order' }}
-        </button>
-      </div>
-      <p
-        v-if="cancelError"
-        class="cart-page__pending-order-error"
-      >
-        {{ cancelError }}
-      </p>
-    </div>
+    <CartPendingOrder />
 
     <div
       v-if="loading"
@@ -87,63 +58,16 @@
           />
         </ul>
 
-        <div
+        <CartGuestEmail
           v-if="!authStore.isLoggedIn"
-          class="cart-page__guest-email"
-        >
-          <label
-            for="guest-email"
-            class="cart-page__guest-email-label"
-          >
-            Email
-            <span
-              aria-hidden="true"
-              class="cart-page__guest-email-required"
-            >*</span>
-          </label>
-          <input
-            id="guest-email"
-            v-model="guestEmail"
-            type="email"
-            autocomplete="email"
-            class="cart-page__guest-email-input"
-            placeholder="your@email.com"
-            @input="guestEmailError = ''; emailTaken = false; signInLinkSent = false"
-          >
-          <p
-            v-if="guestEmailError"
-            class="cart-page__guest-email-error"
-          >
-            {{ guestEmailError }}
-          </p>
-          <p
-            v-if="emailTaken && signInLinkSent"
-            class="cart-page__guest-email-taken"
-          >
-            We've emailed a sign-in link to {{ guestEmail }}. Check your inbox to continue.
-          </p>
-          <p
-            v-else-if="emailTaken"
-            class="cart-page__guest-email-taken"
-          >
-            An account with this email exists —
-            <button
-              type="button"
-              class="cart-page__sign-in-btn"
-              @click="authModal.open('login')"
-            >
-              sign in
-            </button>
-            or
-            <button
-              type="button"
-              class="cart-page__sign-in-btn"
-              @click="sendSignInLink"
-            >
-              email me a sign-in link
-            </button>
-          </p>
-        </div>
+          :model-value="guestEmail"
+          :error="guestEmailError"
+          :email-taken="emailTaken"
+          :sign-in-link-sent="signInLinkSent"
+          @update:model-value="onGuestEmailInput"
+          @open-login="authModal.open('login')"
+          @send-link="sendSignInLink"
+        />
 
         <CheckoutForm ref="checkoutFormRef" />
       </div>
@@ -221,39 +145,13 @@ import { usePendingOrder } from './usePendingOrder'
 import { GuestEmailTakenError } from './guestCheckoutApi'
 import type { ShippingAddress } from '@/entities/order'
 import CartLineItem from './components/CartLineItem.vue'
+import CartPendingOrder from './components/CartPendingOrder.vue'
+import CartGuestEmail from './components/CartGuestEmail.vue'
 
 const router = useRouter()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
-
-const dismissedOrderId = ref<string | null>(null)
-const pendingOrder = computed(() => {
-  if (!authStore.isLoggedIn) return null
-  return orderStore.myOrders.find((o) => o.status === 'PENDING' && o.id !== dismissedOrderId.value) ?? null
-})
-const cancellingOrder = ref(false)
-const cancelError = ref('')
-
-function goToPendingOrder(): void {
-  if (!pendingOrder.value) return
-  router.push({ name: 'order-confirmation', params: { id: pendingOrder.value.id } })
-}
-
-async function onCancelPendingOrder(): Promise<void> {
-  if (!pendingOrder.value) return
-  const orderId = pendingOrder.value.id
-  cancelError.value = ''
-  cancellingOrder.value = true
-  try {
-    await orderStore.cancel(orderId)
-    dismissedOrderId.value = orderId
-  } catch {
-    cancelError.value = 'Could not cancel the order'
-  } finally {
-    cancellingOrder.value = false
-  }
-}
 
 const items = computed(() => cartStore.items)
 const itemCount = computed(() => cartStore.itemCount)
@@ -274,6 +172,13 @@ const guestEmail = ref('')
 const guestEmailError = ref('')
 const emailTaken = ref(false)
 const signInLinkSent = ref(false)
+
+function onGuestEmailInput(value: string) {
+  guestEmail.value = value
+  guestEmailError.value = ''
+  emailTaken.value = false
+  signInLinkSent.value = false
+}
 
 async function sendSignInLink() {
   try {
@@ -448,56 +353,6 @@ async function onRemove(itemId: string): Promise<void> {
     font-size: var(--fs-sm);
   }
 
-  &__pending-order {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    padding: 0.9rem 1rem;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background: rgb(var(--btn-gradient-light) / 0.4);
-  }
-
-  &__pending-order-text {
-    flex: 1 1 220px;
-    margin: 0;
-    color: var(--color-text);
-    font-size: var(--fs-sm);
-  }
-
-  &__pending-order-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.9rem;
-  }
-
-  &__pending-order-btn {
-    --btn-font-size: var(--fs-sm);
-  }
-
-  &__pending-order-cancel {
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: inherit;
-    font-size: var(--fs-sm);
-    color: var(--color-text-muted);
-    text-decoration: underline;
-
-    &:disabled {
-      opacity: 0.6;
-    }
-  }
-
-  &__pending-order-error {
-    flex-basis: 100%;
-    margin: 0;
-    font-size: var(--fs-sm);
-    color: var(--color-error);
-  }
-
   &__layout {
     display: flex;
     flex-direction: column;
@@ -555,61 +410,6 @@ async function onRemove(itemId: string): Promise<void> {
       margin-top: 0.5rem;
       padding-top: 0.75rem;
     }
-  }
-
-  &__guest-email {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-
-  &__guest-email-label {
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    color: var(--color-text);
-  }
-
-  &__guest-email-required {
-    color: var(--color-error);
-    margin-left: 0.2rem;
-  }
-
-  &__guest-email-input {
-    width: 100%;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    font-family: inherit;
-    font-size: var(--fs-sm);
-    color: var(--color-text);
-    background: var(--color-bg);
-    outline: none;
-
-    &:focus {
-      border-color: var(--color-accent);
-    }
-  }
-
-  &__guest-email-error {
-    font-size: var(--fs-sm);
-    color: var(--color-error);
-    margin: 0;
-  }
-
-  &__guest-email-taken {
-    font-size: var(--fs-sm);
-    color: var(--color-text-muted);
-    margin: 0;
-  }
-
-  &__sign-in-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: inherit;
-    font-size: inherit;
-    color: var(--color-accent);
-    text-decoration: underline;
   }
 
   &__pay {
