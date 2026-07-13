@@ -9,14 +9,14 @@
           class="product-card__image"
           :class="{ 'product-card__image--dimmed': product.stock === 0 }"
         >
-          <img
+          <AppImage
             v-if="product.image"
             :src="product.image"
             :alt="product.name"
             class="product-card__img"
             loading="lazy"
             decoding="async"
-          >
+          />
           <div
             v-else
             class="product-card__placeholder"
@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { RouterLink, useRouter } from 'vue-router'
-import { AppButton, formatPrice, useCartPrompt, useToast } from '@/shared'
+import { AppButton, AppImage, formatPrice, useCartPrompt, useToast } from '@/shared'
 import { useCartStore } from '@/entities/cart'
 import type { Product } from './types'
 

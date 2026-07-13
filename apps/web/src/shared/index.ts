@@ -1,6 +1,7 @@
 export { default as AppButton } from './ui/AppButton.vue'
 export { default as RichTextEditor } from './ui/RichTextEditor.vue'
 export { default as AppLogo } from './ui/AppLogo.vue'
+export { default as AppImage } from './ui/AppImage.vue'
 export { default as BaseModal } from './ui/BaseModal.vue'
 export { default as IconEye } from './ui/IconEye.vue'
 export { default as HeartButton } from './ui/HeartButton.vue'

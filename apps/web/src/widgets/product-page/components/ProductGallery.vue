@@ -111,11 +111,11 @@
         </button>
       </div>
       <div class="product-gallery__main">
-        <img
+        <AppImage
           class="product-gallery__main-img"
           :src="activeImage"
           :alt="name"
-        >
+        />
         <template v-if="images.length > 1">
           <button
             type="button"
@@ -178,7 +178,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useSlider } from '@/shared'
+import { useSlider, AppImage } from '@/shared'
 import { FavoriteToggle } from '@/features/favorites-toggle'
 import type { Product } from '@/entities/product'
 
