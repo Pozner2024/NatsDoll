@@ -279,9 +279,10 @@ model Review {
 // ─── Newsletter ───────────────────────────────────────
 
 model NewsletterSubscriber {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  subscribedAt DateTime @default(now())
+  id           String    @id @default(cuid())
+  email        String    @unique
+  subscribedAt DateTime  @default(now())
+  confirmedAt  DateTime?
 }
 
 // ─── Contact ──────────────────────────────────────────
