@@ -15,7 +15,7 @@ test.describe('Newsletter subscribe', () => {
     await page.locator('[data-testid="newsletter-submit"]').click()
 
     await expect(page.locator('[data-testid="newsletter-success"]')).toBeVisible()
-    await expect(page.locator('[data-testid="newsletter-success"]')).toHaveText("You're in!")
+    await expect(page.locator('[data-testid="newsletter-success"]')).toHaveText('Almost there — check your inbox to confirm your subscription.')
   })
 
   test('ошибка сервера показывает сообщение об ошибке', async ({ page }) => {

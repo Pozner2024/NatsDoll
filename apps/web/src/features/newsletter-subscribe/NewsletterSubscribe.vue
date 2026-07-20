@@ -39,7 +39,7 @@
       data-testid="newsletter-success"
       role="status"
     >
-      You're in!
+      Almost there — check your inbox to confirm your subscription.
     </p>
     <p
       v-if="state === 'error'"
