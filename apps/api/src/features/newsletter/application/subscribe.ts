@@ -1,8 +1,5 @@
 import type { NewsletterRepository } from '../infrastructure/newsletterRepository'
-
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase()
-}
+import { normalizeEmail } from './normalizeEmail'
 
 export function makeSubscribe(repo: NewsletterRepository) {
   return async function subscribe(email: string): Promise<void> {

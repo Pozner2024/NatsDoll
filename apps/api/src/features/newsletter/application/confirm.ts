@@ -4,19 +4,19 @@ import { hashToken } from '../../../shared/lib'
 import type { NewsletterRepository } from '../infrastructure/newsletterRepository'
 import { normalizeEmail } from './normalizeEmail'
 
-const TOKEN_PREFIX = 'newsletter-unsubscribe:'
+const TOKEN_PREFIX = 'newsletter-confirm:'
 
-export function unsubscribeToken(email: string): string {
+export function confirmToken(email: string): string {
   return hashToken(TOKEN_PREFIX + normalizeEmail(email))
 }
 
-export function makeUnsubscribe(repo: NewsletterRepository) {
-  return async function unsubscribe(email: string, token: string): Promise<void> {
-    const expected = Buffer.from(unsubscribeToken(email))
+export function makeConfirm(repo: NewsletterRepository) {
+  return async function confirm(email: string, token: string): Promise<void> {
+    const expected = Buffer.from(confirmToken(email))
     const provided = Buffer.from(token)
     if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
-      throw new AppError(400, 'Invalid unsubscribe link')
+      throw new AppError(400, 'Invalid confirmation link')
     }
-    await repo.deleteByEmail(normalizeEmail(email))
+    await repo.confirmByEmail(normalizeEmail(email))
   }
 }
