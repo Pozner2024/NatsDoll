@@ -62,3 +62,4 @@ sources_vue.txt
 collect_vue_folder.py
 
 .claude/settings.local.json
+sources.txt
