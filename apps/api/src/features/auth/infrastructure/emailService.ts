@@ -24,6 +24,7 @@ export type EmailService = {
     totalAmount: number,
   ): Promise<void>
   sendNewOrderAlert(adminEmail: string, orderNumber: number, customerEmail: string, totalAmount: number): Promise<void>
+  sendNewsletterConfirmation(to: string, confirmUrl: string): Promise<void>
 }
 
 export function makeEmailService(): EmailService {
@@ -205,6 +206,19 @@ export function makeEmailService(): EmailService {
           <p>New order <strong>#${orderNumber}</strong> from ${escapeHtml(customerEmail)}.</p>
           <p>Total: <strong>$${totalAmount.toFixed(2)}</strong></p>
           <p><a href="${process.env.FRONTEND_URL ?? 'https://natsdoll.com'}/admin/orders">View in admin panel</a></p>
+        `,
+      })
+    },
+    async sendNewsletterConfirmation(to, confirmUrl) {
+      await send({
+        from: 'noreply@natsdoll.com',
+        to,
+        subject: 'Confirm your subscription — NatsDoll',
+        html: `
+          <p>Thanks for subscribing to the NatsDoll newsletter!</p>
+          <p>Please confirm your subscription by clicking the link below:</p>
+          <p><a href="${confirmUrl}">Confirm subscription</a></p>
+          <p>If you didn't subscribe, just ignore this email.</p>
         `,
       })
     },

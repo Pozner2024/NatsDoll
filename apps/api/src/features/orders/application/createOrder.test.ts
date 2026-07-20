@@ -45,6 +45,7 @@ function makeEmailService(): EmailService {
     sendOrderConfirmation: vi.fn(),
     sendNewOrderAlert: vi.fn(),
     sendReplyNotification: vi.fn(),
+    sendNewsletterConfirmation: vi.fn(),
   }
 }
 
