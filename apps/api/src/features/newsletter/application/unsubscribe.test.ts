@@ -8,6 +8,7 @@ const mockRepo: NewsletterRepository = {
   getAll: vi.fn(),
   deleteById: vi.fn(),
   deleteByEmail: vi.fn(),
+  confirmByEmail: vi.fn(),
 }
 
 describe('unsubscribe', () => {

@@ -7,13 +7,14 @@ const mockRepo: NewsletterRepository = {
   getAll: vi.fn(),
   deleteById: vi.fn(),
   deleteByEmail: vi.fn(),
+  confirmByEmail: vi.fn(),
 }
 
 describe('getSubscribers', () => {
   it('возвращает список подписчиков из репозитория', async () => {
     const subscribers = [
-      { id: '1', email: 'a@example.com', subscribedAt: new Date('2026-01-01') },
-      { id: '2', email: 'b@example.com', subscribedAt: new Date('2026-01-02') },
+      { id: '1', email: 'a@example.com', subscribedAt: new Date('2026-01-01'), confirmedAt: new Date('2026-01-01') },
+      { id: '2', email: 'b@example.com', subscribedAt: new Date('2026-01-02'), confirmedAt: null },
     ]
     vi.mocked(mockRepo.getAll).mockResolvedValue(subscribers)
 
