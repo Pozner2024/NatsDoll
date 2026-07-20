@@ -4,6 +4,7 @@
 
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
+import { HTTPException } from 'hono/http-exception'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { Prisma } from '@prisma/client'
@@ -186,6 +187,9 @@ export function createApp() {
   app.onError((err, c) => {
     if (err instanceof AppError) {
       return c.json({ error: err.message }, err.statusCode)
+    }
+    if (err instanceof HTTPException) {
+      return c.json({ error: err.message }, err.status)
     }
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
