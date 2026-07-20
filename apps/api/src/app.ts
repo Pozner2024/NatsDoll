@@ -14,6 +14,7 @@ import {
   makeNewsletterRepository,
   makeSubscribe,
   makeUnsubscribe,
+  makeConfirm,
   makeGetSubscribers,
   makeDeleteSubscriber,
   makeNewsletterRouter,
@@ -227,11 +228,12 @@ export function createApp() {
 
   // Newsletter
   const newsletterRepo = makeNewsletterRepository(prisma)
-  const subscribe = makeSubscribe(newsletterRepo)
+  const subscribe = makeSubscribe(newsletterRepo, emailService)
   const unsubscribe = makeUnsubscribe(newsletterRepo)
+  const confirmSubscription = makeConfirm(newsletterRepo)
   const getSubscribers = makeGetSubscribers(newsletterRepo)
   const deleteSubscriber = makeDeleteSubscriber(newsletterRepo)
-  app.route('/newsletter', makeNewsletterRouter(subscribe, unsubscribe))
+  app.route('/newsletter', makeNewsletterRouter(subscribe, unsubscribe, confirmSubscription))
   app.route('/admin/newsletter', makeAdminNewsletterRouter(getSubscribers, deleteSubscriber))
 
   // Contact
