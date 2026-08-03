@@ -129,13 +129,13 @@ npx eslint apps/api/src apps/web/app apps/web/src --max-warnings=0
 
 ## Auto Memory
 
-Заметки накапливаются в: `C:\Users\user\.claude\projects\D--Natalia-NatsDoll\memory\`
+Заметки накапливаются в: `~/.claude/projects/-Users-natalliapazniak---------Natalia-NatsDoll/memory/`
 
 При исправлениях или новых предпочтениях — сохранять в memory автоматически.
 
 ## Скриншоты
 
-Скриншоты пользователя хранятся в: `D:\Natalia\screenshot\`
+Скриншоты пользователя хранятся в: `~/Desktop`
 
 ## CRITICAL RULES — ОБЯЗАТЕЛЬНО
 
