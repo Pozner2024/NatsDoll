@@ -65,7 +65,8 @@ import { useRoute, RouterLink } from 'vue-router'
 import { useAsyncData, createError, useSeoMeta, useHead, useRuntimeConfig } from 'nuxt/app'
 import { fetchProduct, fetchProducts } from '@/entities/product'
 import { useCartStore } from '@/entities/cart'
-import { useCartPrompt, useToast, metaDescription, productSeoTitle, DEFAULT_OG_IMAGE } from '@/shared'
+import { useCartPrompt, useToast, metaDescription, productSeoTitle, DEFAULT_OG_IMAGE, fetchShippingSettings } from '@/shared'
+import type { ShippingRates } from '@/shared'
 import ProductGallery from './components/ProductGallery.vue'
 import ProductInfo from './components/ProductInfo.vue'
 import MoreFromShop from './components/MoreFromShop.vue'
@@ -74,7 +75,14 @@ import type { ProductDetail, Product } from '@/entities/product'
 const MORE_FROM_SHOP_FETCH_LIMIT = 8
 const MORE_FROM_SHOP_DISPLAY_LIMIT = 6
 
-type ProductPageData = { product: ProductDetail | null; more: Product[] }
+const SHIPPING_COUNTRIES = ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'PL', 'JP']
+const HANDLING_TIME_MIN_DAYS = 3
+const HANDLING_TIME_MAX_DAYS = 5
+const TRANSIT_TIME_MIN_DAYS = 7
+const TRANSIT_TIME_MAX_DAYS = 30
+const RETURN_WINDOW_DAYS = 14
+
+type ProductPageData = { product: ProductDetail | null; more: Product[]; shipping: ShippingRates | null }
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -82,8 +90,8 @@ const slug = computed(() => route.params.slug as string)
 const { data, status, error } = await useAsyncData<ProductPageData>(
   computed(() => `product:${slug.value}`),
   async () => {
-    const product = await fetchProduct(slug.value)
-    if (!product) return { product: null, more: [] }
+    const [product, shipping] = await Promise.all([fetchProduct(slug.value), fetchShippingSettings()])
+    if (!product) return { product: null, more: [], shipping: null }
     let more: Product[] = []
     try {
       const res = await fetchProducts({
@@ -98,7 +106,7 @@ const { data, status, error } = await useAsyncData<ProductPageData>(
     } catch {
       more = []
     }
-    return { product, more }
+    return { product, more, shipping }
   },
 )
 
@@ -107,6 +115,7 @@ if (!error.value && data.value?.product === null) {
 }
 
 const product = computed(() => data.value?.product ?? null)
+const shippingRates = computed(() => data.value?.shipping ?? null)
 const moreProducts = computed(() => data.value?.more ?? [])
 const isLoading = computed(() => status.value === 'pending')
 const hasError = computed(
@@ -145,6 +154,7 @@ useHead(() => ({
             name: product.value.name,
             description: seoDescription.value,
             image: product.value.images,
+            brand: { '@type': 'Brand', name: 'NatsDoll' },
             offers: {
               '@type': 'Offer',
               price: (product.value.salePrice ?? product.value.price).toFixed(2),
@@ -154,6 +164,43 @@ useHead(() => ({
                   ? 'https://schema.org/InStock'
                   : 'https://schema.org/OutOfStock',
               url: canonicalUrl.value,
+              hasMerchantReturnPolicy: {
+                '@type': 'MerchantReturnPolicy',
+                applicableCountry: SHIPPING_COUNTRIES,
+                returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                merchantReturnDays: RETURN_WINDOW_DAYS,
+                returnMethod: 'https://schema.org/ReturnByMail',
+                returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
+              },
+              ...(shippingRates.value && {
+                shippingDetails: {
+                  '@type': 'OfferShippingDetails',
+                  shippingRate: {
+                    '@type': 'MonetaryAmount',
+                    value: shippingRates.value.baseCost.toFixed(2),
+                    currency: 'USD',
+                  },
+                  shippingDestination: SHIPPING_COUNTRIES.map((country) => ({
+                    '@type': 'DefinedRegion',
+                    addressCountry: country,
+                  })),
+                  deliveryTime: {
+                    '@type': 'ShippingDeliveryTime',
+                    handlingTime: {
+                      '@type': 'QuantitativeValue',
+                      minValue: HANDLING_TIME_MIN_DAYS,
+                      maxValue: HANDLING_TIME_MAX_DAYS,
+                      unitCode: 'DAY',
+                    },
+                    transitTime: {
+                      '@type': 'QuantitativeValue',
+                      minValue: TRANSIT_TIME_MIN_DAYS,
+                      maxValue: TRANSIT_TIME_MAX_DAYS,
+                      unitCode: 'DAY',
+                    },
+                  },
+                },
+              }),
             },
           }),
         },
