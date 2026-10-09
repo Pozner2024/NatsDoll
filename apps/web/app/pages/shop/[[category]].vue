@@ -29,7 +29,13 @@ const description = computed(() =>
     ? `Handmade polymer clay ${categoryName.value.toLowerCase()} by NatsDoll. Every piece is sculpted and painted by hand.`
     : 'Browse handmade polymer clay dolls, birthday gifts, Christmas ornaments and personalized keepsakes. Worldwide shipping.',
 )
-const canonical = computed(() => `${siteUrl}${route.path}`)
+const page = computed(() => {
+  const value = Number(route.query.page)
+  return Number.isInteger(value) && value > 1 ? value : null
+})
+const canonical = computed(() =>
+  page.value ? `${siteUrl}${route.path}?page=${page.value}` : `${siteUrl}${route.path}`,
+)
 
 useSeoMeta({
   title,
