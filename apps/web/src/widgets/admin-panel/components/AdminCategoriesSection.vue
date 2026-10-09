@@ -58,6 +58,13 @@
           <span class="categories-section__name">{{ cat.name }}</span>
           <span class="categories-section__count">{{ cat.productCount }} products</span>
           <button
+            class="categories-section__action"
+            :class="{ 'categories-section__action--save': cat.description }"
+            @click="startDescriptionEdit(cat)"
+          >
+            Text
+          </button>
+          <button
             class="categories-section__action categories-section__action--icon"
             @click="startEdit(cat)"
           >
@@ -70,6 +77,39 @@
             ✕
           </button>
         </template>
+
+        <div
+          v-if="descriptionId === cat.id"
+          class="categories-section__description"
+        >
+          <textarea
+            v-model="descriptionText"
+            class="categories-section__textarea"
+            rows="8"
+            :maxlength="DESCRIPTION_MAX_LENGTH"
+            placeholder="Text shown under the products on the category page. Separate paragraphs with an empty line."
+            @keydown.escape="cancelDescriptionEdit"
+          />
+          <div class="categories-section__description-actions">
+            <span class="categories-section__count">{{ descriptionText.length }} / {{ DESCRIPTION_MAX_LENGTH }}</span>
+            <span
+              v-if="descriptionError"
+              class="categories-section__description-error"
+            >{{ descriptionError }}</span>
+            <button
+              class="categories-section__action categories-section__action--save"
+              @click="saveDescription(cat.id)"
+            >
+              Save
+            </button>
+            <button
+              class="categories-section__action"
+              @click="cancelDescriptionEdit"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       </li>
 
       <li
@@ -105,12 +145,38 @@ import { ref } from 'vue'
 import { useAdminCategories } from '../adminCategoriesApi'
 import type { AdminCategoryItem } from '../adminCategoriesApi'
 
-const { categories, isLoading, error, createCategory, updateCategory, deleteCategory } = useAdminCategories()
+const { categories, isLoading, error, createCategory, updateCategory, updateCategoryDescription, deleteCategory } = useAdminCategories()
+
+const DESCRIPTION_MAX_LENGTH = 5000
 
 const editingId = ref<string | null>(null)
 const editName = ref('')
 const addingNew = ref(false)
 const newName = ref('')
+const descriptionId = ref<string | null>(null)
+const descriptionText = ref('')
+const descriptionError = ref<string | null>(null)
+
+function startDescriptionEdit(cat: AdminCategoryItem) {
+  descriptionId.value = cat.id
+  descriptionText.value = cat.description
+  descriptionError.value = null
+}
+
+function cancelDescriptionEdit() {
+  descriptionId.value = null
+  descriptionText.value = ''
+  descriptionError.value = null
+}
+
+async function saveDescription(id: string) {
+  const ok = await updateCategoryDescription(id, descriptionText.value)
+  if (!ok) {
+    descriptionError.value = 'Failed to save'
+    return
+  }
+  cancelDescriptionEdit()
+}
 
 function startEdit(cat: AdminCategoryItem) {
   editingId.value = cat.id
@@ -201,6 +267,7 @@ async function handleDelete(cat: AdminCategoryItem) {
 
   &__item {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     padding: 8px 16px;
     gap: 10px;
@@ -237,6 +304,38 @@ async function handleDelete(cat: AdminCategoryItem) {
     background: var(--color-white);
     color: var(--color-text);
     font-family: var(--font-display);
+  }
+
+  &__description {
+    flex-basis: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__textarea {
+    width: 100%;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    border: 1px solid var(--color-accent);
+    border-radius: 4px;
+    padding: 6px 8px;
+    background: var(--color-white);
+    color: var(--color-text);
+    font-family: var(--font-display);
+    resize: vertical;
+  }
+
+  &__description-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  &__description-error {
+    font-size: 0.72rem;
+    color: var(--color-error);
   }
 
   &__action {

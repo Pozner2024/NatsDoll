@@ -38,6 +38,7 @@ export type CategoryListItem = {
   id: string
   slug: string
   name: string
+  description: string
 }
 
 export type ProductDetail = {

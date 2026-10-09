@@ -50,7 +50,7 @@ describe('ShopCatalog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockFetchCategories.mockResolvedValue([
-      { id: 'c1', slug: 'animals', name: 'Animals' },
+      { id: 'c1', slug: 'animals', name: 'Animals', description: '' },
     ])
   })
 

@@ -80,6 +80,7 @@ export type AdminCategoryItem = {
   id: string
   name: string
   slug: string
+  description: string
   productCount: number
 }
 
@@ -106,6 +107,7 @@ export type AdminRepository = {
   listCategoriesWithCount(): Promise<AdminCategoryItem[]>
   createCategory(name: string, slug: string): Promise<{ id: string }>
   updateCategory(id: string, name: string, slug: string): Promise<void>
+  updateCategoryDescription(id: string, description: string): Promise<void>
   deleteCategory(id: string): Promise<void>
   getProduct(id: string): Promise<AdminProductDetail | null>
   getAllProductImageUrls(): Promise<string[]>
@@ -127,6 +129,7 @@ export type MoveProductCategory = (id: string, categoryId: string) => Promise<vo
 export type ListCategoriesWithCount = () => Promise<AdminCategoryItem[]>
 export type CreateCategory = (name: string, slug: string) => Promise<{ id: string }>
 export type UpdateCategory = (id: string, name: string, slug: string) => Promise<void>
+export type UpdateCategoryDescription = (id: string, description: string) => Promise<void>
 export type DeleteCategory = (id: string) => Promise<void>
 
 export type AdminProductDetail = {

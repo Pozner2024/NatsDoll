@@ -26,7 +26,7 @@ describe('categoryStore', () => {
   })
 
   it('load fetches and stores categories', async () => {
-    const fake = [{ id: '1', slug: 'a', name: 'A' }]
+    const fake = [{ id: '1', slug: 'a', name: 'A', description: '' }]
     mockFetch.mockResolvedValue(fake)
 
     const store = useCategoryStore()
@@ -38,7 +38,7 @@ describe('categoryStore', () => {
   })
 
   it('load is idempotent — second call does not refetch', async () => {
-    mockFetch.mockResolvedValue([{ id: '1', slug: 'a', name: 'A' }])
+    mockFetch.mockResolvedValue([{ id: '1', slug: 'a', name: 'A', description: '' }])
 
     const store = useCategoryStore()
     await store.load()

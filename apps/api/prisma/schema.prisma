@@ -83,10 +83,11 @@ model RefreshToken {
 // ─── Catalog ─────────────────────────────────────────
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  position  Int       @default(0)
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String    @default("")
+  position    Int       @default(0)
   updatedAt DateTime  @updatedAt
   products  Product[]
 

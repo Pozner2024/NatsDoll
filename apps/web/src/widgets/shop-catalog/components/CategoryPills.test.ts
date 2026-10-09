@@ -5,8 +5,8 @@ import CategoryPills from './CategoryPills.vue'
 import type { Category } from '@/entities/category'
 
 const categories: Category[] = [
-  { id: '1', slug: 'animals', name: 'Animals' },
-  { id: '2', slug: 'sweet', name: 'Sweet' },
+  { id: '1', slug: 'animals', name: 'Animals', description: '' },
+  { id: '2', slug: 'sweet', name: 'Sweet', description: '' },
 ]
 
 function mountPills(activeSlug: string | undefined, currentSort = 'newest') {

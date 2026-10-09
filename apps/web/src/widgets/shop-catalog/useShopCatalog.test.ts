@@ -59,7 +59,7 @@ describe('useShopCatalog', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockFetch.mockResolvedValue(sampleResponse)
-    mockCategories.mockResolvedValue([{ id: 'c1', slug: 'animals', name: 'Animals' }])
+    mockCategories.mockResolvedValue([{ id: 'c1', slug: 'animals', name: 'Animals', description: 'Handmade animal figurines.' }])
   })
 
   it('fetches products on mount with default params from URL /shop', async () => {
@@ -141,6 +141,20 @@ describe('useShopCatalog', () => {
       limit: 12,
     })
     expect(api.activeCategoryName.value).toBe('On Sale')
+  })
+
+  it('returns the category description on the first page of a category', async () => {
+    const { api } = await mountComposable('/shop/animals')
+
+    expect(api.activeCategoryDescription.value).toBe('Handmade animal figurines.')
+  })
+
+  it('hides the category description on later pages and on /shop', async () => {
+    const paged = await mountComposable('/shop/animals?page=2')
+    expect(paged.api.activeCategoryDescription.value).toBeNull()
+
+    const all = await mountComposable('/shop')
+    expect(all.api.activeCategoryDescription.value).toBeNull()
   })
 
   it('throws 404 createError for unknown category slug', async () => {

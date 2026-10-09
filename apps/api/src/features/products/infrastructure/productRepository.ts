@@ -64,7 +64,7 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
     async listCategories(): Promise<CategoryListItem[]> {
       return prisma.category.findMany({
         orderBy: { position: 'asc' },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, description: true },
       })
     },
     async findBySlug(slug: string): Promise<ProductDetail | null> {

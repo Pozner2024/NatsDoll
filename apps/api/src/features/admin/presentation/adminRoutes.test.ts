@@ -4,7 +4,7 @@ import { makeAdminRouter } from './adminRoutes'
 import type {
   GetDashboard, MarkAllMessagesRead, DashboardResponse,
   ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish, MoveProductCategory,
-  ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
+  ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory, UpdateCategoryDescription,
   AdminProductListResponse, AdminCategoryItem,
   GetAdminProduct, AdminProductDetail,
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
@@ -29,7 +29,7 @@ const mockProductList: AdminProductListResponse = {
   total: 1, page: 1, totalPages: 1,
 }
 
-const mockCategories: AdminCategoryItem[] = [{ id: 'c1', name: 'Dolls', slug: 'dolls', productCount: 5 }]
+const mockCategories: AdminCategoryItem[] = [{ id: 'c1', name: 'Dolls', slug: 'dolls', description: '', productCount: 5 }]
 
 function makeApp(overrides: {
   getDashboard?: GetDashboard
@@ -62,6 +62,7 @@ function makeApp(overrides: {
   uploadProductImage?: UploadProductImage
   listAdminContactMessages?: ListAdminContactMessages
   cleanupOrphanImages?: CleanupOrphanImages
+  updateCategoryDescription?: UpdateCategoryDescription
 } = {}) {
   const app = new Hono()
   app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'ADMIN' }); await next() })
@@ -96,6 +97,7 @@ function makeApp(overrides: {
     overrides.uploadProductImage ?? vi.fn().mockResolvedValue({ url: 'https://s3/items/new/x.jpg' }),
     overrides.listAdminContactMessages ?? vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, totalPages: 0 }),
     overrides.cleanupOrphanImages ?? vi.fn().mockResolvedValue({ deleted: 0 }),
+    overrides.updateCategoryDescription ?? vi.fn().mockResolvedValue(undefined),
   ))
   return app
 }
@@ -113,7 +115,7 @@ describe('GET /admin/dashboard', () => {
     const app = new Hono()
     app.use('*', async (c, next) => { c.set('auth', { userId: 'u1', role: 'CUSTOMER' }); await next() })
     app.route('/admin', makeAdminRouter(
-      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
+      vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(),
     ))
     const res = await app.request('/admin/dashboard')
     expect(res.status).toBe(403)
@@ -229,6 +231,32 @@ describe('GET /admin/products/:id', () => {
     const app = makeApp({ getAdminProduct: vi.fn().mockResolvedValue(null) })
     const res = await app.request('/admin/products/nonexistent')
     expect(res.status).toBe(404)
+  })
+})
+
+describe('PUT /admin/categories/:id/description', () => {
+  it('calls updateCategoryDescription and returns ok', async () => {
+    const update = vi.fn().mockResolvedValue(undefined)
+    const app = makeApp({ updateCategoryDescription: update })
+    const res = await app.request('/admin/categories/c1/description', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'Handmade birthday gifts.' }),
+    })
+    expect(res.status).toBe(200)
+    expect(update).toHaveBeenCalledWith('c1', 'Handmade birthday gifts.')
+  })
+
+  it('rejects a description that is too long', async () => {
+    const update = vi.fn()
+    const app = makeApp({ updateCategoryDescription: update })
+    const res = await app.request('/admin/categories/c1/description', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'x'.repeat(5001) }),
+    })
+    expect(res.status).toBe(400)
+    expect(update).not.toHaveBeenCalled()
   })
 })
 

@@ -5,7 +5,7 @@ export function makeAdminProductsRepository(prisma: PrismaClient): Pick<
   AdminRepository,
   | 'listProducts' | 'createProduct' | 'updateProduct' | 'deleteProduct' | 'getAllProductImageUrls'
   | 'togglePublish' | 'moveProductCategory' | 'getProduct'
-  | 'listCategoriesWithCount' | 'createCategory' | 'updateCategory' | 'deleteCategory'
+  | 'listCategoriesWithCount' | 'createCategory' | 'updateCategory' | 'updateCategoryDescription' | 'deleteCategory'
 > {
   return {
     async listProducts(params: AdminProductListParams) {
@@ -115,6 +115,7 @@ export function makeAdminProductsRepository(prisma: PrismaClient): Pick<
           id: true,
           name: true,
           slug: true,
+          description: true,
           _count: { select: { products: { where: { deletedAt: null } } } },
         },
       })
@@ -122,6 +123,7 @@ export function makeAdminProductsRepository(prisma: PrismaClient): Pick<
         id: r.id,
         name: r.name,
         slug: r.slug,
+        description: r.description,
         productCount: r._count.products,
       }))
     },
@@ -135,6 +137,10 @@ export function makeAdminProductsRepository(prisma: PrismaClient): Pick<
 
     async updateCategory(id: string, name: string, slug: string) {
       await prisma.category.update({ where: { id }, data: { name, slug } })
+    },
+
+    async updateCategoryDescription(id: string, description: string) {
+      await prisma.category.update({ where: { id }, data: { description } })
     },
 
     async deleteCategory(id: string) {

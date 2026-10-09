@@ -78,9 +78,12 @@ export default [
     rules: { "vue/multi-word-component-names": "off" },
   },
 
-  // Описание товара санитизируется DOMPurify перед v-html (ProductInfo.vue)
+  // Описание товара и текст категории санитизируются DOMPurify перед v-html
   {
-    files: ["apps/web/src/widgets/product-page/components/ProductInfo.vue"],
+    files: [
+      "apps/web/src/widgets/product-page/components/ProductInfo.vue",
+      "apps/web/src/widgets/shop-catalog/components/CategoryDescription.vue",
+    ],
     rules: { "vue/no-v-html": "off" },
   },
 ];

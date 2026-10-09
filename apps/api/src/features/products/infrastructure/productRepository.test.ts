@@ -12,8 +12,8 @@ describe('productRepository.listCategories', () => {
   it('returns categories ordered by position', async () => {
     const prisma = makePrismaMock()
     const fake = [
-      { id: '1', slug: 'animals', name: 'Animals' },
-      { id: '2', slug: 'sweet', name: 'Sweet' },
+      { id: '1', slug: 'animals', name: 'Animals', description: 'Handmade animal figurines.' },
+      { id: '2', slug: 'sweet', name: 'Sweet', description: '' },
     ]
     vi.mocked(prisma.category.findMany).mockResolvedValue(fake as never)
 
@@ -22,7 +22,7 @@ describe('productRepository.listCategories', () => {
 
     expect(prisma.category.findMany).toHaveBeenCalledWith({
       orderBy: { position: 'asc' },
-      select: { id: true, slug: true, name: true },
+      select: { id: true, slug: true, name: true, description: true },
     })
     expect(result).toEqual(fake)
   })

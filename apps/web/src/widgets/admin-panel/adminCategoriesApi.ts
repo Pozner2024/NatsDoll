@@ -6,6 +6,7 @@ const AdminCategoryItemSchema = z.object({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
+  description: z.string().default(''),
   productCount: z.number(),
 })
 
@@ -55,6 +56,16 @@ export function useAdminCategories() {
     return true
   }
 
+  async function updateCategoryDescription(id: string, description: string): Promise<boolean> {
+    const res = await authFetch(`/admin/categories/${id}/description`, {
+      method: 'PUT',
+      json: { description },
+    })
+    if (!res.ok) return false
+    await load()
+    return true
+  }
+
   async function deleteCategory(id: string): Promise<boolean> {
     const res = await authFetch(`/admin/categories/${id}`, { method: 'DELETE' })
     if (!res.ok) return false
@@ -64,5 +75,5 @@ export function useAdminCategories() {
 
   onMounted(load)
 
-  return { categories, isLoading, error, load, createCategory, updateCategory, deleteCategory }
+  return { categories, isLoading, error, load, createCategory, updateCategory, updateCategoryDescription, deleteCategory }
 }

@@ -6,6 +6,7 @@ const CategorySchema = z.object({
   id: z.string(),
   slug: z.string(),
   name: z.string(),
+  description: z.string().default(''),
 })
 
 const CategoryListSchema = z.array(CategorySchema)

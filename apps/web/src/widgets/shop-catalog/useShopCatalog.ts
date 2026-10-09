@@ -71,6 +71,12 @@ export async function useShopCatalog() {
     return categoryStore.categories.find((c) => c.slug === category.value)?.name ?? null
   })
 
+  const activeCategoryDescription = computed(() => {
+    if (onSale.value || !category.value || page.value > 1) return null
+    const description = categoryStore.categories.find((c) => c.slug === category.value)?.description
+    return description || null
+  })
+
   return {
     category: computed(() => routeParam.value),
     sort,
@@ -83,6 +89,7 @@ export async function useShopCatalog() {
     categories: computed(() => categoryStore.categories),
     categoriesError: computed(() => categoryStore.error),
     activeCategoryName,
+    activeCategoryDescription,
     retry,
   }
 }

@@ -132,6 +132,7 @@ import {
   makeListCategoriesWithCount,
   makeCreateCategory,
   makeUpdateCategory,
+  makeUpdateCategoryDescription,
   makeDeleteCategory,
   makeGetAdminProduct,
   makeListConversations,
@@ -369,6 +370,7 @@ export function createApp() {
   const listCategoriesWithCount = makeListCategoriesWithCount(adminRepo)
   const createCategory = makeCreateCategory(adminRepo)
   const updateCategory = makeUpdateCategory(adminRepo)
+  const updateCategoryDescription = makeUpdateCategoryDescription(adminRepo)
   const deleteCategory = makeDeleteCategory(adminRepo)
   const getAdminProduct = makeGetAdminProduct(adminRepo)
   const listConversations = makeListConversations(adminRepo)
@@ -400,6 +402,7 @@ export function createApp() {
     uploadProductImage,
     listAdminContactMessages,
     cleanupOrphanImages,
+    updateCategoryDescription,
   ))
 
   return app

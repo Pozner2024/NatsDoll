@@ -15,8 +15,8 @@ describe('listCategories', () => {
   it('delegates to repository', async () => {
     const repo = makeRepo()
     const fake = [
-      { id: '1', slug: 'animals', name: 'Animals' },
-      { id: '2', slug: 'sweet', name: 'Sweet' },
+      { id: '1', slug: 'animals', name: 'Animals', description: 'Handmade animal figurines.' },
+      { id: '2', slug: 'sweet', name: 'Sweet', description: '' },
     ]
     vi.mocked(repo.listCategories).mockResolvedValue(fake)
 

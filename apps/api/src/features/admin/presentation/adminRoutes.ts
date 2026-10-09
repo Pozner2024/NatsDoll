@@ -6,7 +6,7 @@ import { requireAdmin } from '../../../shared/middleware'
 import type {
   GetDashboard, MarkAllMessagesRead,
   ListAdminProducts, CreateProduct, UpdateProduct, DeleteProduct, TogglePublish, MoveProductCategory,
-  ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory,
+  ListCategoriesWithCount, CreateCategory, UpdateCategory, DeleteCategory, UpdateCategoryDescription,
   GetAdminProduct,
   ListConversations, GetConversation, ReplyToUser, MarkConversationRead,
   ListAdminOrders, GetAdminOrder, UpdateAdminOrder,
@@ -47,6 +47,12 @@ const productBodySchema = z.object({
 const categoryBodySchema = z.object({
   name: z.string().min(1).max(200),
   slug: slugSchema,
+})
+
+const CATEGORY_DESCRIPTION_MAX_LENGTH = 5000
+
+const categoryDescriptionBodySchema = z.object({
+  description: z.string().max(CATEGORY_DESCRIPTION_MAX_LENGTH),
 })
 
 const moveCategoryBodySchema = z.object({
@@ -135,6 +141,7 @@ export function makeAdminRouter(
   uploadProductImage: UploadProductImage,
   listAdminContactMessages: ListAdminContactMessages,
   cleanupOrphanImages: CleanupOrphanImages,
+  updateCategoryDescription: UpdateCategoryDescription,
 ) {
   const router = new Hono()
 
@@ -255,6 +262,13 @@ export function makeAdminRouter(
     const id = c.req.param('id')
     const { name, slug } = c.req.valid('json')
     await updateCategory(id, name, slug)
+    return c.json({ ok: true })
+  })
+
+  router.put('/categories/:id/description', zValidator('json', categoryDescriptionBodySchema), async (c) => {
+    const id = c.req.param('id')
+    const { description } = c.req.valid('json')
+    await updateCategoryDescription(id, description)
     return c.json({ ok: true })
   })
 

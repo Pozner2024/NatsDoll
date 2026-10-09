@@ -65,6 +65,11 @@
         :total-pages="totalPages"
         :current-sort="sort"
       />
+
+      <CategoryDescription
+        v-if="activeCategoryDescription"
+        :text="activeCategoryDescription"
+      />
     </template>
   </section>
 </template>
@@ -80,6 +85,7 @@ import ShopPagination from './components/ShopPagination.vue'
 import EmptyState from './components/EmptyState.vue'
 import ErrorBar from './components/ErrorBar.vue'
 import ShopCatalogSkeleton from './components/ShopCatalogSkeleton.vue'
+import CategoryDescription from './components/CategoryDescription.vue'
 
 const {
   category, sort, page,
@@ -87,6 +93,7 @@ const {
   isLoading, error,
   categories, categoriesError,
   activeCategoryName,
+  activeCategoryDescription,
   retry,
 } = await useShopCatalog()
 

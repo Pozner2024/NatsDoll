@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { makeListCategoriesWithCount } from './listCategoriesWithCount'
 import type { AdminRepository, AdminCategoryItem } from '../types'
 
-const mockCat: AdminCategoryItem = { id: 'c1', name: 'Dolls', slug: 'dolls', productCount: 5 }
+const mockCat: AdminCategoryItem = { id: 'c1', name: 'Dolls', slug: 'dolls', description: '', productCount: 5 }
 
 function makeRepo(): AdminRepository {
   return {
