@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ReviewsSlider from './ReviewsSlider.vue'
+import { pickReviews } from './reviews'
 
 function mountSlider() {
   return mount(ReviewsSlider)
@@ -75,5 +76,27 @@ describe('ReviewsSlider', () => {
     const style = wrapper.find('.reviews-slider__track').attributes('style') ?? ''
     expect(style).toContain('translateX(-100%)')
     expect(style).not.toContain('transition: none')
+  })
+
+  it('с seed показывает 12 отзывов в счётчике', () => {
+    const wrapper = mount(ReviewsSlider, { props: { seed: 'product:apples' } })
+    expect(wrapper.find('.review-card__counter').text()).toBe('1 / 12')
+  })
+})
+
+describe('pickReviews', () => {
+  it('для одного seed возвращает один и тот же набор', () => {
+    expect(pickReviews('product:apples', 12)).toEqual(pickReviews('product:apples', 12))
+  })
+
+  it('для разных seed возвращает разные наборы', () => {
+    const a = pickReviews('product:apples', 12).map((r) => r.id)
+    const b = pickReviews('product:lemons', 12).map((r) => r.id)
+    expect(a).not.toEqual(b)
+  })
+
+  it('отзывы в наборе не повторяются', () => {
+    const ids = pickReviews('product:apples', 12).map((r) => r.id)
+    expect(new Set(ids).size).toBe(12)
   })
 })

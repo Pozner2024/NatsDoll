@@ -21,7 +21,7 @@
         :style="trackStyle"
       >
         <div
-          v-for="(review, i) in REVIEWS"
+          v-for="(review, i) in reviews"
           :key="review.id"
           class="reviews-slider__slide"
           :aria-hidden="!isVisible(i) || undefined"
@@ -33,7 +33,7 @@
             :name="review.name"
             :country="review.country"
             :rating="review.rating"
-            :counter="`${i + 1} / ${REVIEWS.length}`"
+            :counter="`${i + 1} / ${reviews.length}`"
           />
         </div>
       </div>
@@ -64,12 +64,17 @@
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useSlider, MEDIA } from '@/shared'
 import ReviewCard from './ReviewCard.vue'
-import { REVIEWS } from './reviews'
+import { REVIEWS, pickReviews } from './reviews'
 
 const AUTOPLAY_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD_PX = 40
 const RESIZE_DEBOUNCE_MS = 150
 const RENDER_WINDOW_BUFFER = 3
+const SEEDED_REVIEWS_COUNT = 12
+
+const props = defineProps<{ seed?: string }>()
+
+const reviews = computed(() => (props.seed ? pickReviews(props.seed, SEEDED_REVIEWS_COUNT) : REVIEWS))
 
 const visibleCount = ref(1)
 
@@ -95,7 +100,7 @@ onUnmounted(() => {
   if (resizeTimer) clearTimeout(resizeTimer)
 })
 
-const slideCount = computed(() => Math.max(1, REVIEWS.length - visibleCount.value + 1))
+const slideCount = computed(() => Math.max(1, reviews.value.length - visibleCount.value + 1))
 const { currentIndex, next, prev, pointerPause, pointerResume, focusPause, focusResume } = useSlider(slideCount, AUTOPLAY_INTERVAL_MS)
 
 const slideWidth = computed(() => 100 / visibleCount.value)

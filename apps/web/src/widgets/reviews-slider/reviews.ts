@@ -1835,3 +1835,22 @@ export const REVIEWS: Review[] = [
     rating: 5,
   },
 ]
+function hashSeed(seed: string): number {
+  let hash = 2166136261
+  for (const char of seed) {
+    hash = Math.imul(hash ^ char.charCodeAt(0), 16777619)
+  }
+  return hash >>> 0
+}
+
+export function pickReviews(seed: string, count: number): Review[] {
+  const pool = [...REVIEWS]
+  let state = hashSeed(seed)
+  const picked: Review[] = []
+  while (picked.length < count && pool.length > 0) {
+    state = Math.imul(state ^ (state >>> 15), 2246822507) >>> 0
+    const [review] = pool.splice(state % pool.length, 1)
+    picked.push(review!)
+  }
+  return picked
+}

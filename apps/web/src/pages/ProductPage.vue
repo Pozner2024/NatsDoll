@@ -1,14 +1,19 @@
 <template>
   <ProductPageWidget>
     <template #reviews>
-      <ReviewsSlider />
+      <ReviewsSlider :seed="seed" />
     </template>
   </ProductPageWidget>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { ProductPageWidget } from '@/widgets/product-page'
 import { ReviewsSlider } from '@/widgets/reviews-slider'
+
+const route = useRoute()
+const seed = computed(() => `product:${String(route.params.slug)}`)
 </script>
 
 <style scoped lang="scss">
