@@ -2,7 +2,7 @@ name: Backup database
 
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '0 3 * * 1'   # раз в неделю, понедельник 03:00 UTC
   workflow_dispatch:
 
 permissions:
