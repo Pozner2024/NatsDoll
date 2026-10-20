@@ -2,7 +2,7 @@ import { ref, onMounted } from 'vue'
 import { z } from 'zod'
 import { authFetch, apiErrorMessage } from '@/shared'
 
-export const SaleScopeSchema = z.enum(['ALL', 'CATEGORIES', 'PRODUCTS'])
+const SaleScopeSchema = z.enum(['ALL', 'CATEGORIES', 'PRODUCTS'])
 
 export const SaleRecordSchema = z.object({
   id: z.string(),

@@ -1,5 +1,4 @@
 export {
-  ACCESS_TOKEN_TTL,
   REFRESH_TOKEN_TTL_MS,
   REFRESH_TOKEN_TTL_SECONDS,
   EMAIL_VERIFICATION_TTL_MS,
@@ -20,5 +19,5 @@ export type { S3ObjectInfo } from './s3Client'
 export { calcShipping, SHIPPING_BASE, SHIPPING_PER_EXTRA_ITEM } from './shipping'
 export { saleApplies, applyDiscount, salePricing } from './sale'
 export type { SaleRule } from './sale'
-export { PAID_STATUSES, isPaidStatus, TERMINAL_STATUSES, isTerminalStatus } from './orderStatus'
+export { PAID_STATUSES, isPaidStatus, isTerminalStatus } from './orderStatus'
 export { zValidator } from './zValidator'

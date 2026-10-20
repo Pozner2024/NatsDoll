@@ -1,7 +1,7 @@
 export { makePaymentRepository } from './infrastructure/paymentRepository'
 export { makePaypalClient } from './infrastructure/paypalClient'
 export { makeWooClient } from './infrastructure/wooClient'
-export { encryptSecret, decryptSecret } from './infrastructure/secretCrypto'
+export { decryptSecret } from './infrastructure/secretCrypto'
 export { makeGetPaymentSettings } from './application/getPaymentSettings'
 export { makeUpdatePaymentSettings } from './application/updatePaymentSettings'
 export { makeGetPaymentConfig } from './application/getPaymentConfig'

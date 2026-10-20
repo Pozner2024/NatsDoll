@@ -4,8 +4,8 @@ import { useAsyncData, createError } from 'nuxt/app'
 import { fetchProducts, type ProductSortOrder } from '@/entities/product'
 import { useCategoryStore } from '@/entities/category'
 
-export const PAGE_SIZE = 12
-export const ON_SALE_SLUG = 'on-sale'
+const PAGE_SIZE = 12
+const ON_SALE_SLUG = 'on-sale'
 const VALID_SORTS: ProductSortOrder[] = ['newest', 'price-asc', 'price-desc']
 
 function parseSort(raw: unknown): ProductSortOrder {
