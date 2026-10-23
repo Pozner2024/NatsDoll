@@ -139,7 +139,7 @@ services:
     restart: unless-stopped
 
   wordpress:
-    image: wordpress:6
+    image: wordpress:php8.3-apache
     mem_limit: 512m
     environment:
       WORDPRESS_DB_HOST: wp-db
