@@ -85,6 +85,7 @@ export type MerchantProductItem = {
   stock: number
   categoryId: string
   category: string
+  categorySlug: string
 }
 
 export interface ProductRepository {

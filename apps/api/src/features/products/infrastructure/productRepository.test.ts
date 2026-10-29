@@ -351,7 +351,7 @@ describe('productRepository.findAllForMerchant', () => {
         images: ['https://example.com/1.webp', 'https://example.com/2.webp'],
         stock: 3,
         categoryId: 'c1',
-        category: { name: 'Art Dolls' },
+        category: { name: 'Art Dolls', slug: 'art-dolls' },
       } as never,
     ])
 
@@ -360,7 +360,7 @@ describe('productRepository.findAllForMerchant', () => {
 
     expect(prisma.product.findMany).toHaveBeenCalledWith({
       where: { isPublished: true, deletedAt: null },
-      select: { id: true, slug: true, name: true, description: true, price: true, images: true, stock: true, categoryId: true, category: { select: { name: true } } },
+      select: { id: true, slug: true, name: true, description: true, price: true, images: true, stock: true, categoryId: true, category: { select: { name: true, slug: true } } },
       orderBy: { createdAt: 'asc' },
     })
     expect(result).toEqual([
@@ -374,6 +374,7 @@ describe('productRepository.findAllForMerchant', () => {
         stock: 3,
         categoryId: 'c1',
         category: 'Art Dolls',
+        categorySlug: 'art-dolls',
       },
     ])
   })

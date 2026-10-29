@@ -204,6 +204,7 @@ describe('GET /products/merchant-data', () => {
         stock: 1,
         categoryId: 'c1',
         category: 'Art Dolls',
+        categorySlug: 'art-dolls',
       },
     ]
     const listProductsForMerchant = vi.fn().mockResolvedValue(products)

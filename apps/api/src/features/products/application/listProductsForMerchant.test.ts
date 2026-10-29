@@ -15,6 +15,7 @@ const item: MerchantProductItem = {
   stock: 1,
   categoryId: 'c1',
   category: 'Art Dolls',
+  categorySlug: 'art-dolls',
 }
 
 function makeRepo(items: MerchantProductItem[] = [item]): ProductRepository {

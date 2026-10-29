@@ -10,15 +10,23 @@ export type MerchantProduct = {
   images: string[]
   stock: number
   category: string
+  categorySlug: string
 }
 
 const BRAND = 'NatsDoll'
 const TITLE_MAX_LENGTH = 150
 const DESCRIPTION_MAX_LENGTH = 5000
 const ADDITIONAL_IMAGES_MAX = 10
+const FIGURINES_CATEGORY_ID = '5609'
+const DOLLHOUSE_ACCESSORIES_CATEGORY_ID = '2497'
+const DOLLHOUSE_CATEGORY_SLUG = 'dollhouse-miniature'
 
 function money(amount: number): string {
   return `${amount.toFixed(2)} USD`
+}
+
+function googleCategory(categorySlug: string): string {
+  return categorySlug === DOLLHOUSE_CATEGORY_SLUG ? DOLLHOUSE_ACCESSORIES_CATEGORY_ID : FIGURINES_CATEGORY_ID
 }
 
 function tag(name: string, value: string): string {
@@ -40,6 +48,7 @@ function itemTag(siteUrl: string, product: MerchantProduct, image: string): stri
     tag('brand', BRAND),
     tag('identifier_exists', 'no'),
     tag('product_type', product.category),
+    tag('google_product_category', googleCategory(product.categorySlug)),
   ]
   return `    <item>\n${tags.join('\n')}\n    </item>`
 }

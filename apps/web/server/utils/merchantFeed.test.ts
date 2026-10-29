@@ -13,6 +13,7 @@ function product(overrides: Partial<MerchantProduct>): MerchantProduct {
     images: ['https://example.com/1.webp'],
     stock: 1,
     category: 'Christmas Gifts',
+    categorySlug: 'christmas-gifts',
     ...overrides,
   }
 }
@@ -31,6 +32,14 @@ describe('buildMerchantFeed', () => {
     expect(xml).toContain('<g:identifier_exists>no</g:identifier_exists>')
     expect(xml).toContain('<g:product_type>Christmas Gifts</g:product_type>')
     expect(xml).not.toContain('sale_price')
+  })
+
+  it('sets Google category to figurines by default and dollhouse accessories for miniatures', () => {
+    const xml = buildMerchantFeed([product({}), product({ id: 'p2', categorySlug: 'dollhouse-miniature' })], SITE)
+
+    expect(xml).toContain('<g:id>p1</g:id>')
+    expect(xml.match(/<g:google_product_category>5609<\/g:google_product_category>/g)?.length).toBe(1)
+    expect(xml.match(/<g:google_product_category>2497<\/g:google_product_category>/g)?.length).toBe(1)
   })
 
   it('adds sale price when the product is on sale', () => {

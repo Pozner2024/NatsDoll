@@ -130,7 +130,7 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
     async findAllForMerchant(): Promise<MerchantProductItem[]> {
       const rows = await prisma.product.findMany({
         where: { isPublished: true, deletedAt: null },
-        select: { id: true, slug: true, name: true, description: true, price: true, images: true, stock: true, categoryId: true, category: { select: { name: true } } },
+        select: { id: true, slug: true, name: true, description: true, price: true, images: true, stock: true, categoryId: true, category: { select: { name: true, slug: true } } },
         orderBy: { createdAt: 'asc' },
       })
       return rows.map((r) => ({
@@ -143,6 +143,7 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
         stock: r.stock,
         categoryId: r.categoryId,
         category: r.category.name,
+        categorySlug: r.category.slug,
       }))
     },
   }
