@@ -29,10 +29,11 @@ function makeApp(
   getProduct = vi.fn().mockResolvedValue(sampleDetail),
   listProductsForSitemap = vi.fn().mockResolvedValue([]),
   listProductsForPinterest = vi.fn().mockResolvedValue([]),
+  listProductsForMerchant = vi.fn().mockResolvedValue([]),
 ) {
   const app = new Hono()
-  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest))
-  return { app, listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest }
+  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest, listProductsForMerchant))
+  return { app, listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest, listProductsForMerchant }
 }
 
 describe('GET /products', () => {
@@ -184,6 +185,41 @@ describe('GET /products/pinterest-data', () => {
     const { app } = makeApp(undefined, undefined, getProduct)
 
     await app.request('/products/pinterest-data')
+
+    expect(getProduct).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /products/merchant-data', () => {
+  it('returns products for the merchant feed', async () => {
+    const products = [
+      {
+        id: 'p1',
+        slug: 'aurora-doll',
+        name: 'Aurora Doll',
+        description: 'Handmade doll',
+        price: 100,
+        salePrice: 80,
+        images: ['https://example.com/1.webp'],
+        stock: 1,
+        categoryId: 'c1',
+        category: 'Art Dolls',
+      },
+    ]
+    const listProductsForMerchant = vi.fn().mockResolvedValue(products)
+    const { app } = makeApp(undefined, undefined, undefined, undefined, undefined, listProductsForMerchant)
+
+    const res = await app.request('/products/merchant-data')
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual(products)
+  })
+
+  it('is not shadowed by the :slug route', async () => {
+    const getProduct = vi.fn()
+    const { app } = makeApp(undefined, undefined, getProduct)
+
+    await app.request('/products/merchant-data')
 
     expect(getProduct).not.toHaveBeenCalled()
   })

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { escapeXml, truncate } from './xml'
 
 export type PinterestProduct = {
   id: string
@@ -70,23 +71,6 @@ export function scheduleReleases(
     product,
     releaseAt: Math.max(startMs + Math.floor((i * DAY_MS) / perDay), Date.parse(product.createdAt)),
   }))
-}
-
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;')
-}
-
-export function truncate(text: string, maxLength: number): string {
-  const clean = text.replace(/\s+/g, ' ').trim()
-  if (clean.length <= maxLength) return clean
-  const cut = clean.slice(0, maxLength - 1)
-  const lastSpace = cut.lastIndexOf(' ')
-  return `${lastSpace > 0 ? cut.slice(0, lastSpace) : cut}…`
 }
 
 function imageType(url: string): string {

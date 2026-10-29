@@ -29,6 +29,7 @@ import {
   makeGetProduct,
   makeListProductsForSitemap,
   makeListProductsForPinterest,
+  makeListProductsForMerchant,
   makeProductsRouter,
 } from './features/products'
 import {
@@ -258,7 +259,8 @@ export function createApp() {
   const getProduct = makeGetProduct(productRepo, getActiveSale)
   const listProductsForSitemap = makeListProductsForSitemap(productRepo)
   const listProductsForPinterest = makeListProductsForPinterest(productRepo)
-  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest))
+  const listProductsForMerchant = makeListProductsForMerchant(productRepo, getActiveSale)
+  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest, listProductsForMerchant))
 
   // Auth
   const authRepo = makeAuthRepository(prisma)

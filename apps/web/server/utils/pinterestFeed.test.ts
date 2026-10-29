@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPinterestRss, scheduleReleases, truncate, FEED_START_MS, PINS_PER_DAY, type PinterestProduct } from './pinterestFeed'
+import { buildPinterestRss, scheduleReleases, FEED_START_MS, PINS_PER_DAY, type PinterestProduct } from './pinterestFeed'
 
 const DAY_MS = 24 * 60 * 60_000
 const SITE = 'https://natsdoll.com'
@@ -57,16 +57,6 @@ describe('scheduleReleases', () => {
     const scheduled = scheduleReleases([product({ id: 'new', createdAt: new Date(createdAt).toISOString() })])
 
     expect(scheduled[0]?.releaseAt).toBe(createdAt)
-  })
-})
-
-describe('truncate', () => {
-  it('collapses whitespace and cuts on a word boundary', () => {
-    expect(truncate('Tiny  glass\nbottle with a crab', 16)).toBe('Tiny glass…')
-  })
-
-  it('returns short text unchanged', () => {
-    expect(truncate('Short', 100)).toBe('Short')
   })
 })
 

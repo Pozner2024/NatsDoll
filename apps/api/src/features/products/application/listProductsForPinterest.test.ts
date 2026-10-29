@@ -9,6 +9,7 @@ function makeRepo(): ProductRepository {
     findBySlug: vi.fn(),
     findAllForSitemap: vi.fn(),
     findAllForPinterest: vi.fn(),
+    findAllForMerchant: vi.fn(),
   }
 }
 

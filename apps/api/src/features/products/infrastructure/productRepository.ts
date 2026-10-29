@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder, ProductDetail, SitemapProductItem, PinterestProductItem, ActiveSaleFilter } from '../types'
+import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder, ProductDetail, SitemapProductItem, PinterestProductItem, MerchantProductItem, ActiveSaleFilter } from '../types'
 
 function saleWhere(activeSale: ActiveSaleFilter): Prisma.ProductWhereInput | null {
   if (activeSale.scope === 'ALL') return null
@@ -124,6 +124,25 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
         image: r.images[0] ?? null,
         categorySlug: r.category.slug,
         createdAt: r.createdAt,
+      }))
+    },
+
+    async findAllForMerchant(): Promise<MerchantProductItem[]> {
+      const rows = await prisma.product.findMany({
+        where: { isPublished: true, deletedAt: null },
+        select: { id: true, slug: true, name: true, description: true, price: true, images: true, stock: true, categoryId: true, category: { select: { name: true } } },
+        orderBy: { createdAt: 'asc' },
+      })
+      return rows.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        description: r.description,
+        price: r.price.toNumber(),
+        images: r.images,
+        stock: r.stock,
+        categoryId: r.categoryId,
+        category: r.category.name,
       }))
     },
   }

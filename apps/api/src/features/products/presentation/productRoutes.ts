@@ -1,12 +1,13 @@
 import { Hono } from 'hono'
 import { z } from 'zod/v3'
 import { zValidator } from '../../../shared/lib'
-import type { ProductListParams, ProductListResponse, CategoryListItem, GetProduct, SitemapProductItem, PinterestProductItem } from '../types'
+import type { ProductListParams, ProductListResponse, CategoryListItem, GetProduct, SitemapProductItem, PinterestProductItem, MerchantProductItem } from '../types'
 
 type ListProducts = (params: ProductListParams) => Promise<ProductListResponse>
 type ListCategories = () => Promise<CategoryListItem[]>
 type ListProductsForSitemap = () => Promise<SitemapProductItem[]>
 type ListProductsForPinterest = () => Promise<PinterestProductItem[]>
+type ListProductsForMerchant = () => Promise<MerchantProductItem[]>
 
 const productListQuerySchema = z.object({
   category: z.string().optional().transform((v) => (v && v.length > 0 ? v : undefined)),
@@ -22,6 +23,7 @@ export function makeProductsRouter(
   getProduct: GetProduct,
   listProductsForSitemap: ListProductsForSitemap,
   listProductsForPinterest: ListProductsForPinterest,
+  listProductsForMerchant: ListProductsForMerchant,
 ) {
   const router = new Hono()
 
@@ -38,6 +40,11 @@ export function makeProductsRouter(
 
   router.get('/products/pinterest-data', async (c) => {
     const result = await listProductsForPinterest()
+    return c.json(result)
+  })
+
+  router.get('/products/merchant-data', async (c) => {
+    const result = await listProductsForMerchant()
     return c.json(result)
   })
 

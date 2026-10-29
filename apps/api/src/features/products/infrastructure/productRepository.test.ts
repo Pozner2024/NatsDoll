@@ -337,3 +337,44 @@ describe('productRepository.findAllForPinterest', () => {
     ])
   })
 })
+
+describe('productRepository.findAllForMerchant', () => {
+  it('returns published products with price as number and category name', async () => {
+    const prisma = makePrismaMock()
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      {
+        id: 'p1',
+        slug: 'aurora-doll',
+        name: 'Aurora Doll',
+        description: 'Handmade doll',
+        price: { toNumber: () => 12.8 },
+        images: ['https://example.com/1.webp', 'https://example.com/2.webp'],
+        stock: 3,
+        categoryId: 'c1',
+        category: { name: 'Art Dolls' },
+      } as never,
+    ])
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findAllForMerchant()
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { isPublished: true, deletedAt: null },
+      select: { id: true, slug: true, name: true, description: true, price: true, images: true, stock: true, categoryId: true, category: { select: { name: true } } },
+      orderBy: { createdAt: 'asc' },
+    })
+    expect(result).toEqual([
+      {
+        id: 'p1',
+        slug: 'aurora-doll',
+        name: 'Aurora Doll',
+        description: 'Handmade doll',
+        price: 12.8,
+        images: ['https://example.com/1.webp', 'https://example.com/2.webp'],
+        stock: 3,
+        categoryId: 'c1',
+        category: 'Art Dolls',
+      },
+    ])
+  })
+})
