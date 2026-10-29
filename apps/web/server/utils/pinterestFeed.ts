@@ -24,7 +24,7 @@ export const PINTEREST_FEEDS: Record<string, { title: string; categories: string
   'party-favors': { title: 'Wedding & Party Favors', categories: ['party-favors-bulk', 'cake-toppers'] },
 }
 
-export const PINS_PER_DAY = 5
+export const PINS_PER_DAY = 8
 export const FEED_START_MS = Date.parse('2026-10-30T00:00:00Z')
 
 const DAY_MS = 24 * 60 * 60_000
@@ -50,7 +50,7 @@ export function scheduleReleases(
 
   return [...backlog, ...fresh].map((product, i) => ({
     product,
-    releaseAt: Math.max(startMs + Math.floor(i / perDay) * DAY_MS, Date.parse(product.createdAt)),
+    releaseAt: Math.max(startMs + Math.floor((i * DAY_MS) / perDay), Date.parse(product.createdAt)),
   }))
 }
 

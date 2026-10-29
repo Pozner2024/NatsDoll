@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPinterestRss, scheduleReleases, truncate, FEED_START_MS, type PinterestProduct } from './pinterestFeed'
+import { buildPinterestRss, scheduleReleases, truncate, FEED_START_MS, PINS_PER_DAY, type PinterestProduct } from './pinterestFeed'
 
 const DAY_MS = 24 * 60 * 60_000
 const SITE = 'https://natsdoll.com'
@@ -22,12 +22,11 @@ function backlog(count: number, categorySlug = 'christmas-gifts'): PinterestProd
 }
 
 describe('scheduleReleases', () => {
-  it('releases existing products five per day starting from the feed start', () => {
-    const releases = scheduleReleases(backlog(12)).map((s) => s.releaseAt)
+  it('spreads releases evenly through the day', () => {
+    const releases = scheduleReleases(backlog(PINS_PER_DAY + 1)).map((s) => s.releaseAt)
+    const interval = DAY_MS / PINS_PER_DAY
 
-    expect(releases.filter((r) => r === FEED_START_MS)).toHaveLength(5)
-    expect(releases.filter((r) => r === FEED_START_MS + DAY_MS)).toHaveLength(5)
-    expect(releases.filter((r) => r === FEED_START_MS + 2 * DAY_MS)).toHaveLength(2)
+    expect(releases).toEqual(Array.from({ length: PINS_PER_DAY + 1 }, (_, i) => FEED_START_MS + i * interval))
   })
 
   it('keeps the same order regardless of input order', () => {
@@ -39,8 +38,8 @@ describe('scheduleReleases', () => {
   })
 
   it('queues products created after the start behind the backlog', () => {
-    const fresh = product({ id: 'new', createdAt: new Date(FEED_START_MS + DAY_MS).toISOString() })
-    const scheduled = scheduleReleases([fresh, ...backlog(10)])
+    const fresh = product({ id: 'new', createdAt: new Date(FEED_START_MS + 1).toISOString() })
+    const scheduled = scheduleReleases([fresh, ...backlog(PINS_PER_DAY * 2)])
 
     expect(scheduled.at(-1)?.product.id).toBe('new')
     expect(scheduled.at(-1)?.releaseAt).toBe(FEED_START_MS + 2 * DAY_MS)
@@ -70,11 +69,11 @@ describe('buildPinterestRss', () => {
   })
 
   it('includes only released products of the feed categories', () => {
-    const items = [...backlog(7), product({ id: 'other', slug: 'other', categorySlug: 'art-dolls' })]
-    const xml = buildPinterestRss('christmas-gifts', items, SITE, FEED_START_MS) ?? ''
+    const items = [...backlog(PINS_PER_DAY * 2), product({ id: 'other', slug: 'other', categorySlug: 'art-dolls' })]
+    const xml = buildPinterestRss('christmas-gifts', items, SITE, FEED_START_MS + DAY_MS - 1) ?? ''
 
     expect(xml).not.toContain('/product/other')
-    expect(xml.match(/<item>/g)?.length).toBeLessThanOrEqual(5)
+    expect(xml.match(/<item>/g)?.length).toBeLessThanOrEqual(PINS_PER_DAY)
   })
 
   it('combines several categories in one feed', () => {
@@ -82,7 +81,7 @@ describe('buildPinterestRss', () => {
       product({ id: 'a', slug: 'bulk', categorySlug: 'party-favors-bulk' }),
       product({ id: 'b', slug: 'topper', categorySlug: 'cake-toppers' }),
     ]
-    const xml = buildPinterestRss('party-favors', items, SITE, FEED_START_MS) ?? ''
+    const xml = buildPinterestRss('party-favors', items, SITE, FEED_START_MS + DAY_MS) ?? ''
 
     expect(xml).toContain(`${SITE}/product/bulk`)
     expect(xml).toContain(`${SITE}/product/topper`)
@@ -93,7 +92,7 @@ describe('buildPinterestRss', () => {
       product({ id: 'a', slug: 'a', name: 'Salt & Pepper <3' }),
       product({ id: 'b', slug: 'b', image: null }),
     ]
-    const xml = buildPinterestRss('christmas-gifts', items, SITE, FEED_START_MS) ?? ''
+    const xml = buildPinterestRss('christmas-gifts', items, SITE, FEED_START_MS + DAY_MS) ?? ''
 
     expect(xml).toContain('<title>Salt &amp; Pepper &lt;3</title>')
     expect(xml).toContain('<enclosure url="https://example.com/1.webp" type="image/webp" length="0" />')
