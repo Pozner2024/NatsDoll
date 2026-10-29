@@ -62,6 +62,7 @@ export default defineNuxtConfig({
     head: {
       title: 'NatsDoll',
       htmlAttrs: { lang: 'en' },
+      meta: [{ name: 'p:domain_verify', content: '1fdf7e3b9b163ed4e319bae0d432cc3d' }],
       link: [
         { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
         { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
