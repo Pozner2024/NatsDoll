@@ -1,0 +1,117 @@
+import { createHash } from 'node:crypto'
+
+export type PinterestProduct = {
+  id: string
+  slug: string
+  name: string
+  description: string
+  image: string | null
+  categorySlug: string
+  createdAt: string
+}
+
+type ScheduledProduct = { product: PinterestProduct; releaseAt: number }
+
+export const PINTEREST_FEEDS: Record<string, { title: string; categories: string[] }> = {
+  'christmas-gifts': { title: 'Christmas Gifts', categories: ['christmas-gifts'] },
+  'halloween-gifts': { title: 'Halloween Gifts', categories: ['halloween-gifts'] },
+  'valentines-day-gifts': { title: "Valentine's Day Gifts", categories: ['valentines-day-gifts'] },
+  'dollhouse-miniature': { title: 'Dollhouse Miniature', categories: ['dollhouse-miniature'] },
+  'art-dolls': { title: 'Art Dolls', categories: ['art-dolls'] },
+  'birthday-gifts': { title: 'Birthday Gifts', categories: ['birthday-gifts'] },
+  'motivational-gifts': { title: 'Motivational Gifts', categories: ['motivational-gifts'] },
+  'graduation-gifts': { title: 'Graduation Gifts', categories: ['graduation-gifts'] },
+  'party-favors': { title: 'Wedding & Party Favors', categories: ['party-favors-bulk', 'cake-toppers'] },
+}
+
+export const PINS_PER_DAY = 5
+export const FEED_START_MS = Date.parse('2026-10-30T00:00:00Z')
+
+const DAY_MS = 24 * 60 * 60_000
+const FEED_MAX_ITEMS = 200
+const TITLE_MAX_LENGTH = 100
+const DESCRIPTION_MAX_LENGTH = 500
+
+function shuffleKey(id: string): string {
+  return createHash('md5').update(id).digest('hex')
+}
+
+export function scheduleReleases(
+  products: PinterestProduct[],
+  startMs = FEED_START_MS,
+  perDay = PINS_PER_DAY,
+): ScheduledProduct[] {
+  const backlog = products
+    .filter((p) => Date.parse(p.createdAt) < startMs)
+    .sort((a, b) => shuffleKey(a.id).localeCompare(shuffleKey(b.id)))
+  const fresh = products
+    .filter((p) => Date.parse(p.createdAt) >= startMs)
+    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+
+  return [...backlog, ...fresh].map((product, i) => ({
+    product,
+    releaseAt: Math.max(startMs + Math.floor(i / perDay) * DAY_MS, Date.parse(product.createdAt)),
+  }))
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+export function truncate(text: string, maxLength: number): string {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (clean.length <= maxLength) return clean
+  const cut = clean.slice(0, maxLength - 1)
+  const lastSpace = cut.lastIndexOf(' ')
+  return `${lastSpace > 0 ? cut.slice(0, lastSpace) : cut}…`
+}
+
+function imageType(url: string): string {
+  if (url.endsWith('.png')) return 'image/png'
+  if (url.endsWith('.webp')) return 'image/webp'
+  return 'image/jpeg'
+}
+
+function itemTag(siteUrl: string, { product, releaseAt }: ScheduledProduct, image: string): string {
+  const link = `${siteUrl}/product/${product.slug}`
+  return `    <item>
+      <title>${escapeXml(truncate(product.name, TITLE_MAX_LENGTH))}</title>
+      <link>${escapeXml(link)}</link>
+      <guid isPermaLink="true">${escapeXml(link)}</guid>
+      <description>${escapeXml(truncate(product.description, DESCRIPTION_MAX_LENGTH))}</description>
+      <pubDate>${new Date(releaseAt).toUTCString()}</pubDate>
+      <enclosure url="${escapeXml(image)}" type="${imageType(image)}" length="0" />
+      <media:content url="${escapeXml(image)}" medium="image" />
+    </item>`
+}
+
+export function buildPinterestRss(
+  feedKey: string,
+  products: PinterestProduct[],
+  siteUrl: string,
+  nowMs: number,
+): string | null {
+  const feed = PINTEREST_FEEDS[feedKey]
+  if (!feed) return null
+
+  const items = scheduleReleases(products)
+    .filter(({ product, releaseAt }) => releaseAt <= nowMs && product.image && feed.categories.includes(product.categorySlug))
+    .sort((a, b) => b.releaseAt - a.releaseAt)
+    .slice(0, FEED_MAX_ITEMS)
+    .map((scheduled) => itemTag(siteUrl, scheduled, scheduled.product.image as string))
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>${escapeXml(`NatsDoll — ${feed.title}`)}</title>
+    <link>${siteUrl}/</link>
+    <description>${escapeXml(`Handmade polymer clay ${feed.title.toLowerCase()} by NatsDoll`)}</description>
+${items.join('\n')}
+  </channel>
+</rss>`
+}

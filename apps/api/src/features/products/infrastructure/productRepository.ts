@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
-import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder, ProductDetail, SitemapProductItem, ActiveSaleFilter } from '../types'
+import type { ProductListParams, ProductListItem, CategoryListItem, ProductRepository, ProductSortOrder, ProductDetail, SitemapProductItem, PinterestProductItem, ActiveSaleFilter } from '../types'
 
 function saleWhere(activeSale: ActiveSaleFilter): Prisma.ProductWhereInput | null {
   if (activeSale.scope === 'ALL') return null
@@ -108,6 +108,23 @@ export function makeProductRepository(prisma: PrismaClient): ProductRepository {
         select: { slug: true, updatedAt: true },
         orderBy: { updatedAt: 'desc' },
       })
+    },
+
+    async findAllForPinterest(): Promise<PinterestProductItem[]> {
+      const rows = await prisma.product.findMany({
+        where: { isPublished: true, deletedAt: null },
+        select: { id: true, slug: true, name: true, description: true, images: true, createdAt: true, category: { select: { slug: true } } },
+        orderBy: { createdAt: 'asc' },
+      })
+      return rows.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        description: r.description,
+        image: r.images[0] ?? null,
+        categorySlug: r.category.slug,
+        createdAt: r.createdAt,
+      }))
     },
   }
 }

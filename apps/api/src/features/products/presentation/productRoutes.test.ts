@@ -28,10 +28,11 @@ function makeApp(
   listCategories = vi.fn().mockResolvedValue([]),
   getProduct = vi.fn().mockResolvedValue(sampleDetail),
   listProductsForSitemap = vi.fn().mockResolvedValue([]),
+  listProductsForPinterest = vi.fn().mockResolvedValue([]),
 ) {
   const app = new Hono()
-  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap))
-  return { app, listProducts, listCategories, getProduct, listProductsForSitemap }
+  app.route('/', makeProductsRouter(listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest))
+  return { app, listProducts, listCategories, getProduct, listProductsForSitemap, listProductsForPinterest }
 }
 
 describe('GET /products', () => {
@@ -142,6 +143,47 @@ describe('GET /products/sitemap-data', () => {
     const { app } = makeApp(undefined, undefined, getProduct)
 
     await app.request('/products/sitemap-data')
+
+    expect(getProduct).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /products/pinterest-data', () => {
+  it('returns products with createdAt as ISO strings', async () => {
+    const listProductsForPinterest = vi.fn().mockResolvedValue([
+      {
+        id: 'p1',
+        slug: 'aurora-doll',
+        name: 'Aurora Doll',
+        description: 'Handmade doll',
+        image: 'https://example.com/1.webp',
+        categorySlug: 'art-dolls',
+        createdAt: new Date('2026-06-01T10:00:00.000Z'),
+      },
+    ])
+    const { app } = makeApp(undefined, undefined, undefined, undefined, listProductsForPinterest)
+
+    const res = await app.request('/products/pinterest-data')
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([
+      {
+        id: 'p1',
+        slug: 'aurora-doll',
+        name: 'Aurora Doll',
+        description: 'Handmade doll',
+        image: 'https://example.com/1.webp',
+        categorySlug: 'art-dolls',
+        createdAt: '2026-06-01T10:00:00.000Z',
+      },
+    ])
+  })
+
+  it('is not shadowed by the :slug route', async () => {
+    const getProduct = vi.fn()
+    const { app } = makeApp(undefined, undefined, getProduct)
+
+    await app.request('/products/pinterest-data')
 
     expect(getProduct).not.toHaveBeenCalled()
   })

@@ -297,3 +297,43 @@ describe('productRepository.findAllForSitemap', () => {
     expect(result).toEqual([{ slug: 'aurora-doll', updatedAt }])
   })
 })
+
+describe('productRepository.findAllForPinterest', () => {
+  it('returns published products with first image and category slug, oldest first', async () => {
+    const prisma = makePrismaMock()
+    const createdAt = new Date('2026-06-01T10:00:00Z')
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      {
+        id: 'p1',
+        slug: 'aurora-doll',
+        name: 'Aurora Doll',
+        description: 'Handmade doll',
+        images: ['https://example.com/1.webp', 'https://example.com/2.webp'],
+        createdAt,
+        category: { slug: 'art-dolls' },
+      } as never,
+      {
+        id: 'p2',
+        slug: 'no-photo',
+        name: 'No Photo',
+        description: '',
+        images: [],
+        createdAt,
+        category: { slug: 'art-dolls' },
+      } as never,
+    ])
+
+    const repo = makeProductRepository(prisma)
+    const result = await repo.findAllForPinterest()
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { isPublished: true, deletedAt: null },
+      select: { id: true, slug: true, name: true, description: true, images: true, createdAt: true, category: { select: { slug: true } } },
+      orderBy: { createdAt: 'asc' },
+    })
+    expect(result).toEqual([
+      { id: 'p1', slug: 'aurora-doll', name: 'Aurora Doll', description: 'Handmade doll', image: 'https://example.com/1.webp', categorySlug: 'art-dolls', createdAt },
+      { id: 'p2', slug: 'no-photo', name: 'No Photo', description: '', image: null, categorySlug: 'art-dolls', createdAt },
+    ])
+  })
+})

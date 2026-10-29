@@ -64,9 +64,20 @@ export type SitemapProductItem = {
   updatedAt: Date
 }
 
+export type PinterestProductItem = {
+  id: string
+  slug: string
+  name: string
+  description: string
+  image: string | null
+  categorySlug: string
+  createdAt: Date
+}
+
 export interface ProductRepository {
   findMany(params: ProductListParams, activeSale?: ActiveSaleFilter | null): Promise<{ items: ProductListItem[]; total: number }>
   listCategories(): Promise<CategoryListItem[]>
   findBySlug(slug: string): Promise<ProductDetail | null>
   findAllForSitemap(): Promise<SitemapProductItem[]>
+  findAllForPinterest(): Promise<PinterestProductItem[]>
 }
