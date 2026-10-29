@@ -63,7 +63,7 @@ jobs:
         run: npx vitest run --root apps/web
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16-alpine
