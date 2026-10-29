@@ -12,7 +12,7 @@ export const FAQ_ITEMS = [
   {
     id: 3,
     question: 'Do you ship internationally?',
-    answer: `Yes, I ship worldwide. Shipping time and cost depend on your location and the weight of the item. Standard international delivery takes 7–30 business days. Tracked and express options available at checkout.`,
+    answer: `Yes, I ship worldwide. Shipping costs $12 for the first item and $1 for each additional item in the same order. Items are made and packed within 3–5 business days, then international delivery takes 7–30 business days.`,
   },
   {
     id: 4,
@@ -22,7 +22,7 @@ export const FAQ_ITEMS = [
   {
     id: 5,
     question: 'Can I return or exchange an item?',
-    answer: `Yes, you can return any item within 2 weeks from the date you receive the shipment. If you'd like to exchange it for another item, please contact me — we’ll work it out depending on availability.`,
+    answer: `Yes, you can return any item in its original condition within 14 days from the date you receive the shipment. Return shipping is paid by the buyer. I issue a refund within 14 days after I receive the item back. If you'd like to exchange it for another item, please contact me — we’ll work it out depending on availability.`,
   },
   {
     id: 6,
