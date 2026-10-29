@@ -25,7 +25,7 @@ export const PINTEREST_FEEDS: Record<string, { title: string; categories: string
 }
 
 export const PINS_PER_DAY = 8
-export const FEED_START_MS = Date.parse('2026-10-30T00:00:00Z')
+export const FEED_START_MS = Date.parse('2026-10-28T00:00:00Z')
 
 const DAY_MS = 24 * 60 * 60_000
 const FEED_MAX_ITEMS = 200
@@ -36,14 +36,32 @@ function shuffleKey(id: string): string {
   return createHash('md5').update(id).digest('hex')
 }
 
+function feedKeyOf(categorySlug: string): string {
+  return Object.keys(PINTEREST_FEEDS).find((key) => PINTEREST_FEEDS[key]?.categories.includes(categorySlug)) ?? categorySlug
+}
+
+function interleaveByFeed(products: PinterestProduct[]): PinterestProduct[] {
+  const groups = new Map<string, PinterestProduct[]>()
+  for (const product of products) {
+    const key = feedKeyOf(product.categorySlug)
+    groups.set(key, [...(groups.get(key) ?? []), product])
+  }
+
+  const queues = [...groups.keys()]
+    .sort()
+    .map((key) => (groups.get(key) ?? []).sort((a, b) => shuffleKey(a.id).localeCompare(shuffleKey(b.id))))
+  const longest = Math.max(0, ...queues.map((q) => q.length))
+
+  return Array.from({ length: longest }, (_, round) => queues.flatMap((q) => q[round] ?? []))
+    .flat()
+}
+
 export function scheduleReleases(
   products: PinterestProduct[],
   startMs = FEED_START_MS,
   perDay = PINS_PER_DAY,
 ): ScheduledProduct[] {
-  const backlog = products
-    .filter((p) => Date.parse(p.createdAt) < startMs)
-    .sort((a, b) => shuffleKey(a.id).localeCompare(shuffleKey(b.id)))
+  const backlog = interleaveByFeed(products.filter((p) => Date.parse(p.createdAt) < startMs))
   const fresh = products
     .filter((p) => Date.parse(p.createdAt) >= startMs)
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))

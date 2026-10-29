@@ -37,6 +37,13 @@ describe('scheduleReleases', () => {
     expect(a).toEqual(b)
   })
 
+  it('alternates feeds so every feed gets an item in the first round', () => {
+    const items = [...backlog(5, 'christmas-gifts'), ...backlog(5, 'art-dolls').map((p) => ({ ...p, id: `a-${p.id}` }))]
+    const firstRound = scheduleReleases(items).slice(0, 2).map((s) => s.product.categorySlug)
+
+    expect(firstRound.sort()).toEqual(['art-dolls', 'christmas-gifts'])
+  })
+
   it('queues products created after the start behind the backlog', () => {
     const fresh = product({ id: 'new', createdAt: new Date(FEED_START_MS + 1).toISOString() })
     const scheduled = scheduleReleases([fresh, ...backlog(PINS_PER_DAY * 2)])
